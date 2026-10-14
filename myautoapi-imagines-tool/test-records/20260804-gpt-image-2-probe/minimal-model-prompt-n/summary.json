@@ -1,0 +1,19 @@
+{
+  "name": "minimal-model-prompt-n",
+  "endpoint": "/v1/images/generations",
+  "method": "POST",
+  "startedAt": "2026-08-04T10:35:08.142Z",
+  "elapsedMs": 25449,
+  "status": 200,
+  "responseBytes": 1523906,
+  "contentType": "application/json",
+  "transportError": null,
+  "parseError": null,
+  "result": {
+    "format": "png",
+    "extension": "png",
+    "source": "b64_json",
+    "bytes": 1142569,
+    "outputPath": "/home/ss/data/projects/subdocs/myautoapi-imagines-tool/test-records/20260804-gpt-image-2-probe/minimal-model-prompt-n/result.png"
+  }
+}

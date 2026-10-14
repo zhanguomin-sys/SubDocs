@@ -1,0 +1,7 @@
+interface:
+  display_name: "中转站生图与修图"
+  short_description: "生图修图，恢复 Bash 嵌套调用结果"
+  default_prompt: "Use $myautoapi-image-generation to generate, edit, or diagnose images. Explicitly forward nested Linux and macOS Code Mode results; if that result is lost, recover only attributable files from the known output directory. Keep concurrent model results mapped to exact model IDs and display every confirmed image."
+
+policy:
+  allow_implicit_invocation: true

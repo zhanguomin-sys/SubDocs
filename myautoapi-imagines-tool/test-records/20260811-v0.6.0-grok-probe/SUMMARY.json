@@ -1,0 +1,67 @@
+{
+  "date": "2026-08-11",
+  "endpoint": {
+    "generation": "/v1/images/generations",
+    "edit": "/v1/images/edits"
+  },
+  "model": "grok-imagine-image",
+  "credential": "dedicated test key; value not archived",
+  "verified": {
+    "minimal_generation": {
+      "count": 1,
+      "dimensions": "1024x1024",
+      "format": "jpeg"
+    },
+    "multi_generation": {
+      "requested": 3,
+      "received": 3,
+      "all_images_opened": true
+    },
+    "resolution": {
+      "1k": "1024x1024",
+      "2k_square": "2048x2048",
+      "2k_16_9": "2816x1584"
+    },
+    "aspect_ratio": {
+      "1:1": "1024x1024",
+      "16:9": "1280x720",
+      "9:16": "720x1280",
+      "4:3": "1152x864",
+      "3:4": "864x1152",
+      "3:2": "1248x832",
+      "2:3": "832x1248"
+    },
+    "quality_requests": [
+      "low",
+      "medium",
+      "high"
+    ],
+    "edit": {
+      "received": 1,
+      "dimensions": "1024x1024",
+      "format": "jpeg"
+    }
+  },
+  "adapter": {
+    "generation_fields": [
+      "model",
+      "prompt",
+      "n",
+      "response_format",
+      "resolution",
+      "aspect_ratio",
+      "quality_when_requested"
+    ],
+    "edit_fields": [
+      "model",
+      "prompt",
+      "n",
+      "response_format",
+      "image"
+    ],
+    "saved_extension": "derived from image signature"
+  },
+  "retained_artifacts": [
+    "SUMMARY.json"
+  ]
+}

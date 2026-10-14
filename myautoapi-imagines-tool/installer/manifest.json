@@ -1,0 +1,11 @@
+{
+  "files": {
+    "VERSION": "aaf6721dc37c40b4233accfc081f25776ff3bd1d2a4b9d5cea760d1c2cf86665",
+    "skill-template/myautoapi-image-generation/SKILL.md": "28d0d750c90d6d1114f90598a4c87e823ed0d33f768c97f8dbd5e77d3ee10cd6",
+    "skill-template/myautoapi-image-generation/agents/openai.yaml": "91b185bec335efc2b47d1cc6520d8d7868bd1d74082082669b7ac67a625844a5",
+    "tool/生成图片.py": "195f335597a2043295ae09e3b2d0d055c02e835d3668bacfc224b026a208e7a4"
+  },
+  "managed_by": "myautoapi-imagines-tool",
+  "schema_version": 1,
+  "version": "0.8.1"
+}

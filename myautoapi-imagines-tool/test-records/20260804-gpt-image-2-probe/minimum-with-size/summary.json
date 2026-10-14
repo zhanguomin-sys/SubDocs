@@ -1,0 +1,19 @@
+{
+  "name": "minimum-with-size",
+  "endpoint": "/v1/images/generations",
+  "method": "POST",
+  "startedAt": "2026-08-04T10:35:33.918Z",
+  "elapsedMs": 37090,
+  "status": 200,
+  "responseBytes": 1795022,
+  "contentType": "application/json",
+  "transportError": null,
+  "parseError": null,
+  "result": {
+    "format": "png",
+    "extension": "png",
+    "source": "b64_json",
+    "bytes": 1345907,
+    "outputPath": "/home/ss/data/projects/subdocs/myautoapi-imagines-tool/test-records/20260804-gpt-image-2-probe/minimum-with-size/result.png"
+  }
+}

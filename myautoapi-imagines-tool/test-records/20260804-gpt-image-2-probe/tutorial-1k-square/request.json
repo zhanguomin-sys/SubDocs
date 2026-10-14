@@ -1,0 +1,8 @@
+{
+  "model": "gpt-image-2",
+  "prompt": "一只红苹果放在纯白背景上，真实产品摄影风格，主体居中。",
+  "n": 1,
+  "size": "1024x1024",
+  "quality": "high",
+  "output_format": "png"
+}

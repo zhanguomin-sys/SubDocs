@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>打开无限画布</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #172033;
+      background: #f6f8fb;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    main {
+      width: min(620px, 100%);
+      padding: 28px;
+      border: 1px solid #dbe3ef;
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+    }
+
+    .intro {
+      margin: 0 0 16px;
+      color: #334155;
+      font-size: 17px;
+      line-height: 1.7;
+      text-align: center;
+    }
+
+    .url-row {
+      display: flex;
+      gap: 10px;
+      margin: 0 0 18px;
+    }
+
+    .url {
+      flex: 1;
+      min-width: 0;
+      padding: 14px 15px;
+      border: 1px solid #d8e0ec;
+      border-radius: 8px;
+      background: #f8fafc;
+      color: #0f172a;
+      font-size: 16px;
+      line-height: 1.4;
+      word-break: break-all;
+      user-select: all;
+    }
+
+    .copy {
+      min-width: 92px;
+      border: 1px solid #c7d2fe;
+      border-radius: 8px;
+      background: #eef2ff;
+      color: #1d4ed8;
+      font-size: 15px;
+      font-weight: 650;
+      cursor: pointer;
+      transition: background 0.16s ease, border-color 0.16s ease;
+    }
+
+    .copy:hover {
+      border-color: #93c5fd;
+      background: #dbeafe;
+    }
+
+    .actions {
+      text-align: center;
+    }
+
+    .guide-link {
+      display: inline-block;
+      margin: 14px 0 0;
+      color: #2563eb;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .guide-link:hover {
+      text-decoration: underline;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 180px;
+      min-height: 48px;
+      padding: 0 24px;
+      border-radius: 8px;
+      background: #2563eb;
+      color: #fff;
+      font-size: 17px;
+      font-weight: 650;
+      text-decoration: none;
+      box-shadow: 0 10px 24px rgba(37, 99, 235, 0.24);
+      transition: transform 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .button:hover {
+      background: #1d4ed8;
+      box-shadow: 0 14px 30px rgba(37, 99, 235, 0.3);
+      transform: translateY(-1px);
+    }
+
+    .button:focus-visible {
+      outline: 3px solid rgba(37, 99, 235, 0.32);
+      outline-offset: 3px;
+    }
+
+    .notes {
+      margin: 24px 0 0;
+      padding: 16px 18px;
+      border-radius: 8px;
+      background: #f8fafc;
+      color: #475569;
+      font-size: 15px;
+      line-height: 1.75;
+    }
+
+    .notes ol {
+      margin: 0;
+      padding-left: 22px;
+    }
+
+    .notes li + li {
+      margin-top: 6px;
+    }
+
+    .service {
+      margin: 14px 0 0;
+      color: #64748b;
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    @media (max-width: 520px) {
+      main {
+        padding: 22px;
+      }
+
+      .url-row {
+        display: block;
+      }
+
+      .copy {
+        width: 100%;
+        min-height: 44px;
+        margin-top: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="intro">请复制网址后在浏览器打开，或点击下方直接打开。</p>
+    <div class="url-row">
+      <div class="url" id="canvas-url">https://canvas.myautoapi.com</div>
+      <button class="copy" type="button" id="copy-url">一键复制</button>
+    </div>
+    <div class="actions">
+      <a class="button" href="https://canvas.myautoapi.com" target="_blank" rel="noopener noreferrer">打开无限画布</a>
+      <br>
+      <a class="guide-link" href="https://docs.myautoapi.com/images/infinite-canvas.html" target="_blank" rel="noopener noreferrer">查看生图使用说明</a>
+    </div>
+    <div class="notes">
+      <ol>
+        <li>图片数据存储在当前浏览器的 IndexedDB 本地数据库中，服务器不保存数据。</li>
+        <li>更换浏览器会导致数据丢失，请及时保存。</li>
+        <li>生图时间一般需要 2 至 15 分钟，请耐心等候。可以多开页面快速批量作图。</li>
+        <li>生图过程中断网/关闭浏览器会导致生图失败，完成后断网不会影响本地数据。</li>
+        <li>无限画布适合快速临时作图，专业流程请使用 ComfyUI 等大型工具。</li>
+      </ol>
+    </div>
+  </main>
+  <script>
+    const copyButton = document.getElementById('copy-url')
+    const canvasUrl = document.getElementById('canvas-url').textContent.trim()
+
+    copyButton.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(canvasUrl)
+        copyButton.textContent = '已复制'
+        setTimeout(() => {
+          copyButton.textContent = '一键复制'
+        }, 1600)
+      } catch {
+        const selection = window.getSelection()
+        const range = document.createRange()
+        range.selectNodeContents(document.getElementById('canvas-url'))
+        selection.removeAllRanges()
+        selection.addRange(range)
+        copyButton.textContent = '请手动复制'
+      }
+    })
+  </script>
+</body>
+</html>

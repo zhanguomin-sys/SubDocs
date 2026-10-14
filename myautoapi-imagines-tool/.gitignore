@@ -1,0 +1,22 @@
+# Local agent instructions. Keep them on this development machine only.
+AGENTS.md
+
+# Secrets and local configuration.
+api-key
+**/api-key
+.env
+.env.*
+
+# Python generated files.
+__pycache__/
+*.py[cod]
+
+# Generated images and temporary runtime files.
+myautoapi-image-results/
+dist/
+*.tmp
+*.log
+
+# Operating-system metadata.
+.DS_Store
+Thumbs.db

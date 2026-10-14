@@ -1,0 +1,11 @@
+{
+  "endpoint": "https://api.myautoapi.com/v1/images/generations",
+  "payload": {
+    "model": "gpt-image-2",
+    "n": 1,
+    "output_format": "png",
+    "prompt": "一颗红苹果放在纯白背景上，真实产品摄影风格，主体居中。",
+    "quality": "high",
+    "size": "1024x1024"
+  }
+}

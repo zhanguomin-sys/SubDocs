@@ -1,0 +1,20 @@
+{
+  "name": "tutorial-1k-portrait",
+  "endpoint": "/v1/images/generations",
+  "method": "POST",
+  "startedAt": "2026-08-04T10:36:11.340Z",
+  "elapsedMs": 20409,
+  "status": 200,
+  "responseBytes": 469,
+  "contentType": "application/json",
+  "transportError": null,
+  "parseError": null,
+  "result": {
+    "format": "png",
+    "extension": "png",
+    "source": "url",
+    "bytes": 1504295,
+    "outputPath": "/home/ss/data/projects/subdocs/myautoapi-imagines-tool/test-records/20260804-gpt-image-2-probe/tutorial-1k-portrait/result.png",
+    "urlStatus": 200
+  }
+}

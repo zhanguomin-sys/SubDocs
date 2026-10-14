@@ -1,0 +1,14 @@
+{
+  "bytes": 1348113,
+  "dimensions": [
+    1254,
+    1254
+  ],
+  "format": "png",
+  "model": "gpt-image-2",
+  "ok": true,
+  "output_file": "/tmp/myautoapi-v0.1-smoke.PlJtXR/20260807-120210-077276-gpt-image-2/result.png",
+  "record_dir": "/tmp/myautoapi-v0.1-smoke.PlJtXR/20260807-120210-077276-gpt-image-2",
+  "source": "b64_json",
+  "status": 200
+}

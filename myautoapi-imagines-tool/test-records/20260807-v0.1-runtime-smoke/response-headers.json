@@ -1,0 +1,18 @@
+{
+  "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept, Origin",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Max-Age": "86400",
+  "Alt-Svc": "h3=\":443\"; ma=2592000",
+  "Connection": "close",
+  "Content-Type": "application/json",
+  "Date": "Fri, 07 Aug 2026 04:02:11 GMT",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Server": "Caddy",
+  "Transfer-Encoding": "chunked",
+  "Vary": "Accept-Encoding",
+  "X-Client-Request-Id": "1bbbe4ef-ee22-4321-bd02-8ba3de128224",
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "X-Request-Id": "59e93400-eefb-4495-acf7-a7aac31eb736"
+}

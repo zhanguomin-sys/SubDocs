@@ -1,0 +1,47 @@
+{
+  "status": "verified",
+  "date": "2026-08-10",
+  "model": "gpt-image-2",
+  "endpoint": "https://api.myautoapi.com/v1/images/generations",
+  "scope": "V0.4.0 text-to-image capability matrix",
+  "request_count": 13,
+  "verified_sizes": [
+    "1024x1024",
+    "1536x1024",
+    "1024x1536",
+    "2048x2048",
+    "2048x1152",
+    "1152x2048",
+    "3840x2160",
+    "2160x3840",
+    "auto"
+  ],
+  "verified_qualities": [
+    "low",
+    "medium",
+    "high",
+    "auto"
+  ],
+  "stable_output_format": "png",
+  "verified_response_paths": [
+    "b64_json",
+    "https_url"
+  ],
+  "verified_behaviors": [
+    "Square, landscape, and portrait requests were accepted across the tested 1K, 2K, and 4K suggestions.",
+    "The auto size and all four quality values were accepted.",
+    "The stable saved result format was PNG.",
+    "Both inline Base64 image data and HTTPS image URL responses produced a usable local image."
+  ],
+  "implementation_use": [
+    "The Skill maps user requests to tested size and quality suggestions without adding creative content.",
+    "The native tool validates exact sizes and keeps one final image in the user images directory.",
+    "Each requested image uses one API call; multiple images use separate calls instead of n.",
+    "The output name follows the image subject, avoids nested directories, and never overwrites an existing image.",
+    "Raw API responses and duplicate image payloads are not retained as V0.4.0 user output."
+  ],
+  "security": {
+    "api_key_content_read_by_operator": false,
+    "api_key_content_written_to_records": false
+  }
+}

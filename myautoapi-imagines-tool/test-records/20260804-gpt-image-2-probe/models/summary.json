@@ -1,0 +1,13 @@
+{
+  "name": "models",
+  "endpoint": "/v1/models",
+  "method": "GET",
+  "startedAt": "2026-08-04T10:35:07.566Z",
+  "elapsedMs": 272,
+  "status": 200,
+  "responseBytes": 1350,
+  "contentType": "application/json; charset=utf-8",
+  "transportError": null,
+  "parseError": null,
+  "result": null
+}

@@ -1,0 +1,48 @@
+{
+  "version": "V0.5.0",
+  "date": "2026-08-11",
+  "credential": "temporary test key; not stored",
+  "models": {
+    "gpt-image-1k-th": {
+      "endpoint": "/v1/images/generations and /v1/images/edits",
+      "verified": {"size": "1024x1024", "quality": ["low", "high"]},
+      "response": "generation and edit succeeded with valid PNG",
+      "native_n_3": "HTTP 200; observed one image and four images across probes; tool must force single-image requests"
+    },
+    "gpt-image-2-adobe": {
+      "endpoint": "/v1/images/generations",
+      "verified": {"sizes": ["1024x1536", "1536x2304", "2304x3456"], "quality": "low", "n": 1},
+      "response": "all three sizes succeeded twice; valid PNG dimensions matched each requested size",
+      "edit": "503 No available compatible accounts",
+      "medium": "503 No available compatible accounts",
+      "high": "503 No available compatible accounts",
+      "native_n_3": "503 No available compatible accounts",
+      "tool_n_3": "first single request succeeded; second returned HTTP 502; no partial files saved"
+    },
+    "ad-gpt-image-2-mx": {
+      "images": "400 model is not supported by the Images route",
+      "responses": "502 Upstream access forbidden",
+      "response": "not delivered"
+    }
+  },
+  "aliases": {
+    "gpt-image-2k-adobe": "HTTP 404 model_not_found",
+    "gpt-image-4k-adobe": "HTTP 404 model_not_found"
+  },
+  "model_catalog_probe": {
+    "date": "2026-08-11",
+    "endpoint": "/v1/models",
+    "status": "HTTP 200",
+    "upstream_ids": [
+      "ad-gpt-image-2-mx",
+      "gpt-image-1k-th",
+      "gpt-image-2",
+      "gpt-image-2-adobe",
+      "grok-imagine-image",
+      "nano-banana-2",
+      "nano-banana-pro"
+    ],
+    "note": "本次分组已减少模型；探测结果只记录上游暴露，不自动改变工具支持列表。"
+  },
+  "decision": "Expose gpt-image-1k-th generation/edit and the verified low-quality Adobe size contracts; gpt-image-2 remains the default model. AZ is not delivered."
+}

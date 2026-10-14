@@ -1,0 +1,8 @@
+.DS_Store
+Thumbs.db
+
+# Original third-party scripts are local comparison material only.
+reference/
+
+# Metadata of the former standalone repository, kept as a local backup only.
+.git-backup/

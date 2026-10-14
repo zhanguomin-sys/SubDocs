@@ -1,0 +1,67 @@
+{
+  "date": "2026-08-11",
+  "endpoint": "/v1/responses",
+  "models": [
+    "nano-banana-2",
+    "nano-banana-pro"
+  ],
+  "credential": "dedicated test key; value not archived",
+  "confirmed": {
+    "model_list": {
+      "http_status": 200,
+      "matching_models": [
+        "nano-banana-2",
+        "nano-banana-pro"
+      ]
+    },
+    "nano_banana_pro_minimal": {
+      "response_status": "completed",
+      "response_content_type": "output_text",
+      "image_container": "Markdown Data URL",
+      "image_format": "png",
+      "dimensions": "1024x1024",
+      "opened": true
+    },
+    "nano_banana_pro_ratio_request": {
+      "request_image_size": "1K",
+      "request_aspect_ratio": "16:9",
+      "image_format": "png",
+      "dimensions": "1408x768",
+      "opened": true
+    },
+    "nano_banana_2_minimal": {
+      "response_status": "completed",
+      "response_content_type": "output_text",
+      "image_container": "Markdown Data URL",
+      "image_format": "png",
+      "dimensions": "1408x768",
+      "opened": true
+    }
+  },
+  "observed_not_claimed_as_verified": {
+    "reference_image_current_attempts": "temporary upstream 502/503 responses before the successful text-to-image recheck"
+  },
+  "adapter": {
+    "request_fields": [
+      "model",
+      "input[].role",
+      "input[].content[].input_text",
+      "input[].content[].input_image",
+      "stream",
+      "response_format.type",
+      "response_format.mime_type",
+      "response_format.aspect_ratio",
+      "response_format.image_size"
+    ],
+    "response_scope": "output only",
+    "response_candidates": [
+      "structured image data",
+      "Markdown Data URL",
+      "HTTPS image URL"
+    ],
+    "saved_extension": "derived from image signature"
+  },
+  "retained_artifacts": [
+    "SUMMARY.json"
+  ]
+}

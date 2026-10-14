@@ -1,0 +1,85 @@
+[
+  {
+    "name": "models",
+    "endpoint": "/v1/models",
+    "method": "GET",
+    "startedAt": "2026-08-04T10:35:07.566Z",
+    "elapsedMs": 272,
+    "status": 200,
+    "responseBytes": 1350,
+    "contentType": "application/json; charset=utf-8",
+    "transportError": null,
+    "parseError": null,
+    "result": null
+  },
+  {
+    "name": "minimal-model-prompt-n",
+    "endpoint": "/v1/images/generations",
+    "method": "POST",
+    "startedAt": "2026-08-04T10:35:08.142Z",
+    "elapsedMs": 25449,
+    "status": 200,
+    "responseBytes": 1523906,
+    "contentType": "application/json",
+    "transportError": null,
+    "parseError": null,
+    "result": {
+      "format": "png",
+      "extension": "png",
+      "source": "b64_json",
+      "bytes": 1142569,
+      "outputPath": "/home/ss/data/projects/subdocs/myautoapi-imagines-tool/test-records/20260804-gpt-image-2-probe/minimal-model-prompt-n/result.png"
+    }
+  },
+  {
+    "name": "minimum-with-size",
+    "endpoint": "/v1/images/generations",
+    "method": "POST",
+    "startedAt": "2026-08-04T10:35:33.918Z",
+    "elapsedMs": 37090,
+    "status": 200,
+    "responseBytes": 1795022,
+    "contentType": "application/json",
+    "transportError": null,
+    "parseError": null,
+    "result": {
+      "format": "png",
+      "extension": "png",
+      "source": "b64_json",
+      "bytes": 1345907,
+      "outputPath": "/home/ss/data/projects/subdocs/myautoapi-imagines-tool/test-records/20260804-gpt-image-2-probe/minimum-with-size/result.png"
+    }
+  },
+  {
+    "name": "tutorial-1k-portrait",
+    "endpoint": "/v1/images/generations",
+    "method": "POST",
+    "startedAt": "2026-08-04T10:36:11.340Z",
+    "elapsedMs": 20409,
+    "status": 200,
+    "responseBytes": 469,
+    "contentType": "application/json",
+    "transportError": null,
+    "parseError": null,
+    "result": {
+      "format": "png",
+      "extension": "png",
+      "source": "url",
+      "bytes": 1504295,
+      "outputPath": "/home/ss/data/projects/subdocs/myautoapi-imagines-tool/test-records/20260804-gpt-image-2-probe/tutorial-1k-portrait/result.png",
+      "urlStatus": 200
+    }
+  },
+  {
+    "status": 200,
+    "elapsedMs": 39060,
+    "responseBytes": 1984736,
+    "transportError": null,
+    "parseError": null,
+    "image": {
+      "source": "b64_json",
+      "bytes": 1488248,
+      "outputPath": "/home/ss/data/projects/subdocs/myautoapi-imagines-tool/test-records/20260804-gpt-image-2-probe/tutorial-1k-square/result.png"
+    }
+  }
+]

@@ -1,0 +1,50 @@
+{
+  "status": "verified",
+  "date": "2026-09-08",
+  "runtime_version": "0.8.0",
+  "source_invocation": "go run .",
+  "cases": [
+    {
+      "model": "gpt-image-2.5-flare",
+      "operation": "generate",
+      "endpoint": "https://api.myautoapi.com/v1/images/generations",
+      "model_argument": "omitted",
+      "size_argument": "omitted",
+      "quality_argument": "omitted",
+      "expected_default_size": "2048x2048",
+      "expected_default_quality": "high",
+      "status": "accepted",
+      "actual_format": "png",
+      "actual_size": "2048x2048",
+      "output_files": 1
+    },
+    {
+      "model": "gpt-image-2.5-sunburst",
+      "operation": "edit",
+      "endpoint": "https://api.myautoapi.com/v1/images/edits",
+      "input_images": 1,
+      "size_argument": "omitted",
+      "quality_argument": "omitted",
+      "expected_default_size": "2048x2048",
+      "expected_default_quality": "high",
+      "status": "accepted",
+      "actual_format": "png",
+      "actual_size": "2048x2048",
+      "output_files": 1,
+      "input_overwritten": false
+    }
+  ],
+  "quality_matrix": {
+    "official_values": ["low", "medium", "high", "xhigh", "max", "auto"],
+    "local_contract_covered": true,
+    "remote_matrix_executed": false
+  },
+  "retry_policy": "no automatic retry",
+  "security": {
+    "installed_binary_used": false,
+    "api_key_written_to_record": false,
+    "raw_response_written_to_record": false,
+    "temporary_url_written_to_record": false,
+    "test_images_written_to_repository": false
+  }
+}

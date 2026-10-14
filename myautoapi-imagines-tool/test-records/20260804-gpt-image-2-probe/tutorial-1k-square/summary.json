@@ -1,0 +1,12 @@
+{
+  "status": 200,
+  "elapsedMs": 39060,
+  "responseBytes": 1984736,
+  "transportError": null,
+  "parseError": null,
+  "image": {
+    "source": "b64_json",
+    "bytes": 1488248,
+    "outputPath": "/home/ss/data/projects/subdocs/myautoapi-imagines-tool/test-records/20260804-gpt-image-2-probe/tutorial-1k-square/result.png"
+  }
+}
