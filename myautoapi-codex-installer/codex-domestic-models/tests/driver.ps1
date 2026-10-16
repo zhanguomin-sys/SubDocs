@@ -1,20 +1,18 @@
-param([string]$InputPath)
+# Runs the Windows importer (or uninstaller) on every case directory under CasesRoot.
+param([string]$CasesRoot, [string]$Action='import')
 $ErrorActionPreference='Stop'
 . (Join-Path $PSScriptRoot '../src/core.ps1')
 . (Join-Path $PSScriptRoot '../src/windows-host.ps1')
-$cases=ConvertFrom-Json -InputObject ([IO.File]::ReadAllText($InputPath))
-$results=New-Object 'System.Collections.Generic.List[object]'
-foreach ($test in $cases) {
+$DomesticCatalog=ConvertFrom-Json -InputObject ([IO.File]::ReadAllText((Join-Path $CasesRoot 'domestic.json')))
+$BundledOfficialCatalog=ConvertFrom-Json -InputObject ([IO.File]::ReadAllText((Join-Path $PSScriptRoot '../src/gpt-catalog.json')))
+$BundledOfficialVersion='0.162.1'
+$results=[ordered]@{}
+foreach ($dir in (Get-ChildItem -LiteralPath $CasesRoot -Directory)) {
   try {
-    $info=Get-ConfigInfo $test.config
-    $merged=Merge-ModelCatalog $test.existing $test.app $test.domestic $test.managed $info
-    $config=Set-ModelConfig $test.config $info $test.path $merged.Efforts
-    $sourcePath=if ($info.Values.ContainsKey('model_catalog_json')) { Get-TomlString $info.Values['model_catalog_json'] } else { $null }
-    $results.Add(@{ok=$true; catalog=$merged.Catalog; managed=$merged.Managed; efforts=$merged.Efforts; sourcePath=$sourcePath; config=$config})
+    if ($Action -ceq 'uninstall') { $r=Remove-ImportedModels $dir.FullName $DomesticCatalog; $results[$dir.Name]=@{ok=$true; changed=$r.Changed; count=$r.Count} }
+    else { $r=Invoke-ModelImport $dir.FullName $DomesticCatalog; $results[$dir.Name]=@{ok=$true; usedCache=$r.UsedCache; count=$r.Count} }
   } catch {
-    # Fixture data only: expose error for developer diagnosis without printing real user config.
-    [Console]::Error.WriteLine($_.ScriptStackTrace+': '+$_.Exception.Message)
-    $results.Add(@{ok=$false})
+    $results[$dir.Name]=@{ok=$false; error=(Format-ModelImportError $_)}
   }
 }
-ConvertTo-Json -InputObject @($results.ToArray()) -Depth 100 -Compress
+ConvertTo-Json -InputObject $results -Depth 10 -Compress

@@ -9,15 +9,13 @@ sidebarTitle: 导入国产模型
 
 ## 一键导入
 
-导入成功后会自动关闭 ChatGPT/Codex，正在运行的任务会中断。
-
 **Linux / macOS：打开终端，复制运行。**
 
 ```sh
 curl -fsSL https://docs.myautoapi.com/install/codex-models.sh | sh
 ```
 
-Linux 需要本机已有 Node.js 16 或以上版本。
+Linux 需要本机已有 Node.js 16 或以上版本。Linux / macOS 导入成功后会自动关闭 ChatGPT/Codex，正在运行的任务会中断。
 
 **Windows：按 `Win + X`，打开终端或 Windows PowerShell，复制运行。**
 
@@ -25,11 +23,13 @@ Linux 需要本机已有 Node.js 16 或以上版本。
 irm https://docs.myautoapi.com/install/codex-models.ps1 | iex
 ```
 
-## 重新打开 Codex 选择模型
+Windows 脚本只读写 `CODEX_HOME` 中的配置与模型文件；未设置时使用 `C:\Users\你的用户名\.codex`。导入成功后会自动关闭 ChatGPT/Codex，正在运行的任务会中断。
+
+## 重新打开 App 选择模型
 
 登录 MyAutoAPI 后台，进入 **API 密钥**，把当前 Key 的分组切换为 **国产模型大全 0.45x**。模型 ID 和价格见[模型价格](/models)。
 
-重新打开 Codex，**新建任务**，在模型选择器中选择要用的国产模型，发送 `测试`。
+重新打开 App，**新建任务**，在模型选择器中选择要用的国产模型，发送 `测试`。
 
 <details>
 <summary>查看本次导入的 10 个模型</summary>
@@ -65,6 +65,6 @@ Windows 打开 PowerShell 运行：
 & ([scriptblock]::Create((irm https://docs.myautoapi.com/install/codex-models.ps1))) -Uninstall
 ```
 
-卸载只移除本工具导入的国产模型，保留 GPT、其他自定义模型、接口和 Key；本地模型目录继续保留其余模型。完成后按脚本提示重新打开 Codex，新建任务继续使用。
+卸载只移除本工具导入的国产模型，保留 GPT、其他自定义模型、接口和 Key；本地模型目录继续保留其余模型。完成后按脚本提示重新打开 App，新建任务继续使用。
 
 </details>

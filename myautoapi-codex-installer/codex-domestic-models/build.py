@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
+# Codex version whose bundled catalog is saved in src/gpt-catalog.json; update both together.
+OFFICIAL_SNAPSHOT_VERSION = '0.162.1'
 
 
 def catalog():
@@ -34,17 +36,20 @@ def catalog():
     return {'models': models}
 
 
-def parent_process_functions():
+def parent_shell_process_functions():
     # Reuse the actual existing installers, rather than maintaining a second implementation.
     shell = (ROOT.parent / 'install/install.sh').read_text(encoding='utf-8')
+    return shell[shell.index('list_running_clients() {'):shell.index('backup_if_exists() {')].rstrip()
+
+
+def parent_powershell_process_functions():
     powershell = (ROOT.parent / 'install/install.ps1').read_text(encoding='utf-8-sig')
-    return (shell[shell.index('list_running_clients() {'):shell.index('backup_if_exists() {')].rstrip(),
-            powershell[powershell.index('function Get-RunningCodexClients {'):powershell.index('function Show-WritePlan {')].rstrip())
+    return powershell[powershell.index('function Get-RunningCodexClients {'):powershell.index('function Show-WritePlan {')].rstrip()
 
 
 def build():
     data = catalog()
-    shell_processes, ps_processes = parent_process_functions()
+    shell_processes = parent_shell_process_functions()
     shell = (ROOT / 'src/installer.sh.in').read_text(encoding='utf-8')
     for marker, content in {
         '@MODEL_COUNT@': str(len(data['models'])),
@@ -62,7 +67,10 @@ $ErrorActionPreference = 'Stop'
 function Say([string]$Message) { Write-Host $Message }
 '''
     ps += '$DomesticCatalog = ConvertFrom-Json -InputObject @\'\n' + json.dumps(data, ensure_ascii=False) + "\n'@\n"
-    ps += ps_processes + '\n' + (ROOT / 'src/core.ps1').read_text(encoding='utf-8') + '\n' + (ROOT / 'src/windows-host.ps1').read_text(encoding='utf-8')
+    official = json.loads((ROOT / 'src/gpt-catalog.json').read_text(encoding='utf-8'))
+    ps += "$BundledOfficialVersion = '" + OFFICIAL_SNAPSHOT_VERSION + "'\n"
+    ps += '$BundledOfficialCatalog = ConvertFrom-Json -InputObject @\'\n' + json.dumps(official, ensure_ascii=False) + "\n'@\n"
+    ps += parent_powershell_process_functions() + '\n' + (ROOT / 'src/core.ps1').read_text(encoding='utf-8') + '\n' + (ROOT / 'src/windows-host.ps1').read_text(encoding='utf-8')
     ps += '''
 try { Start-ModelInstaller $CodexHomePath $CodexPath -Uninstall:$Uninstall }
 catch {

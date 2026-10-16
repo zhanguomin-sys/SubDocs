@@ -11,6 +11,8 @@ import subprocess
 import uuid
 import tomllib
 import unittest
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from threading import Thread
 
 ROOT = Path(__file__).resolve().parents[1]
 WORK = ROOT / 'tests/.work'
@@ -73,6 +75,9 @@ add('bom_first_desktop_header', case('\ufeff[desktop]\ntheme="dark"\n'))
 add('bom_first_other_header', case('\ufeff[features]\nx=true\n'))
 add('windows_path', case(path='C:\\Users\\测试\\.codex\\myautoapi-models.json'))
 add('path_quotes', case(path='/Users/a"b\\c/.codex/myautoapi-models.json'))
+add('windows_crlf_path_and_headers', case('model="gpt-original"\r\n[features]\r\nx=true\r\n', path='C:\\Users\\demo\\.codex\\myautoapi-models.json'))
+add('windows_existing_catalog_path', case('model="gpt-original"\r\nmodel_catalog_json="C:\\\\Users\\\\demo\\\\.codex\\\\old.json"\r\n[desktop]\r\nenabled-reasoning-efforts=["high"]\r\n', path='C:\\Users\\demo\\.codex\\myautoapi-models.json'))
+add('path_control_characters', case(path='/Users/测试/tab\tline\n/myautoapi-models.json'))
 add('multiline_string', case('model="gpt-original"\ninstructions = """\n[desktop]\nmodel_catalog_json = "fake"\n# inside string\n"""\n[features]\nx=true\n'))
 add('literal_multiline', case("model=\"gpt-original\"\ninstructions='''\n[desktop]\nmodel_catalog_json='fake'\n'''\n"))
 add('multiline_array', case('model="gpt-original"\nother = [\n "#inside",\n "[desktop]",\n]\n'))
@@ -107,21 +112,11 @@ class ModelTests(unittest.TestCase):
         path = WORK / 'cases.json'
         path.write_text(json.dumps([value for value, _ in CASES.values()], ensure_ascii=False))
         cls.outputs = {}
-        for platform, command in [('mac_core', [NODE, 'tests/driver.js', path]), ('windows_core', [PWSH, '-NoProfile', '-File', 'tests/driver.ps1', path])]:
+        for platform, command in [('mac_core', [NODE, 'tests/driver.js', path])]:
             result = execute(command)
             if result.returncode:
                 raise AssertionError(f'{platform}: {result.stderr}')
             cls.outputs[platform] = json.loads(result.stdout)
-
-    def test_platform_parity(self):
-        for index, name in enumerate(CASES):
-            with self.subTest(name=name):
-                left, right = (self.outputs[p][index] for p in ('mac_core', 'windows_core'))
-                self.assertEqual(left['ok'], right['ok'])
-                if left['ok']:
-                    self.assertEqual(left['catalog'], right['catalog'])
-                    self.assertEqual(left['efforts'], right['efforts'])
-                    self.assertEqual(tomllib.loads(left['config'].lstrip('\ufeff')), tomllib.loads(right['config'].lstrip('\ufeff')))
 
     def test_cases(self):
         for index, (name, (value, ok)) in enumerate(CASES.items()):
@@ -178,9 +173,12 @@ class ModelTests(unittest.TestCase):
                 self.assertFalse(item['supports_parallel_tool_calls'])
 
     def test_embedded_process_functions(self):
-        shell, ps = build.parent_process_functions()
+        shell = build.parent_shell_process_functions()
         self.assertIn(shell, (ROOT/'install/codex-models.sh').read_text())
-        self.assertIn(ps, (ROOT/'install/codex-models.ps1').read_text(encoding='utf-8-sig'))
+        windows=(ROOT/'install/codex-models.ps1').read_text(encoding='utf-8-sig')
+        self.assertIn(build.parent_powershell_process_functions(), windows)
+        for forbidden in ['function Find-DesktopBackend', 'function Invoke-CodexExport', 'ProcessStartInfo', 'Get-AppxPackage', 'Start-Process']:
+            self.assertNotIn(forbidden, windows)
 
     def test_generated_scripts_reproducible(self):
         before = {p.name: p.read_bytes() for p in (ROOT/'install').iterdir()}
@@ -656,13 +654,34 @@ console.log(core.formatError(error));'''
                 self.assertTrue(loaded_by_id[slug][field], f'{slug} {field}')
             self.assertEqual(loaded_by_id[slug]['apply_patch_tool_type'], 'freeform')
 
+    def test_windows_embedded_official_catalog_deserializes(self):
+        # Maintainer-only schema check of the published data, not a user dependency.
+        snapshot=json.loads((ROOT/'src/gpt-catalog.json').read_text())
+        ids=[m['slug'] for m in snapshot['models']]
+        self.assertTrue(ids)
+        self.assertEqual(len(ids),len(set(ids)))
+        self.assertTrue(any(slug.startswith('gpt-') for slug in ids))
+        hidden=[m for m in snapshot['models'] if m['slug']=='codex-auto-review']
+        self.assertEqual([m['visibility'] for m in hidden],['hide'])
+        target=WORK/'windows-snapshot-schema'
+        target.mkdir(exist_ok=True)
+        data={'models':snapshot['models']+DOMESTIC['models']}
+        catalog=target/'models.json'
+        catalog.write_text(json.dumps(data,ensure_ascii=False))
+        (target/'config.toml').write_text('model_catalog_json = '+json.dumps(str(catalog))+'\n')
+        loaded=subprocess.run([str(CODEX),'debug','models'],cwd=target,
+            env=dict(os.environ,CODEX_HOME=str(target)),text=True,capture_output=True,timeout=30)
+        self.assertEqual(loaded.returncode,0,loaded.stderr)
+        parsed=json.loads(loaded.stdout)
+        self.assertEqual([m['slug'] for m in parsed['models']],ids+[m['slug'] for m in DOMESTIC['models']])
+
     def test_javascript_import_and_rollback(self):
         result=execute([NODE,'tests/integration.js'])
         self.assertEqual(result.returncode,0,result.stdout+result.stderr)
         print(result.stdout.strip())
 
     def test_powershell_import_and_rollback(self):
-        result=execute([PWSH,'-NoProfile','-File','tests/integration.ps1','-Backend',CODEX,'-DomesticPath',WORK/'domestic.json','-WorkRoot',WORK/'ps-integration'])
+        result=execute([PWSH,'-NoProfile','-File','tests/integration.ps1','-DomesticPath',WORK/'domestic.json','-WorkRoot',WORK/'ps-integration'])
         self.assertEqual(result.returncode,0,result.stdout+result.stderr)
         print(result.stdout.strip())
 
@@ -671,13 +690,37 @@ console.log(core.formatError(error));'''
         self.assertEqual(result.returncode,0,result.stdout+result.stderr)
         print(result.stdout.strip())
 
+    def test_powershell_http_pipeline_entry(self):
+        # Serve the actual HTTP publication bytes, with the production charset.
+        published=ROOT.parents[1]/'docs/public/install/codex-models.ps1'
+        payload=published.read_bytes()
+        self.assertFalse(payload.startswith(b'\xef\xbb\xbf'))
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(200)
+                self.send_header('Content-Type','text/plain; charset=utf-8')
+                self.send_header('Content-Length',str(len(payload)))
+                self.end_headers()
+                self.wfile.write(payload)
+            def log_message(self,*args): pass
+        server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
+        worker=Thread(target=server.serve_forever,daemon=True); worker.start()
+        try:
+            result=execute([PWSH,'-NoProfile','-File','tests/web-entry.ps1',
+                '-SourceUrl',f'http://127.0.0.1:{server.server_port}/codex-models.ps1',
+                '-WorkRoot',WORK/'ps-web-entry'])
+            self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+            print(result.stdout.strip())
+        finally:
+            server.shutdown(); server.server_close(); worker.join()
+
     def test_javascript_uninstall(self):
         result=execute([NODE,'tests/uninstall.js'])
         self.assertEqual(result.returncode,0,result.stdout+result.stderr)
         print(result.stdout.strip())
 
     def test_powershell_uninstall(self):
-        result=execute([PWSH,'-NoProfile','-File','tests/uninstall.ps1','-Backend',CODEX,'-WorkRoot',WORK/'ps-uninstall'])
+        result=execute([PWSH,'-NoProfile','-File','tests/uninstall.ps1','-DomesticPath',WORK/'domestic.json','-WorkRoot',WORK/'ps-uninstall'])
         self.assertEqual(result.returncode,0,result.stdout+result.stderr)
         print(result.stdout.strip())
 
@@ -746,7 +789,7 @@ console.log(core.formatError(error));'''
         self.assertEqual((tools/'mock-kills.log').read_text(),'')
 
     def test_shell_processes(self):
-        functions=build.parent_process_functions()[0]
+        functions=build.parent_shell_process_functions()
         fixture='''
 id() { printf '1001\\n'; }
 ps() {
@@ -809,6 +852,179 @@ report_running_clients
                 self.assertTrue(any('-KILL' in call for call in calls))
                 for call in calls:
                     self.assertTrue(set(call.split()[1:]).issubset({'7001','7005'}))
+
+
+def tomlish(text):
+    return tomllib.loads(text.lstrip('\ufeff'))
+
+
+def strip_owned(value):
+    value = copy.deepcopy(value)
+    value.pop('model_catalog_json', None)
+    if 'desktop' in value:
+        value['desktop'].pop('enabled-reasoning-efforts', None)
+        if not value['desktop']:
+            value.pop('desktop')
+    return value
+
+
+def windows_cache(version, models):
+    return json.dumps({'fetched_at': '2026-10-16T00:00:00Z', 'etag': 'x', 'client_version': version, 'identity': 'x', 'models': models})
+
+
+WIN_CONFIGS = {
+    'no_config': None,
+    'empty': b'',
+    'comment_only_no_newline': b'# note',
+    'crlf_no_trailing_newline': b'model = "gpt-5.5"\r\n[projects.\'C:\\Users\\ss\\a.b\']\r\ntrust_level = "trusted"',
+    'multiline_before_header': b'model = "x"\nargs = [\n  "a", # c\n  "[b]",\n]\ntext = """\n[not.header]\nmodel_catalog_json = "no"\n"""\n[mcp.x]\nmodel_catalog_json = "other table"\n',
+    'desktop_header_no_efforts': b'model = "x"\n[desktop]\ntheme = "dark"\n[tui]\na = 1\n',
+    'desktop_header_last_no_newline': b'model = "x"\n[desktop]',
+    'desktop_dotted': b'desktop.theme = "dark"\nmodel = "x"\n[tui]\na = 1\n',
+    'existing_fields_replaced': b'# top\nmodel_catalog_json = "C:/old/models.json"  # old\n[desktop]\nenabled-reasoning-efforts = ["low",\n "high"] # old\n',
+    'custom_effort_kept': b'[desktop]\nenabled-reasoning-efforts = ["low", "turbo"]\n',
+    'bom_crlf': b'\xef\xbb\xbfmodel = "x"\r\n[desktop]\r\ntheme = "dark"\r\n',
+    'unknown_service': b'model = "x"\nmodel_provider = "not-defined"\n',
+}
+WIN_BAD = {
+    'inline_desktop': b'desktop = { theme = "dark" }\n',
+    'duplicate_desktop': b'[desktop]\na = 1\n[desktop]\nb = 2\n',
+    'profile_catalog': b'[profiles.work]\nmodel_catalog_json = "elsewhere.json"\n',
+    'duplicate_catalog_key': b'model_catalog_json = "a"\n"model_catalog_json" = "b"\n',
+    'unclosed_string': b'a = "bad\n',
+    'unclosed_array': b'a = ["bad"\n',
+    'empty_value': b'model_catalog_json =\n',
+}
+
+
+class WindowsImportTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.snapshot = json.loads((ROOT / 'src/gpt-catalog.json').read_text())
+        cls.root = WORK / ('win-cases-' + uuid.uuid4().hex)
+        cls.root.mkdir()
+        (cls.root / 'domestic.json').write_text(json.dumps(DOMESTIC, ensure_ascii=False))
+        astra = copy.deepcopy(next(m for m in cls.snapshot['models'] if m['slug'] == 'gpt-6-astra'))
+        newer = copy.deepcopy(astra); newer['display_name'] = 'FROM-CACHE'
+        future = copy.deepcopy(astra); future.update(slug='gpt-future', display_name='gpt-future')
+        older = copy.deepcopy(astra); older['display_name'] = 'OLD-CACHE'
+        only_old = copy.deepcopy(astra); only_old.update(slug='gpt-old-only', display_name='gpt-old-only')
+        cls.cases = {}
+        for name, config in {**WIN_CONFIGS, **WIN_BAD}.items():
+            cls.cases[name] = {'config': config}
+        cls.cases['cache_newer'] = {'config': b'model = "x"\n', 'cache': windows_cache('0.170.0', [newer, future, {'slug': 'broken'}])}
+        cls.cases['cache_older'] = {'config': b'model = "x"\n', 'cache': windows_cache('0.100.0', [older, only_old])}
+        cls.cases['cache_corrupt'] = {'config': b'model = "x"\n', 'cache': '{not json'}
+        cls.cases['cache_wrong_shape'] = {'config': b'model = "x"\n', 'cache': '{"models": "nope"}'}
+        custom = copy.deepcopy(astra); custom.update(slug='user-custom', display_name='user-custom', custom_field={'keep': [1]})
+        gone = copy.deepcopy(astra); gone.update(slug='gpt-removed-upstream', display_name='gone')
+        stale = copy.deepcopy(astra); stale['display_name'] = 'STALE'
+        cls.cases['existing_catalog_refresh'] = {
+            'config': b'model_catalog_json = "' + str(cls.root / 'existing_catalog_refresh' / 'myautoapi-models.json').encode() + b'"\n',
+            'catalog': json.dumps({'models': [stale, custom, gone], 'top': {'keep': True}}),
+            'managed': json.dumps(['renamed-domestic']),
+            'cache': windows_cache('0.170.0', [newer, future]),
+        }
+        for name, case in cls.cases.items():
+            directory = cls.root / name
+            directory.mkdir()
+            if case['config'] is not None:
+                (directory / 'config.toml').write_bytes(case['config'])
+            for key, filename in (('cache', 'models_cache.json'), ('catalog', 'myautoapi-models.json'), ('managed', 'myautoapi-models.managed.json')):
+                if key in case:
+                    (directory / filename).write_text(case[key])
+        cls.results = cls.run_driver('import')
+        cls.first_bytes = cls.snapshot_bytes()
+        cls.second = cls.run_driver('import')
+
+    @classmethod
+    def snapshot_bytes(cls):
+        names = ('config.toml', 'myautoapi-models.json', 'myautoapi-models.managed.json')
+        return {d.name: [(d / n).read_bytes() if (d / n).exists() else None for n in names] for d in cls.root.iterdir() if d.is_dir()}
+
+    @classmethod
+    def run_driver(cls, action):
+        result = execute([PWSH, '-NoProfile', '-File', 'tests/driver.ps1', cls.root, action])
+        if result.returncode:
+            raise AssertionError(result.stdout + result.stderr)
+        return json.loads(result.stdout)
+
+    def read_catalog(self, name):
+        return json.loads((self.root / name / 'myautoapi-models.json').read_text())
+
+    def test_invalid_configs_are_rejected_and_untouched(self):
+        for name, config in WIN_BAD.items():
+            with self.subTest(name=name):
+                self.assertFalse(self.results[name]['ok'])
+                self.assertIn('原因', self.results[name]['error'])
+                self.assertEqual(sorted(p.name for p in (self.root / name).iterdir()), ['config.toml'])
+                self.assertEqual((self.root / name / 'config.toml').read_bytes(), config)
+
+    def test_valid_configs_keep_everything_else(self):
+        for name, config in WIN_CONFIGS.items():
+            with self.subTest(name=name):
+                self.assertTrue(self.results[name]['ok'], self.results[name])
+                directory = self.root / name
+                after = tomlish((directory / 'config.toml').read_text(encoding='utf-8'))
+                self.assertEqual(after['model_catalog_json'], str(directory / 'myautoapi-models.json'))
+                before = tomlish(config.decode('utf-8')) if config else {}
+                self.assertEqual(strip_owned(before), strip_owned(after))
+                if config is not None and b'\r\n' in config:
+                    self.assertNotIn(b'\n', (directory / 'config.toml').read_bytes().replace(b'\r\n', b''))
+                efforts = after['desktop']['enabled-reasoning-efforts']
+                self.assertEqual(len(efforts), len(set(efforts)))
+                for item in DOMESTIC['models']:
+                    for level in item['supported_reasoning_levels']:
+                        self.assertIn(level['effort'], efforts)
+
+    def test_custom_effort_and_bom_survive(self):
+        after = tomlish((self.root / 'custom_effort_kept' / 'config.toml').read_text())
+        self.assertIn('turbo', after['desktop']['enabled-reasoning-efforts'])
+        raw = (self.root / 'bom_crlf' / 'config.toml').read_bytes()
+        self.assertTrue(raw.startswith(b'\xef\xbb\xbf') and not raw.startswith(b'\xef\xbb\xbf\xef\xbb\xbf'))
+
+    def test_catalog_has_official_hidden_and_domestic_models(self):
+        official = [m['slug'] for m in self.snapshot['models']]
+        domestic = [m['slug'] for m in DOMESTIC['models']]
+        for name in list(WIN_CONFIGS) + ['cache_corrupt', 'cache_wrong_shape']:
+            with self.subTest(name=name):
+                catalog = self.read_catalog(name)
+                ids = [m['slug'] for m in catalog['models']]
+                self.assertEqual(ids, official + domestic)
+                by_id = {m['slug']: m for m in catalog['models']}
+                self.assertEqual(by_id['codex-auto-review']['visibility'], 'hide')
+                self.assertEqual(json.loads((self.root / name / 'myautoapi-models.managed.json').read_text()), domestic)
+                self.assertFalse(self.results[name]['usedCache'])
+
+    def test_cache_priority(self):
+        newer = {m['slug']: m for m in self.read_catalog('cache_newer')['models']}
+        self.assertTrue(self.results['cache_newer']['usedCache'])
+        self.assertEqual(newer['gpt-6-astra']['display_name'], 'FROM-CACHE')
+        self.assertIn('gpt-future', newer)
+        self.assertNotIn('broken', newer)
+        self.assertIn('codex-auto-review', newer)
+        older = {m['slug']: m for m in self.read_catalog('cache_older')['models']}
+        self.assertEqual(older['gpt-6-astra']['display_name'], 'GPT-6-Astra')
+        self.assertIn('gpt-old-only', older)
+
+    def test_existing_catalog_refreshed_without_losing_entries(self):
+        catalog = self.read_catalog('existing_catalog_refresh')
+        by_id = {m['slug']: m for m in catalog['models']}
+        self.assertEqual(catalog['top'], {'keep': True})
+        self.assertEqual(by_id['gpt-6-astra']['display_name'], 'FROM-CACHE')
+        self.assertEqual(by_id['user-custom']['custom_field'], {'keep': [1]})
+        self.assertIn('gpt-removed-upstream', by_id)
+        self.assertIn('gpt-future', by_id)
+        self.assertIn('codex-auto-review', by_id)
+        ids = [m['slug'] for m in catalog['models']]
+        self.assertEqual(ids[-len(DOMESTIC['models']):], [m['slug'] for m in DOMESTIC['models']])
+
+    def test_second_import_changes_nothing(self):
+        # The first run already rewrote these directories; a second run must be a no-op.
+        for name in list(WIN_CONFIGS) + ['cache_newer', 'existing_catalog_refresh']:
+            with self.subTest(name=name):
+                self.assertTrue(self.second[name]['ok'], self.second[name])
+                self.assertEqual(self.snapshot_bytes()[name], self.first_bytes[name])
 
 
 if __name__ == '__main__':

@@ -54,19 +54,32 @@ function New-OrdinalMap {
   return ,(New-Object 'System.Collections.Generic.Dictionary[string,object]' ([System.StringComparer]::Ordinal))
 }
 
-function ConvertTo-CanonicalValue($Value) {
-  if ($null -eq $Value) { return $null }
-  if ($Value -is [Array]) {
-    $items=New-Object 'System.Collections.Generic.List[object]'
-    foreach ($item in $Value) { $items.Add((ConvertTo-CanonicalValue $item)) }
-    return ,$items.ToArray()
+function ConvertTo-TomlString([string]$Value) {
+  # Windows paths are literal TOML strings, so backslashes never become escapes.
+  if ($Value.Contains('\') -and -not $Value.Contains("'") -and $Value -notmatch '[\x00-\x1f\x7f]') { return "'"+$Value+"'" }
+  $encoded=New-Object System.Text.StringBuilder
+  [void]$encoded.Append('"')
+  foreach ($character in $Value.ToCharArray()) {
+    $number=[int]$character
+    if ($number -eq 34) { [void]$encoded.Append('\"') }
+    elseif ($number -eq 92) { [void]$encoded.Append('\\') }
+    elseif ($number -lt 32 -or $number -eq 127) { [void]$encoded.Append(('\u{0:x4}' -f $number)) }
+    else { [void]$encoded.Append($character) }
   }
-  if ($Value -is [pscustomobject]) {
-    $result=[ordered]@{}
-    foreach ($name in ($Value.PSObject.Properties.Name | Sort-Object -CaseSensitive)) { $result[$name]=ConvertTo-CanonicalValue $Value.$name }
-    return $result
-  }
-  return $Value
+  [void]$encoded.Append('"')
+  return $encoded.ToString()
+}
+
+function ConvertTo-TomlStringArray([string[]]$Values) {
+  if ($null -eq $Values -or -not $Values.Count) { return '[]' }
+  return '['+((@($Values) | ForEach-Object { ConvertTo-TomlString $_ }) -join ',')+']'
+}
+
+function New-TomlSyntaxError([string]$Message, [string]$Text, [int]$Offset) {
+  $prefix=$Text.Substring(0,[Math]::Min($Offset,$Text.Length))
+  $line=1; foreach ($character in $prefix.ToCharArray()) { if ([int]$character -eq 10) { $line++ } }
+  $column=$prefix.Length-$prefix.LastIndexOf("`n")
+  return (New-ModelImportError ($Message+' 第 '+$line+' 行，第 '+$column+' 列。'))
 }
 
 function Get-TomlString([string]$Raw) {
@@ -112,7 +125,7 @@ function Get-TomlStatements([string]$Text) {
   $records = New-Object 'System.Collections.Generic.List[object]'
   $depth = New-Object 'System.Collections.Generic.Stack[char]'
   $clean = New-Object System.Text.StringBuilder
-  $start = 0; $quote = ''; $triple = $false; $escaped = $false; $comment = $false
+  $start = 0; $quote = ''; $quoteStart = 0; $triple = $false; $escaped = $false; $comment = $false
   for ($i = 0; $i -lt $Text.Length; $i++) {
     $ch = [string]$Text[$i]
     if ($comment) {
@@ -130,12 +143,12 @@ function Get-TomlStatements([string]$Text) {
           while ($run -lt 5 -and $i + $run -lt $Text.Length -and [string]$Text[$i + $run] -ceq $quote) { $run += 1 }
           [void]$clean.Append($Text.Substring($i + 1, $run - 1)); $i += $run - 1; $quote = ''; $triple = $false
         }
-      } elseif ($ch -ceq "`n" -and -not $triple) { throw (New-ModelImportError 'TOML 字符串未闭合。') }
+      } elseif ($ch -ceq "`n" -and -not $triple) { throw (New-TomlSyntaxError 'TOML 字符串未闭合。' $Text $quoteStart) }
       continue
     }
     if ($ch -ceq '#') { $comment = $true; [void]$clean.Append(' '); continue }
     if ($ch -ceq '"' -or $ch -ceq "'") {
-      $quote = $ch; $triple = $i + 2 -lt $Text.Length -and $Text.Substring($i, 3) -ceq ($ch * 3)
+      $quote = $ch; $quoteStart = $i; $triple = $i + 2 -lt $Text.Length -and $Text.Substring($i, 3) -ceq ($ch * 3)
       [void]$clean.Append($ch)
       if ($triple) { [void]$clean.Append($ch * 2); $i += 2 }
       continue
@@ -143,32 +156,38 @@ function Get-TomlStatements([string]$Text) {
     if ($ch -ceq '[' -or $ch -ceq '{') { $depth.Push([char]$ch) }
     if ($ch -ceq ']' -or $ch -ceq '}') {
       $expected = if ($ch -ceq ']') { '[' } else { '{' }
-      if (-not $depth.Count -or [string]$depth.Pop() -cne $expected) { throw (New-ModelImportError 'TOML 括号不匹配。') }
+      if (-not $depth.Count -or [string]$depth.Pop() -cne $expected) { throw (New-TomlSyntaxError 'TOML 括号不匹配。' $Text $i) }
     }
     [void]$clean.Append($ch)
     if ($ch -ceq "`n" -and -not $depth.Count) {
       $records.Add(@{Start=$start; End=$i+1; Code=$clean.ToString()}); $start=$i+1; [void]$clean.Clear()
     }
   }
-  if ($quote -or $depth.Count) { throw (New-ModelImportError 'TOML 字符串或括号未闭合。') }
+  if ($quote) { throw (New-TomlSyntaxError 'TOML 字符串未闭合。' $Text $quoteStart) }
+  if ($depth.Count) { throw (New-TomlSyntaxError 'TOML 括号未闭合。' $Text $Text.Length) }
   if ($start -lt $Text.Length) { $records.Add(@{Start=$start; End=$Text.Length; Code=$clean.ToString()}) }
   return ,$records.ToArray()
 }
 
-function Get-ConfigInfo([string]$Text, [switch]$ReadOnly) {
-  $info = @{Values=(New-OrdinalMap); Edits=(New-OrdinalMap); FirstHeader=$Text.Length; Desktop=$null; DesktopInline=$false; DesktopDotted=$false; ProfileCatalog=$false}
+
+# Reads config.toml statement by statement. It records where the two fields this
+# tool owns live (by statement index), so edits never depend on shifting offsets.
+function Get-ConfigInfo([string]$Text) {
+  $info = @{Values=(New-OrdinalMap); Edits=(New-OrdinalMap); Records=@(); FirstHeaderIndex=-1; DesktopIndex=-1; DesktopInline=$false; DesktopDotted=$false}
   $scope = @()
-  foreach ($rec in (Get-TomlStatements $Text)) {
+  $info.Records = Get-TomlStatements $Text
+  for ($index = 0; $index -lt $info.Records.Count; $index++) {
+    $rec = $info.Records[$index]
     $code = $rec.Code.Trim([char[]]@(' ', "`r", "`n", "`t", [char]0xFEFF))
     if (-not $code) { continue }
     if ($code.StartsWith('[')) {
       $header = [regex]::Match($code, '^(\[\[?)([\s\S]*?)(\]\]?)$')
       if (-not $header.Success -or $header.Groups[1].Length -ne $header.Groups[3].Length) { throw (New-ModelImportError 'TOML 配置段无效。') }
       $scope = Get-TomlKeyParts $header.Groups[2].Value.Trim()
-      $info.FirstHeader = [Math]::Min($info.FirstHeader, $rec.Start)
+      if ($info.FirstHeaderIndex -lt 0) { $info.FirstHeaderIndex = $index }
       if ($scope.Count -eq 1 -and $scope[0] -ceq 'desktop') {
-        if ($header.Groups[1].Value -ceq '[[' -or $null -ne $info.Desktop) { throw (New-ModelImportError 'desktop 配置段重复或格式无效。') }
-        $info.Desktop = $rec
+        if ($header.Groups[1].Value -ceq '[[' -or $info.DesktopIndex -ge 0) { throw (New-ModelImportError 'desktop 配置段重复或格式无效。') }
+        $info.DesktopIndex = $index
       }
       continue
     }
@@ -183,23 +202,23 @@ function Get-ConfigInfo([string]$Text, [switch]$ReadOnly) {
     $parts = Get-TomlKeyParts $rec.Code.Substring(0,$eq).Trim().TrimStart([char]0xFEFF)
     $path = @($scope) + @($parts); $key = $path -join '.'
     if (-not $scope.Count -and $parts[0] -ceq 'desktop') {
-      $info.DesktopInline = $parts.Count -eq 1
-      $info.DesktopDotted = $parts.Count -gt 1 -or $info.DesktopDotted
+      if ($parts.Count -eq 1) { $info.DesktopInline = $true } else { $info.DesktopDotted = $true }
     }
     if ($path.Count -gt 1 -and $path[0] -ceq 'profiles' -and $path[-1] -ceq 'model_catalog_json') {
-      if ($ReadOnly) { $info.ProfileCatalog=$true }
-      else { throw (New-ModelImportError 'profile 中另有 model_catalog_json；请先统一目录配置再导入。') }
+      throw (New-ModelImportError 'profile 中另有 model_catalog_json；请先统一目录配置再导入。')
     }
-    if (($path.Count -eq 1 -and @('model_catalog_json','model','review_model','profile','model_provider') -ccontains $key) -or ($path.Count -eq 2 -and $key -ceq 'desktop.enabled-reasoning-efforts')) {
+    if (($path.Count -eq 1 -and $path[0] -ceq 'model_catalog_json') -or ($path.Count -eq 2 -and $key -ceq 'desktop.enabled-reasoning-efforts')) {
       if ($info.Edits.ContainsKey($key)) { throw (New-ModelImportError '目标 TOML 字段重复。') }
       $vstart = $eq + 1
       while ($vstart -lt $rec.Code.Length -and [char]::IsWhiteSpace($rec.Code[$vstart])) { $vstart += 1 }
       $vend = $rec.Code.TrimEnd().Length
-      $info.Edits[$key] = @{Start=$rec.Start+$vstart; End=$rec.Start+$vend}
+      if ($vend -le $vstart) { throw (New-ModelImportError ('TOML 字段 '+$key+' 缺少值。')) }
+      # Offsets are relative to this statement's own text.
+      $info.Edits[$key] = @{Index=$index; Start=$vstart; End=$vend}
       $info.Values[$key] = $rec.Code.Substring($vstart,$vend-$vstart)
     }
   }
-  if ($info.DesktopInline -and -not $ReadOnly) { throw (New-ModelImportError 'desktop 使用内联表；请改为 [desktop] 配置段后导入。') }
+  if ($info.DesktopInline) { throw (New-ModelImportError 'desktop 使用内联表；请改为 [desktop] 配置段后导入。') }
   return $info
 }
 
@@ -216,189 +235,244 @@ function Get-TomlStringArray([string]$Raw) {
   return ,$items.ToArray()
 }
 
+# Rewrites only the two fields this tool owns. Every other statement is copied
+# back byte for byte; edits are keyed by statement index and never sorted.
 function Set-ModelConfig([string]$Text, $Info, [string]$CatalogPath, [string[]]$Efforts) {
-  if ($Text.StartsWith([string][char]0xFEFF)) { $Text=$Text.TrimStart([char]0xFEFF); $Info=Get-ConfigInfo $Text }
   $newline = if ($Text.Contains("`r`n")) { "`r`n" } else { "`n" }
-  $changes = New-Object 'System.Collections.Generic.List[object]'
+  $records = $Info.Records
+  if ($records.Count -and $records[$records.Count-1].End -ne $Text.Length) { throw (New-ModelImportError 'TOML 配置解析结果与文本不一致。') }
+  $pieces = New-Object 'System.Collections.Generic.List[string]'
+  foreach ($rec in $records) { $pieces.Add($Text.Substring($rec.Start, $rec.End - $rec.Start)) }
+  $before = New-Object 'System.Collections.Generic.Dictionary[int,string]'
+  $after = New-Object 'System.Collections.Generic.Dictionary[int,string]'
   $rootLines = New-Object 'System.Collections.Generic.List[string]'
-  $values = @{
-    'model_catalog_json'= (ConvertTo-Json -InputObject $CatalogPath -Compress)
-    'desktop.enabled-reasoning-efforts'= (ConvertTo-Json -InputObject @($Efforts) -Compress)
-  }
-  foreach ($key in @('model_catalog_json','desktop.enabled-reasoning-efforts')) {
-    if ($Info.Edits.ContainsKey($key)) { $changes.Add(@{Start=$Info.Edits[$key].Start; End=$Info.Edits[$key].End; Value=$values[$key]}); continue }
-    if ($key -ceq 'model_catalog_json') { $rootLines.Add('model_catalog_json = ' + $values[$key]); continue }
-    $line = 'enabled-reasoning-efforts = ' + $values[$key] + $newline
-    if ($null -ne $Info.Desktop) {
-      $prefix = if ($Text[$Info.Desktop.End-1] -ceq "`n") { '' } else { $newline }
-      $changes.Add(@{Start=$Info.Desktop.End; End=$Info.Desktop.End; Value=$prefix+$line})
-    } elseif ($Info.DesktopDotted) { $rootLines.Add('desktop.'+$line.Trim()) }
-    else {
-      $prefix = if ($Text -and -not $Text.EndsWith("`n")) { $newline } else { '' }
-      $changes.Add(@{Start=$Text.Length; End=$Text.Length; Value=$prefix+$newline+'[desktop]'+$newline+$line})
+  $tail = ''
+  $catalogValue = ConvertTo-TomlString $CatalogPath
+  $effortsValue = ConvertTo-TomlStringArray $Efforts
+
+  foreach ($item in @(@('model_catalog_json',$catalogValue), @('desktop.enabled-reasoning-efforts',$effortsValue))) {
+    if ($Info.Edits.ContainsKey($item[0])) {
+      $edit = $Info.Edits[$item[0]]; $piece = $pieces[$edit.Index]
+      $pieces[$edit.Index] = $piece.Substring(0,$edit.Start) + $item[1] + $piece.Substring($edit.End)
     }
   }
-  if ($rootLines.Count) {
-    $at = $Info.FirstHeader
-    $prefix = if ($at -and $Text[$at-1] -cne "`n") { $newline } else { '' }
-    $changes.Add(@{Start=$at; End=$at; Value=$prefix+($rootLines -join $newline)+$newline})
+  if (-not $Info.Edits.ContainsKey('model_catalog_json')) { $rootLines.Add('model_catalog_json = ' + $catalogValue) }
+  $desktopBlock = ''
+  if (-not $Info.Edits.ContainsKey('desktop.enabled-reasoning-efforts')) {
+    $line = 'enabled-reasoning-efforts = ' + $effortsValue + $newline
+    if ($Info.DesktopIndex -ge 0) {
+      $lead = if ($pieces[$Info.DesktopIndex].EndsWith("`n", [StringComparison]::Ordinal)) { '' } else { $newline }
+      $after[$Info.DesktopIndex] = $lead + $line
+    } elseif ($Info.DesktopDotted) { $rootLines.Add('desktop.' + $line.TrimEnd()) }
+    else { $desktopBlock = '[desktop]' + $newline + $line }
   }
-  for ($index=0; $index -lt $changes.Count; $index++) { $changes[$index].Order=$index }
-  foreach ($change in ($changes | Sort-Object @{Expression='Start';Descending=$true},@{Expression='End';Descending=$true},@{Expression='Order';Descending=$false})) {
-    $Text = $Text.Substring(0,$change.Start) + $change.Value + $Text.Substring($change.End)
+  $rootText = ''
+  if ($rootLines.Count) { $rootText = ($rootLines -join $newline) + $newline }
+  if ($rootText) {
+    if ($Info.FirstHeaderIndex -ge 0) { $before[$Info.FirstHeaderIndex] = $rootText } else { $tail += $rootText }
   }
-  $null = Get-ConfigInfo $Text
-  return $Text
+  if ($desktopBlock) { $tail += $(if ($Text -or $tail) { $newline } else { '' }) + $desktopBlock }
+
+  $out = New-Object System.Text.StringBuilder
+  for ($index = 0; $index -lt $pieces.Count; $index++) {
+    if ($before.ContainsKey($index)) { [void]$out.Append($before[$index]) }
+    [void]$out.Append($pieces[$index])
+    if ($after.ContainsKey($index)) { [void]$out.Append($after[$index]) }
+  }
+  if ($tail) {
+    if ($out.Length -and $out[$out.Length-1] -cne "`n") { [void]$out.Append($newline) }
+    [void]$out.Append($tail)
+  }
+  $result = $out.ToString()
+
+  # The new text must parse and must carry exactly the values we meant to write.
+  $check = Get-ConfigInfo $result
+  $written = $check.Values['model_catalog_json']
+  $writtenEfforts = $check.Values['desktop.enabled-reasoning-efforts']
+  $writtenList = if ($null -ne $writtenEfforts) { Get-TomlStringArray $writtenEfforts } else { $null }
+  if ($null -eq $written -or $null -eq $writtenList -or (Get-TomlString $written) -cne $CatalogPath -or ($writtenList -join ',') -cne (@($Efforts) -join ',')) {
+    throw (New-ModelImportError '写入后的配置字段与预期不一致，已停止。')
+  }
+  return $result
 }
 
-function Test-ModelCatalog($Catalog) {
+# Entries from the user's catalog, the Codex cache and the bundled snapshot only
+# need to look like model objects; Codex itself decides what it can load.
+function Test-ModelEntry($Model) {
+  return ($null -ne $Model -and $Model.slug -is [string] -and [bool]$Model.slug -and $Model.display_name -is [string] -and [bool]$Model.visibility)
+}
+
+function Test-ModelCatalogShape($Catalog) {
   if ($null -eq $Catalog -or $Catalog.models -isnot [Array] -or -not $Catalog.models.Count) { throw (New-ModelImportError '模型目录必须包含非空 models 数组。') }
   $seen = New-OrdinalMap
   foreach ($model in $Catalog.models) {
     if ($null -eq $model -or $model.slug -isnot [string] -or -not $model.slug -or $seen.ContainsKey($model.slug)) { throw (New-ModelImportError '模型目录中有空 ID 或重复 ID。') }
-    $seen[$model.slug]=$true
+    $seen[$model.slug] = $true
+  }
+}
+
+# Full field check, used for the data this tool ships (domestic list and snapshot).
+function Test-ModelCatalog($Catalog) {
+  Test-ModelCatalogShape $Catalog
+  foreach ($model in $Catalog.models) {
     if ($model.display_name -isnot [string] -or $model.supported_reasoning_levels -isnot [Array] -or -not $model.shell_type -or -not $model.visibility -or $model.supported_in_api -isnot [bool] -or $null -eq $model.priority -or $model.support_verbosity -isnot [bool] -or $null -eq $model.truncation_policy -or $model.experimental_supported_tools -isnot [Array]) { throw (New-ModelImportError '模型目录缺少 Codex 必需元数据。') }
     if ($model.model_messages.instructions_template -isnot [string] -and $model.base_instructions -isnot [string]) { throw (New-ModelImportError '模型目录缺少模型指令。') }
   }
 }
 
-function Merge-ModelCatalog($Existing, $App, $Domestic, $Managed, $Info) {
-  Test-ModelCatalog $App; Test-ModelCatalog $Domestic
-  if ($null -ne $Existing) { Test-ModelCatalog $Existing }
-  if ($Managed -isnot [Array]) { throw (New-ModelImportError '已管理模型记录格式无效。') }
-  foreach ($id in $Managed) {
-    if ($id -isnot [string] -or -not $id) { throw (New-ModelImportError '已管理模型记录格式无效。') }
-    if ($id -match '^gpt-') { throw (New-ModelImportError '管理记录包含 GPT，停止导入以保留 GPT。') }
+function Test-CacheNotOlder($CacheVersion, [string]$SnapshotVersion) {
+  try {
+    $cache = [version](([string]$CacheVersion) -replace '[-+].*$','')
+    $snapshot = [version]($SnapshotVersion -replace '[-+].*$','')
+    return ($cache -ge $snapshot)
+  } catch {
+    # The cache is written by the installed Codex. A missing or unreadable version
+    # means its format changed, which is what a newer Codex looks like.
+    return $true
   }
-  $byId=New-OrdinalMap; $owned=New-OrdinalMap; $order=New-Object 'System.Collections.Generic.List[string]'
-  foreach ($id in (@($Managed) + @($Domestic.models | ForEach-Object {$_.slug}))) { $owned[$id]=$true }
-  $initial = @(); if ($null -ne $Existing) { $initial=@($Existing.models) }
-  foreach ($model in (@($initial) + @($App.models))) {
-    if (-not $byId.ContainsKey($model.slug) -and -not $owned.ContainsKey($model.slug)) { $byId[$model.slug]=$model; $order.Add($model.slug) }
-  }
-  foreach ($model in $Domestic.models) { $byId[$model.slug]=$model; $order.Add($model.slug) }
-  $source = if ($null -ne $Existing) { $Existing } else { $App }
-  $result = ConvertFrom-Json -InputObject (ConvertTo-Json -InputObject $source -Depth 100)
-  $result.models = @($order | ForEach-Object {$byId[$_]})
-  if (-not @($result.models | Where-Object {$_.slug -match '^gpt-'}).Count) { throw (New-ModelImportError '未取得 GPT 完整目录，停止导入。') }
-  $levels = New-OrdinalMap
-  $efforts = @()
-  if ($Info.Values.ContainsKey('desktop.enabled-reasoning-efforts')) { $efforts = Get-TomlStringArray $Info.Values['desktop.enabled-reasoning-efforts'] }
-  else { $efforts=@($result.models | Where-Object {$_.slug -match '^gpt-'} | ForEach-Object {$_.supported_reasoning_levels} | ForEach-Object {$_.effort}) }
-  $efforts += @($Domestic.models | ForEach-Object {$_.supported_reasoning_levels} | ForEach-Object {$_.effort})
-  $effortOrder = @('none','minimal','low','medium','high','xhigh','ultra','max')
-  foreach ($level in $efforts) {
-    if ($effortOrder -cnotcontains $level) { throw (New-ModelImportError '桌面档位存在未知值，停止导入。') }
-    $levels[$level]=$true
-  }
-  Test-ModelCatalog $result
-  return @{Catalog=$result; Efforts=@($effortOrder | Where-Object {$levels.ContainsKey($_)}); Managed=@($Domestic.models | ForEach-Object {$_.slug})}
 }
 
-function Invoke-ModelImport([string]$TargetHome, [string]$Backend, $Domestic) {
+# Official models (including hidden ones such as codex-auto-review) come from the
+# bundled snapshot, refreshed by Codex's own models_cache.json when it is usable.
+# A cache older than the snapshot only fills in missing models.
+function Get-OfficialModels($Snapshot, [string]$SnapshotVersion, $CacheText) {
+  $entries = New-OrdinalMap; $order = New-Object 'System.Collections.Generic.List[string]'
+  foreach ($model in $Snapshot.models) { $entries[$model.slug] = @{Model=$model; Source='snapshot'}; $order.Add($model.slug) }
+  $usedCache = $false
+  if ($null -ne $CacheText) {
+    try {
+      $cache = ConvertFrom-Json -InputObject $CacheText -ErrorAction Stop
+      if ($cache.models -is [Array]) {
+        $newer = Test-CacheNotOlder $cache.client_version $SnapshotVersion
+        foreach ($model in $cache.models) {
+          if (-not (Test-ModelEntry $model)) { continue }
+          if (-not $entries.ContainsKey($model.slug)) { $entries[$model.slug] = @{Model=$model; Source='cache'}; $order.Add($model.slug); $usedCache = $true }
+          elseif ($newer) { $entries[$model.slug] = @{Model=$model; Source='cache'}; $usedCache = $true }
+        }
+      }
+    } catch { $usedCache = $false; $entries = $null }
+    if ($null -eq $entries) { return (Get-OfficialModels $Snapshot $SnapshotVersion $null) }
+  }
+  return @{Entries=$entries; Order=$order; UsedCache=$usedCache}
+}
+
+function Merge-ModelCatalog($Existing, $Official, $Domestic, $Managed, $Info) {
+  Test-ModelCatalog $Domestic
+  if ($null -ne $Existing) { Test-ModelCatalogShape $Existing }
+  $owned = New-OrdinalMap
+  foreach ($id in @($Managed)) { if ($id -is [string] -and $id -and -not $Official.Entries.ContainsKey($id) -and $id -notmatch '^gpt-') { $owned[$id] = $true } }
+  foreach ($model in $Domestic.models) { $owned[$model.slug] = $true }
+  $byId = New-OrdinalMap; $order = New-Object 'System.Collections.Generic.List[string]'
+  if ($null -ne $Existing) {
+    foreach ($model in $Existing.models) {
+      if ($owned.ContainsKey($model.slug)) { continue }
+      $item = $model
+      if ($Official.Entries.ContainsKey($model.slug) -and $Official.Entries[$model.slug].Source -ceq 'cache') { $item = $Official.Entries[$model.slug].Model }
+      $byId[$model.slug] = $item; $order.Add($model.slug)
+    }
+  }
+  foreach ($slug in $Official.Order) {
+    if (-not $byId.ContainsKey($slug) -and -not $owned.ContainsKey($slug)) { $byId[$slug] = $Official.Entries[$slug].Model; $order.Add($slug) }
+  }
+  foreach ($model in $Domestic.models) { $byId[$model.slug] = $model; $order.Add($model.slug) }
+  if ($null -ne $Existing) { $result = ConvertFrom-Json -InputObject (ConvertTo-Json -InputObject $Existing -Depth 100) }
+  else { $result = [pscustomobject]@{models=@()} }
+  $result | Add-Member -NotePropertyName models -NotePropertyValue @($order | ForEach-Object { $byId[$_] }) -Force
+  if (-not @($result.models | Where-Object { $_.slug -match '^gpt-' }).Count) { throw (New-ModelImportError '未取得 GPT 完整目录，停止导入。') }
+  Test-ModelCatalogShape $result
+
+  $efforts = @()
+  if ($Info.Values.ContainsKey('desktop.enabled-reasoning-efforts')) { $efforts = Get-TomlStringArray $Info.Values['desktop.enabled-reasoning-efforts'] }
+  else { $efforts = @($result.models | Where-Object { $_.slug -match '^gpt-' } | ForEach-Object { $_.supported_reasoning_levels } | ForEach-Object { $_.effort }) }
+  $efforts += @($Domestic.models | ForEach-Object { $_.supported_reasoning_levels } | ForEach-Object { $_.effort })
+  $effortOrder = @('none','minimal','low','medium','high','xhigh','ultra','max')
+  $levels = New-OrdinalMap; $extra = New-Object 'System.Collections.Generic.List[string]'
+  foreach ($level in $efforts) {
+    if ($level -isnot [string] -or -not $level) { continue }
+    if ($levels.ContainsKey($level)) { continue }
+    $levels[$level] = $true
+    # A level this tool does not know is kept as the user or Codex wrote it.
+    if ($effortOrder -cnotcontains $level) { $extra.Add($level) }
+  }
+  $finalEfforts = @($effortOrder | Where-Object { $levels.ContainsKey($_) }) + @($extra.ToArray())
+  return @{Catalog=$result; Efforts=$finalEfforts; Managed=@($Domestic.models | ForEach-Object { $_.slug })}
+}
+
+function Get-ConfiguredCatalogPath($Info, [string]$TargetHome) {
+  $value = Get-TomlString $Info.Values['model_catalog_json']
+  if ($value.StartsWith('~/') -or $value.StartsWith('~\')) { $value = Join-Path $HOME $value.Substring(2) }
+  if (-not [IO.Path]::IsPathRooted($value)) { $value = Join-Path $TargetHome $value }
+  return [IO.Path]::GetFullPath($value)
+}
+
+function ConvertFrom-ManagedIds([string]$Raw) {
+  # Ownership hint only. A damaged record falls back to the built-in domestic list.
+  if ($null -eq $Raw) { return @() }
+  try {
+    $wrapper = ConvertFrom-Json -InputObject ('{"ids":' + $Raw + '}') -ErrorAction Stop
+    return @($wrapper.ids | Where-Object { $_ -is [string] -and $_ })
+  } catch { return @() }
+}
+
+function Invoke-ModelImport([string]$TargetHome, $Domestic) {
   $configPath = Join-Path $TargetHome 'config.toml'
   $catalogPath = Join-Path $TargetHome 'myautoapi-models.json'
   $managedPath = Join-Path $TargetHome 'myautoapi-models.managed.json'
-  Invoke-ModelStep '创建 Codex 配置目录' $TargetHome { if (-not (Test-PrivatePath $TargetHome)) { $null=[IO.Directory]::CreateDirectory($TargetHome) } }
-  $readSet=New-Object 'System.Collections.Generic.List[object]'
-  $original=Read-ModelInput $readSet $configPath '读取 Codex 配置'
-  $outputCatalog=Read-ModelInput $readSet $catalogPath '读取原输出模型目录'
-  $rawManaged=Read-ModelInput $readSet $managedPath '读取已管理模型记录'
-  $info=Invoke-ModelStep '解析 Codex 配置' $configPath { Get-ConfigInfo ([string]$original) }
-  $existing=$null; $managed=@(); $source=$null
+  $cachePath = Join-Path $TargetHome 'models_cache.json'
+  Invoke-ModelStep '创建 Codex 配置目录' $TargetHome { $null=[IO.Directory]::CreateDirectory($TargetHome) }
+  $original = Read-OptionalText $configPath '读取 Codex 配置'
+  $info = Invoke-ModelStep '解析 Codex 配置' $configPath { Get-ConfigInfo ([string]$original) }
+  $existing = $null
   if ($info.Values.ContainsKey('model_catalog_json')) {
-    $source=Invoke-ModelStep '解析原模型目录路径' $configPath {
-      $value=Get-TomlString $info.Values['model_catalog_json']
-      if ($value.StartsWith('~/') -or $value.StartsWith('~\')) { $value=Join-Path $HOME $value.Substring(2) }
-      if (-not [IO.Path]::IsPathRooted($value)) { $value=Join-Path $TargetHome $value }
-      [IO.Path]::GetFullPath($value)
-    }
-    $sourceText=Read-ModelInput $readSet $source '读取原模型目录'
-    if ($null -ne $sourceText) {
-      $existing=ConvertFrom-ModelJson $sourceText '解析原模型目录' $source
-      Invoke-ModelStep '校验原模型目录' $source { Test-ModelCatalog $existing }
-    }
-  }
-  if ($null -ne $rawManaged) {
-    $managed=Invoke-ModelStep '解析已管理模型记录' $managedPath {
-      if (-not $rawManaged.TrimStart().StartsWith('[')) { throw (New-ModelImportError '已管理模型记录格式无效。') }
-      ,@(ConvertFrom-ModelJson $rawManaged '解析已管理模型记录' $managedPath)
-    }
-  }
-  $app=Invoke-ModelStep '导出并解析 Codex 内置模型目录' ($Backend+' debug models --bundled') {
-    ConvertFrom-ModelJson (Invoke-CodexExport $Backend @('debug','models','--bundled') $TargetHome) '解析 Codex 内置模型目录' ($Backend+' debug models --bundled')
+    $source = Invoke-ModelStep '解析原模型目录路径' $configPath { Get-ConfiguredCatalogPath $info $TargetHome }
+    $sourceText = Read-OptionalText $source '读取原模型目录'
+    if ($null -ne $sourceText) { $existing = ConvertFrom-ModelJson $sourceText '解析原模型目录' $source }
   }
   if ($null -eq $existing) {
-    try { $candidate=ConvertFrom-Json -InputObject (Invoke-CodexExport $Backend @('debug','models') $TargetHome); Test-ModelCatalog $candidate; $existing=$candidate }
-    catch {
-      if ($_.Exception.Data['ConfigSyntax'] -eq $true) {
-        $_.Exception.Data['ModelImportStep']='解析已有 TOML 配置'; $_.Exception.Data['ModelImportTarget']=$configPath
-        throw
-      }
-    }
+    $outputText = Read-OptionalText $catalogPath '读取原输出模型目录'
+    if ($null -ne $outputText) { $existing = ConvertFrom-ModelJson $outputText '解析原输出模型目录' $catalogPath }
   }
-  $merged=Invoke-ModelStep '校验并合并模型元数据' $catalogPath { Merge-ModelCatalog $existing $app $Domestic $managed $info }
-  $config=Invoke-ModelStep '合并模型目录指向和桌面档位' $configPath { Set-ModelConfig ([string]$original) $info $catalogPath $merged.Efforts }
+  $managed = ConvertFrom-ManagedIds (Read-OptionalText $managedPath '读取已管理模型记录')
+  # The Codex cache is optional: any read or format problem simply means the snapshot is used.
+  $cacheText = $null
+  try { $cacheText = Read-OptionalText $cachePath '读取本地模型缓存' } catch { $cacheText = $null }
+  $official = Get-OfficialModels $BundledOfficialCatalog $BundledOfficialVersion $cacheText
+  $merged = Invoke-ModelStep '校验并合并模型元数据' $catalogPath { Merge-ModelCatalog $existing $official $Domestic $managed $info }
+  $config = Invoke-ModelStep '合并模型目录指向和桌面档位' $configPath { Set-ModelConfig ([string]$original) $info $catalogPath $merged.Efforts }
   $files = @(
-    @{Path=$catalogPath; Text=(ConvertTo-Json -InputObject $merged.Catalog -Depth 100)+"`n"},
-    @{Path=$managedPath; Text=(ConvertTo-Json -InputObject @($merged.Managed) -Depth 100)+"`n"},
-    @{Path=$configPath; Text=$config}
+    @{Path=$catalogPath; Text=(ConvertTo-Json -InputObject $merged.Catalog -Depth 100)+"`n"; Kind='catalog'},
+    @{Path=$managedPath; Text=(ConvertTo-Json -InputObject @($merged.Managed) -Depth 100)+"`n"; Kind='managed'},
+    @{Path=$configPath; Text=$config; Kind='config'}
   )
-  Invoke-ModelStep '写入并校验导入结果' $catalogPath { Write-ModelTransaction $files $Backend $TargetHome $original $readSet.ToArray() }
-  return $merged.Managed.Count
+  Invoke-ModelStep '写入并校验导入结果' $catalogPath { Write-ModelFiles $files $original }
+  return @{Count=$merged.Managed.Count; UsedCache=$official.UsedCache}
 }
 
-function Remove-ImportedModels([string]$TargetHome) {
-  $configPath=Join-Path $TargetHome 'config.toml'
-  $catalogPath=Join-Path $TargetHome 'myautoapi-models.json'
-  $managedPath=Join-Path $TargetHome 'myautoapi-models.managed.json'
-  $readSet=New-Object 'System.Collections.Generic.List[object]'
-  $rawManaged=Read-ModelInput $readSet $managedPath '读取已管理模型记录'
-  if ($null -eq $rawManaged) { return @{Changed=$false; Active=$false; Count=0} }
-  $managed=Invoke-ModelStep '解析已管理模型记录' $managedPath {
-    if (-not $rawManaged.TrimStart().StartsWith('[')) { throw (New-ModelImportError '已管理模型记录格式无效。') }
-    $null=ConvertFrom-ModelJson $rawManaged '解析已管理模型记录' $managedPath
-    # A wrapper preserves nested/empty arrays even when PS 5.1 enumerates the root array.
-    $wrapper=ConvertFrom-ModelJson ('{"ids":'+$rawManaged+'}') '解析已管理模型记录' $managedPath
-    ,$wrapper.ids
-  }
-  $owned=New-OrdinalMap
-  Invoke-ModelStep '校验已管理模型记录' $managedPath {
-    foreach ($id in $managed) {
-      if ($id -isnot [string] -or -not $id) { throw (New-ModelImportError '已管理模型记录格式无效。') }
-      if ($id -match '^gpt-') { throw (New-ModelImportError '管理记录包含 GPT，停止卸载以保留 GPT。') }
-      $owned[$id]=$true
-    }
-  }
-  if (-not $owned.Count) { return @{Changed=$false; Active=$false; Count=0} }
-  $catalogText=Invoke-ModelStep '读取原导入模型目录' $catalogPath {
-    $text=Read-ModelInput $readSet $catalogPath '读取原导入模型目录'
-    if ($null -eq $text) { throw (New-ModelImportError '原导入模型目录不存在，停止卸载。') }
-    $text
-  }
-  $catalog=ConvertFrom-ModelJson $catalogText '解析原导入模型目录' $catalogPath
-  Invoke-ModelStep '校验原导入模型目录' $catalogPath { Test-ModelCatalog $catalog }
-  $beforeCount=$catalog.models.Count
-  $catalog.models=@($catalog.models | Where-Object { -not $owned.ContainsKey($_.slug) })
-  Invoke-ModelStep '校验卸载后的模型目录' $catalogPath { Test-ModelCatalog $catalog }
-  $count=$beforeCount-$catalog.models.Count
-  $original=Read-ModelInput $readSet $configPath '读取 Codex 配置'
-  $info=Invoke-ModelStep '解析 Codex 配置' $configPath { Get-ConfigInfo ([string]$original) -ReadOnly }
-  $active=$false
-  if ($count -gt 0 -and -not $info.ProfileCatalog -and $info.Values.ContainsKey('model_catalog_json')) {
-    $source=Invoke-ModelStep '解析当前模型目录路径' $configPath {
-      $value=Get-TomlString $info.Values['model_catalog_json']
-      if ($value.StartsWith('~/') -or $value.StartsWith('~\')) { $value=Join-Path $HOME $value.Substring(2) }
-      if (-not [IO.Path]::IsPathRooted($value)) { $value=Join-Path $TargetHome $value }
-      [IO.Path]::GetFullPath($value)
-    }
-    $active=[StringComparer]::OrdinalIgnoreCase.Equals($source,[IO.Path]::GetFullPath($catalogPath))
-  }
-  $files=@(
-    @{Path=$catalogPath; Text=(ConvertTo-Json -InputObject $catalog -Depth 100)+"`n"},
-    @{Path=$managedPath; Text="[]`n"},
-    @{Path=$configPath; Text=$original; Keep=$true}
+function Remove-ImportedModels([string]$TargetHome, $Domestic) {
+  $catalogPath = Join-Path $TargetHome 'myautoapi-models.json'
+  $managedPath = Join-Path $TargetHome 'myautoapi-models.managed.json'
+  $catalogText = Read-OptionalText $catalogPath '读取原导入模型目录'
+  if ($null -eq $catalogText) { return @{Changed=$false; Active=$false; Count=0} }
+  $catalog = ConvertFrom-ModelJson $catalogText '解析原导入模型目录' $catalogPath
+  Invoke-ModelStep '校验原导入模型目录' $catalogPath { Test-ModelCatalogShape $catalog }
+  $owned = New-OrdinalMap
+  foreach ($id in (ConvertFrom-ManagedIds (Read-OptionalText $managedPath '读取已管理模型记录'))) { if ($id -notmatch '^gpt-') { $owned[$id] = $true } }
+  foreach ($model in $Domestic.models) { $owned[$model.slug] = $true }
+  $remaining = @($catalog.models | Where-Object { -not $owned.ContainsKey($_.slug) })
+  $count = $catalog.models.Count - $remaining.Count
+  if ($count -eq 0) { return @{Changed=$false; Active=$false; Count=0} }
+  $catalog | Add-Member -NotePropertyName models -NotePropertyValue $remaining -Force
+  Invoke-ModelStep '校验卸载后的模型目录' $catalogPath { Test-ModelCatalogShape $catalog }
+  $files = @(
+    @{Path=$catalogPath; Text=(ConvertTo-Json -InputObject $catalog -Depth 100)+"`n"; Kind='catalog'},
+    @{Path=$managedPath; Text="[]`n"; Kind='managed'}
   )
-  Invoke-ModelStep '写入并校验卸载结果' $catalogPath { Write-ModelTransaction $files '' $TargetHome $original $readSet.ToArray() }
+  # Only a catalog that config.toml points at is in use; an unreadable config counts as in use.
+  $active=$true
+  try {
+    $info=Get-ConfigInfo ([string](Read-OptionalText (Join-Path $TargetHome 'config.toml') '读取 Codex 配置'))
+    $active=$info.Values.ContainsKey('model_catalog_json') -and [StringComparer]::OrdinalIgnoreCase.Equals((Get-ConfiguredCatalogPath $info $TargetHome),[IO.Path]::GetFullPath($catalogPath))
+  } catch { $active=$true }
+  Invoke-ModelStep '写入并校验卸载结果' $catalogPath { Write-ModelFiles $files $null }
   return @{Changed=$true; Active=$active; Count=$count}
 }

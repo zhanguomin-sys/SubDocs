@@ -20,7 +20,7 @@ curl -fsSL https://docs.myautoapi.com/install/myautoapi-codex-installer/install.
 
 ## 给 Codex 增加国产模型
 
-已经接入 Codex 后，运行对应命令可导入 10 个国产模型，同时保留原有 GPT、默认模型、接口和 Key。导入完成后，把 MyAutoAPI API Key 切换到 **国产模型大全 0.45x** 分组，重新打开 Codex 并新建任务选择模型。重复运行同一命令就是更新。
+已经接入 Codex 后，运行对应命令可导入 10 个国产模型，同时保留原有 GPT、默认模型、接口和 Key。Windows 只读写 `CODEX_HOME` 中的配置和模型文件，不依赖 Codex CLI；导入成功后各平台都会自动关闭 ChatGPT/Codex。完成后把 MyAutoAPI API Key 切换到 **国产模型大全 0.45x** 分组，重新打开 App 并新建任务选择模型。重复运行同一命令就是更新。
 
 Windows：
 
@@ -28,13 +28,13 @@ Windows：
 irm https://docs.myautoapi.com/install/codex-models.ps1 | iex
 ```
 
-Linux / macOS：
+Linux/macOS（同一入口自动识别系统）：
 
 ```bash
 curl -fsSL https://docs.myautoapi.com/install/codex-models.sh | sh
 ```
 
-Linux 使用本机已有 Node.js 16 或以上版本，脚本不会自动安装依赖。模型设定、完整源码和自动测试在 [codex-domestic-models](codex-domestic-models/README.md) 内维护。
+Linux 使用本机已有 Node.js 16+，脚本不会自动安装依赖。模型设定、完整源码、自动测试、独立审查与桌面待验收项目在 [codex-domestic-models](codex-domestic-models/README.md) 内维护。
 
 ## 使用过程
 
@@ -89,4 +89,4 @@ cp codex-domestic-models/install/codex-models.sh codex-domestic-models/install/c
 cp install/codex-models.sh install/codex-models.ps1 ../docs/public/install/
 ```
 
-线上下发的是 `docs/public/install/` 里的那一份。文档站的测试会检查两处内容一致，忘记复制时测试不通过。
+线上下发的是 `docs/public/install/` 里的那一份。测试会检查子项目与上级安装目录一致，并检查站点 PowerShell 副本只移除了开头的 UTF-8 BOM。
