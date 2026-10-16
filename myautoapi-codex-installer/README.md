@@ -18,6 +18,24 @@ irm https://docs.myautoapi.com/install/myautoapi-codex-installer/install.ps1 | i
 curl -fsSL https://docs.myautoapi.com/install/myautoapi-codex-installer/install.sh | bash
 ```
 
+## 给 Codex 增加国产模型
+
+已经接入 Codex 后，运行对应命令可导入 10 个国产模型，同时保留原有 GPT、默认模型、接口和 Key。导入完成后，把 MyAutoAPI API Key 切换到 **国产模型大全 0.45x** 分组，重新打开 Codex 并新建任务选择模型。重复运行同一命令就是更新。
+
+Windows：
+
+```powershell
+irm https://docs.myautoapi.com/install/codex-models.ps1 | iex
+```
+
+Linux / macOS：
+
+```bash
+curl -fsSL https://docs.myautoapi.com/install/codex-models.sh | sh
+```
+
+Linux 使用本机已有 Node.js 16 或以上版本，脚本不会自动安装依赖。模型设定、完整源码和自动测试在 [codex-domestic-models](codex-domestic-models/README.md) 内维护。
+
 ## 使用过程
 
 1. 在终端明文输入 MyAutoAPI中转站API Key。Key 必须以 `sk-` 开头；输入为空或格式错误时会提示重新输入。
@@ -44,6 +62,13 @@ curl -fsSL https://docs.myautoapi.com/install/myautoapi-codex-installer/install.
 install/
   install.ps1
   install.sh
+  codex-models.ps1
+  codex-models.sh
+codex-domestic-models/
+  README.md
+  src/
+  tests/
+  install/
 tests/
   installers.sh
 ```
@@ -56,10 +81,12 @@ bash tests/installers.sh
 
 ## 部署
 
-脚本只在 `install/` 里修改。本地检查通过后，把两个脚本复制到文档站的部署位置，再提交并推送：
+原 GPT 脚本在 `install/` 里维护；国产模型导入脚本在 `codex-domestic-models/` 内开发、构建和测试。把发布文件同步到文档站后再提交：
 
 ```bash
 cp install/install.sh install/install.ps1 ../docs/public/install/myautoapi-codex-installer/
+cp codex-domestic-models/install/codex-models.sh codex-domestic-models/install/codex-models.ps1 install/
+cp install/codex-models.sh install/codex-models.ps1 ../docs/public/install/
 ```
 
 线上下发的是 `docs/public/install/` 里的那一份。文档站的测试会检查两处内容一致，忘记复制时测试不通过。

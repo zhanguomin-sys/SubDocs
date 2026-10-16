@@ -8,7 +8,7 @@
 
 打开 [WorkBuddy 官网](https://www.codebuddy.cn/work/) 下载并安装，完成后登录。已经安装则直接打开。
 
-按 [快速开始](/quick-start) 创建 MyAutoAPI API Key，分组选择 **腾讯混元分组**。
+按 [快速开始](/quick-start) 创建 MyAutoAPI API Key，分组选择 **国产模型大全 0.45x**。
 
 ### 2. 添加模型
 
@@ -32,7 +32,7 @@
 测试
 ```
 
-能正常回复即接入完成。返回 `model not found` 时，确认当前 API Key 属于腾讯混元分组，并检查模型名是否为 `hy4-preview`。
+能正常回复即接入完成。返回 `model not found` 时，确认当前 API Key 属于 **国产模型大全 0.45x** 分组，并检查模型名是否为 `hy4-preview`。
 
 <details>
 <summary>手动组装 API 请求参数（非基础内容）</summary>

@@ -25,7 +25,7 @@ const vitepressConfigSource = readFileSync(new URL('../docs/.vitepress/config.mt
 
 const isClose = (actual, expected) => Math.abs(actual - expected) < 1e-12
 
-test('includes the updated GPT pricing groups in order', () => {
+test('includes the updated text pricing groups in order', () => {
   assert.deepEqual(
     TEXT_GROUPS.map(({ id, name, multiplier }) => ({ id, name, multiplier })),
     [
@@ -40,10 +40,13 @@ test('includes the updated GPT pricing groups in order', () => {
       { id: 'grok-free', name: 'free号池', multiplier: 0.1 },
       { id: 'grok-4.5', name: 'heavy号池', multiplier: 0.3 },
       { id: 'gemini-antigravity', name: 'Gemini 分组（反重力 Antigravity 反代）', multiplier: 0.35 },
-      { id: 'deepseek', name: 'DeepSeek 分组', multiplier: 0.45 },
-      { id: 'domestic', name: '国产之光', multiplier: 0.45 },
-      { id: 'kimi', name: 'Kimi 分组', multiplier: 0.45 },
-      { id: 'hunyuan', name: '腾讯混元分组', multiplier: 0.45 },
+      { id: 'gemini-4-argon', name: 'gemini-4-argon', multiplier: 0.5 },
+      { id: 'deepseek', name: '国产模型大全 0.45x', multiplier: 0.45 },
+      { id: 'domestic', name: '国产模型大全 0.45x', multiplier: 0.45 },
+      { id: 'qwen', name: '国产模型大全 0.45x', multiplier: 0.45 },
+      { id: 'kimi', name: '国产模型大全 0.45x', multiplier: 0.45 },
+      { id: 'mimo', name: '国产模型大全 0.45x', multiplier: 0.45 },
+      { id: 'hunyuan', name: '国产模型大全 0.45x', multiplier: 0.45 },
     ],
   )
 })
@@ -55,10 +58,12 @@ test('keeps the model category tabs in the requested order', () => {
       { id: 'gpt', name: 'GPT', kind: 'text', groupIds: ['pro-plus', 'gpt-0.18', 'full'], defaultGroupId: 'gpt-0.18' },
       { id: 'anthropic', name: 'Anthropic', kind: 'text', groupIds: ['anthropic-main', 'anthropic-cc-test', 'anthropic-cc-test-0.7', 'anthropic-max', 'anthropic-max-external'], defaultGroupId: undefined },
       { id: 'grok', name: 'Grok', kind: 'text', groupIds: ['grok-free', 'grok-4.5'], defaultGroupId: undefined },
-      { id: 'gemini', name: 'Gemini', kind: 'text', groupIds: ['gemini-antigravity'], defaultGroupId: undefined },
+      { id: 'gemini', name: 'Gemini', kind: 'text', groupIds: ['gemini-antigravity', 'gemini-4-argon'], defaultGroupId: undefined },
       { id: 'deepseek', name: 'DeepSeek', kind: 'text', groupIds: ['deepseek'], defaultGroupId: undefined },
       { id: 'domestic', name: 'GLM', kind: 'text', groupIds: ['domestic'], defaultGroupId: undefined },
+      { id: 'qwen', name: 'Qwen 千问', kind: 'text', groupIds: ['qwen'], defaultGroupId: undefined },
       { id: 'kimi', name: 'Kimi', kind: 'text', groupIds: ['kimi'], defaultGroupId: undefined },
+      { id: 'mimo', name: '小米 MiMo', kind: 'text', groupIds: ['mimo'], defaultGroupId: undefined },
       { id: 'hunyuan', name: '腾讯混元', kind: 'text', groupIds: ['hunyuan'], defaultGroupId: undefined },
       { id: 'image', name: '生图', kind: 'image', groupIds: [], defaultGroupId: undefined },
     ],
@@ -79,17 +84,19 @@ test('uses colored Claude Code, Grok and Gemini icons instead of letter placehol
   assert.match(gemini.iconSvg, /M11\.04 19\.32/)
 })
 
-test('uses official local logos for DeepSeek, GLM and Kimi', () => {
+test('uses official local logos for DeepSeek, GLM, Qwen, Kimi and MiMo', () => {
   const deepseek = MODEL_CATEGORIES.find((category) => category.id === 'deepseek')
   const glm = MODEL_CATEGORIES.find((category) => category.id === 'domestic')
+  const qwen = MODEL_CATEGORIES.find((category) => category.id === 'qwen')
   const kimi = MODEL_CATEGORIES.find((category) => category.id === 'kimi')
+  const mimo = MODEL_CATEGORIES.find((category) => category.id === 'mimo')
 
   assert.deepEqual(
-    [deepseek.iconSrc, glm.iconSrc, kimi.iconSrc],
-    ['/brand-icons/deepseek.ico', '/brand-icons/glm.png', '/brand-icons/kimi.ico'],
+    [deepseek.iconSrc, glm.iconSrc, qwen.iconSrc, kimi.iconSrc, mimo.iconSrc],
+    ['/brand-icons/deepseek.ico', '/brand-icons/glm.png', '/brand-icons/qwen.png', '/brand-icons/kimi.ico', '/brand-icons/mimo.png'],
   )
 
-  for (const category of [deepseek, glm, kimi]) {
+  for (const category of [deepseek, glm, qwen, kimi, mimo]) {
     assert.equal(category.mark, undefined)
     assert.equal(category.iconSvg, undefined)
   }
@@ -130,7 +137,6 @@ test('keeps the GPT family models in the expected order', () => {
         'gpt-5.6-sol',
         'gpt-5.6-terra',
         'gpt-5.6-luna',
-        'gpt-5.5',
       ],
     )
   }
@@ -501,11 +507,10 @@ test('shows the free and heavy Grok pools with the same models and requested mul
   )
 })
 
-test('shows Gemini 4 Argon and Barium first in the Gemini Antigravity group', () => {
+test('keeps Barium and the remaining models in the Gemini Antigravity group after moving Argon', () => {
   assert.deepEqual(
     getTextModelsForGroup('gemini-antigravity').map((model) => model.id),
     [
-      'gemini-4-argon',
       'gemini-4-barium',
       'gemini-3.8-flash',
       'gemini-3.7-flash',
@@ -514,8 +519,6 @@ test('shows Gemini 4 Argon and Barium first in the Gemini Antigravity group', ()
       'gemini-3.5-flash',
       'gemini-3.1-pro-preview',
       'gemini-3.1-flash-lite',
-      'gemini-3.1-flash-lite-preview',
-      'gemini-3-pro-preview',
       'gemini-3-flash',
       'gemini-3-flash-preview',
       'gemini-2.5-pro',
@@ -525,10 +528,21 @@ test('shows Gemini 4 Argon and Barium first in the Gemini Antigravity group', ()
   )
 })
 
+test('moves Argon into its own group and calculates prices with the 0.5 multiplier', () => {
+  const group = TEXT_GROUPS.find((item) => item.id === 'gemini-4-argon')
+  const models = getTextModelsForGroup(group.id)
+
+  assert.equal(group.multiplier, 0.5)
+  assert.deepEqual(models.map((model) => model.id), ['gemini-4-argon'])
+  assert.deepEqual(models[0].officialUsd, { input: 2, output: 10, cachedInput: 0.1 })
+  const price = calculateTextPrice(models[0].officialUsd, group.multiplier)
+  assert.deepEqual(price.group, { input: 1, output: 5, cachedInput: 0.05, total: 6 })
+})
+
 test('shows GLM-5.3-Flash, GLM-5.3, GLM-5.2 and LongCat-2.0 together in the RMB domestic group', () => {
   const group = TEXT_GROUPS.find((item) => item.id === 'domestic')
 
-  assert.equal(group.name, '国产之光')
+  assert.equal(group.name, '国产模型大全 0.45x')
   assert.equal(group.multiplier, 0.45)
   assert.equal(group.currency, 'cny')
   assert.match(group.description, /逆向/)
@@ -560,11 +574,47 @@ test('calculates GLM-5.3-Flash from the official RMB baseline at 0.45x', () => {
   assert.ok(isClose(price.group.total, 1.62))
 })
 
+test('prices the new Qwen and MiMo groups from official realtime RMB baselines at 0.45x', () => {
+  const cases = [
+    {
+      groupId: 'qwen',
+      models: [
+        { id: 'qwen3.8-max', official: [12, 36, 1.5, 48], group: [5.4, 16.2, 0.675, 21.6] },
+        { id: 'qwen3.8-flash', official: [0.8, 2.7, 0.1, 3.5], group: [0.36, 1.215, 0.045, 1.575] },
+      ],
+    },
+    {
+      groupId: 'mimo',
+      models: [
+        { id: 'mimo-v2.6-pro', official: [3, 6, 0.025, 9], group: [1.35, 2.7, 0.01125, 4.05] },
+        { id: 'mimo-v2.6-flash', official: [1, 2, 0.02, 3], group: [0.45, 0.9, 0.009, 1.35] },
+      ],
+    },
+  ]
+
+  for (const { groupId, models: expectedModels } of cases) {
+    const group = TEXT_GROUPS.find((item) => item.id === groupId)
+    const models = getTextModelsForGroup(groupId)
+    assert.equal(group.multiplier, 0.45)
+    assert.equal(group.currency, 'cny')
+    assert.deepEqual(models.map((model) => model.id), expectedModels.map((model) => model.id))
+    assert.equal(getEquivalentDiscount(group.multiplier, group.currency), '4.5折')
+
+    for (const [index, model] of models.entries()) {
+      const price = calculateTextPrice(model.officialCny, group.multiplier, group.currency)
+      for (const [fieldIndex, field] of ['input', 'output', 'cachedInput', 'total'].entries()) {
+        assert.ok(isClose(price.official[field], expectedModels[index].official[fieldIndex]), `${model.id} official ${field}`)
+        assert.ok(isClose(price.group[field], expectedModels[index].group[fieldIndex]), `${model.id} group ${field}`)
+      }
+    }
+  }
+})
+
 test('shows only Kimi K3 at the verified RMB price with a 0.45 multiplier', () => {
   const group = TEXT_GROUPS.find((item) => item.id === 'kimi')
   const models = getTextModelsForGroup('kimi')
 
-  assert.equal(group.name, 'Kimi 分组')
+  assert.equal(group.name, '国产模型大全 0.45x')
   assert.equal(group.multiplier, 0.45)
   assert.equal(group.currency, 'cny')
   assert.deepEqual(
@@ -592,7 +642,7 @@ test('calculates hy4-preview from the official RMB baseline at a 0.45 multiplier
   const group = TEXT_GROUPS.find((item) => item.id === 'hunyuan')
   const models = getTextModelsForGroup('hunyuan')
 
-  assert.equal(group.name, '腾讯混元分组')
+  assert.equal(group.name, '国产模型大全 0.45x')
   assert.equal(group.multiplier, 0.45)
   assert.equal(group.currency, 'cny')
   assert.deepEqual(
@@ -620,7 +670,7 @@ test('shows DeepSeek V4.1 Flash first, followed by V4 Flash and Pro, at a 0.45 m
   const group = TEXT_GROUPS.find((item) => item.id === 'deepseek')
   const models = getTextModelsForGroup(group.id)
 
-  assert.equal(group.name, 'DeepSeek 分组')
+  assert.equal(group.name, '国产模型大全 0.45x')
   assert.equal(group.multiplier, 0.45)
   assert.equal(group.currency, 'cny')
   assert.match(group.description, /周一至周五/)
@@ -719,7 +769,9 @@ test('uses the displayed official price baselines for GPT-5.6', () => {
 
 test('keeps verified Gemini price baselines including the published Barium channel rate', () => {
   assert.deepEqual(
-    getTextModelsForGroup('gemini-antigravity').map(({ id, officialUsd }) => ({ id, officialUsd })),
+    ['gemini-4-argon', 'gemini-antigravity']
+      .flatMap(getTextModelsForGroup)
+      .map(({ id, officialUsd }) => ({ id, officialUsd })),
     [
       { id: 'gemini-4-argon', officialUsd: { input: 2, output: 10, cachedInput: 0.1 } },
       { id: 'gemini-4-barium', officialUsd: { input: 2, output: 10, cachedInput: 0.1 } },
@@ -730,8 +782,6 @@ test('keeps verified Gemini price baselines including the published Barium chann
       { id: 'gemini-3.5-flash', officialUsd: { input: 1.5, output: 9, cachedInput: 0.15 } },
       { id: 'gemini-3.1-pro-preview', officialUsd: { input: 2, output: 12, cachedInput: 0.2 } },
       { id: 'gemini-3.1-flash-lite', officialUsd: { input: 0.25, output: 1.5, cachedInput: 0.025 } },
-      { id: 'gemini-3.1-flash-lite-preview', officialUsd: { input: 0.25, output: 1.5, cachedInput: 0.025 } },
-      { id: 'gemini-3-pro-preview', officialUsd: { input: 2, output: 12, cachedInput: 0.2 } },
       { id: 'gemini-3-flash', officialUsd: { input: 0.5, output: 3, cachedInput: 0.05 } },
       { id: 'gemini-3-flash-preview', officialUsd: { input: 0.5, output: 3, cachedInput: 0.05 } },
       { id: 'gemini-2.5-pro', officialUsd: { input: 1.25, output: 10, cachedInput: 0.125 } },
@@ -770,7 +820,6 @@ test('keeps Gemini descriptions customer-facing with dates or concrete use cases
   assert.match(models.get('gemini-3.6-flash').description, /2026-07/)
   assert.match(models.get('gemini-3.5-flash').description, /2026-05/)
   assert.match(models.get('gemini-3.1-pro-preview').description, /2026-02/)
-  assert.match(models.get('gemini-3-pro-preview').description, /2025-11/)
   assert.match(models.get('gemini-2.5-pro').description, /2025-06/)
   assert.match(models.get('gemini-2.5-flash-lite').description, /高频|低延迟/)
 })
@@ -884,6 +933,8 @@ test('formats RMB amounts without noisy trailing zeroes', () => {
   assert.equal(formatCny(245), '¥245.00')
   assert.equal(formatCny(0.525), '¥0.53')
   assert.equal(formatCny(1.25), '¥1.25')
+  assert.equal(formatCny(1.575), '¥1.58')
+  assert.equal(formatCny(3.5 * 0.45), '¥1.58')
 })
 
 test('formats tiny non-zero RMB amounts without rounding them to zero', () => {

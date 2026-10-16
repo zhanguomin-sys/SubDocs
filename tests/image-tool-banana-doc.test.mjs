@@ -68,7 +68,7 @@ test('documents the verified Nano Banana 2 Responses request contract', () => {
 test('keeps the three primary sidebar paths in the requested order and visually numbered', () => {
   assert.match(
     configSource,
-    /'quick-start\.md',\s*'codex-cc-switch\.md',\s*'image-video-group-image\.md',[\s\S]*?'clients'/,
+    /'quick-start\.md',\s*'codex-cc-switch\.md',\s*'codex-models\.md',\s*'image-video-group-image\.md',[\s\S]*?'clients'/,
   )
   assert.match(configSource, /frontmatterTitleFieldName:\s*'sidebarTitle'/)
   assert.match(ccSwitchSource, /^sidebarTitle:\s*CC Switch 接入$/m)

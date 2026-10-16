@@ -74,7 +74,7 @@ kimi web
 | 上下文 | `1048576` |
 | 显示名 | 可以留空 |
 
-点击 **保存**。Base URL 必须保留结尾的 `/v1`；必须选择第一步对应的 Kimi 分组。
+点击 **保存**。Base URL 必须保留结尾的 `/v1`；API Key 必须属于 **国产模型大全 0.45x** 分组。
 
 <details>
 <summary>查看图片：填写 Kimi K3 配置</summary>

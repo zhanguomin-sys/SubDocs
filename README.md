@@ -29,6 +29,7 @@ Cloudflare Pages 的构建命令为 `npm run docs:build`，产物目录为 `docs
 | 子项目 | 源码目录 | 随文档站发布的文件 |
 | --- | --- | --- |
 | Codex 一键配置 | `myautoapi-codex-installer/` | `docs/public/install/myautoapi-codex-installer/` |
+| Codex 国产模型导入 | `myautoapi-codex-installer/codex-domestic-models/` | `docs/public/install/codex-models.ps1`、`codex-models.sh` |
 | 图片生成工具 V0.8.1 | `myautoapi-imagines-tool/` | `docs/public/install/myautoapi-imagines-tool/` |
 
 图片工具发布文件包含 Windows x64、macOS Intel、macOS Apple Silicon 和 Linux x64 原生程序，以及 `SHA256SUMS` 校验文件。

@@ -24,6 +24,7 @@ outline: false
 ## 接入完成后
 
 <div class="home-link-grid">
+  <a href="/codex-models">Codex 导入国产模型</a>
   <a href="/clients/chatgpt-login-myautoapi">保持 ChatGPT 登录</a>
   <a href="/images/codex-image-direct">Codex 生图</a>
   <a href="/clients/">客户端接入</a>

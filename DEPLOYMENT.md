@@ -16,6 +16,8 @@ node --test tests/*.test.mjs
 
 - `docs/public/install/myautoapi-codex-installer/install.ps1`
 - `docs/public/install/myautoapi-codex-installer/install.sh`
+- `docs/public/install/codex-models.ps1`
+- `docs/public/install/codex-models.sh`
 - `docs/public/install/myautoapi-imagines-tool/install.ps1`
 - `docs/public/install/myautoapi-imagines-tool/install.sh`
 - `docs/public/install/myautoapi-imagines-tool/releases/v0.8.1/`
@@ -73,6 +75,8 @@ npm run docs:build
 https://docs.myautoapi.com/
 https://docs.myautoapi.com/install/myautoapi-codex-installer/install.ps1
 https://docs.myautoapi.com/install/myautoapi-codex-installer/install.sh
+https://docs.myautoapi.com/install/codex-models.ps1
+https://docs.myautoapi.com/install/codex-models.sh
 https://docs.myautoapi.com/install/myautoapi-imagines-tool/install.ps1
 https://docs.myautoapi.com/install/myautoapi-imagines-tool/install.sh
 ```

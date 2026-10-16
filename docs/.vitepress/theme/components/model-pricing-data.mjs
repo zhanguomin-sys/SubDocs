@@ -12,11 +12,9 @@ const GPT_MODEL_IDS = [
   'gpt-5.6-sol',
   'gpt-5.6-terra',
   'gpt-5.6-luna',
-  'gpt-5.5',
 ]
 
 const GEMINI_MODEL_IDS = [
-  'gemini-4-argon',
   'gemini-4-barium',
   'gemini-3.8-flash',
   'gemini-3.7-flash',
@@ -25,8 +23,6 @@ const GEMINI_MODEL_IDS = [
   'gemini-3.5-flash',
   'gemini-3.1-pro-preview',
   'gemini-3.1-flash-lite',
-  'gemini-3.1-flash-lite-preview',
-  'gemini-3-pro-preview',
   'gemini-3-flash',
   'gemini-3-flash-preview',
   'gemini-2.5-pro',
@@ -169,8 +165,15 @@ export const TEXT_GROUPS = [
     modelIds: GEMINI_MODEL_IDS,
   },
   {
+    id: 'gemini-4-argon',
+    name: 'gemini-4-argon',
+    multiplier: 0.5,
+    description: 'Gemini 4 Argon 专用分组',
+    modelIds: ['gemini-4-argon'],
+  },
+  {
     id: 'deepseek',
-    name: 'DeepSeek 分组',
+    name: '国产模型大全 0.45x',
     multiplier: 0.45,
     currency: 'cny',
     description: 'V4.1 Flash、V4 Flash 与 Pro 统一分组，高峰时段为北京时间周一至周五 09:00-12:00、14:00-18:00，其余为空闲时段',
@@ -178,23 +181,39 @@ export const TEXT_GROUPS = [
   },
   {
     id: 'domestic',
-    name: '国产之光',
+    name: '国产模型大全 0.45x',
     multiplier: 0.45,
     currency: 'cny',
     description: '限制相对 GPT 更宽，可用于逆向等场景',
     modelIds: ['glm-5.3-flash', 'glm-5.3', 'glm-5.2', 'LongCat-2.0'],
   },
   {
+    id: 'qwen',
+    name: '国产模型大全 0.45x',
+    multiplier: 0.45,
+    currency: 'cny',
+    description: 'Max 用于复杂编程与专业任务，Flash 用于高频调用；按百炼北京地域原价和普通缓存命中价计算',
+    modelIds: ['qwen3.8-max', 'qwen3.8-flash'],
+  },
+  {
     id: 'kimi',
-    name: 'Kimi 分组',
+    name: '国产模型大全 0.45x',
     multiplier: 0.45,
     currency: 'cny',
     description: 'K3 适合长程编程、知识工作和深度推理',
     modelIds: ['kimi-k3'],
   },
   {
+    id: 'mimo',
+    name: '国产模型大全 0.45x',
+    multiplier: 0.45,
+    currency: 'cny',
+    description: 'Pro 用于复杂长程任务，Flash 用于高频多模态任务；按国内实时调用原价计算',
+    modelIds: ['mimo-v2.6-pro', 'mimo-v2.6-flash'],
+  },
+  {
     id: 'hunyuan',
-    name: '腾讯混元分组',
+    name: '国产模型大全 0.45x',
     multiplier: 0.45,
     currency: 'cny',
     description: '适合长程编程、复杂任务和工具调用',
@@ -230,7 +249,7 @@ export const MODEL_CATEGORIES = [
     name: 'Gemini',
     iconSvg: GEMINI_ICON,
     kind: 'text',
-    groupIds: ['gemini-antigravity'],
+    groupIds: ['gemini-antigravity', 'gemini-4-argon'],
   },
   {
     id: 'deepseek',
@@ -247,11 +266,27 @@ export const MODEL_CATEGORIES = [
     groupIds: ['domestic'],
   },
   {
+    id: 'qwen',
+    name: 'Qwen 千问',
+    // 官网图标来源：https://qwen.ai/
+    iconSrc: '/brand-icons/qwen.png',
+    kind: 'text',
+    groupIds: ['qwen'],
+  },
+  {
     id: 'kimi',
     name: 'Kimi',
     iconSrc: '/brand-icons/kimi.ico',
     kind: 'text',
     groupIds: ['kimi'],
+  },
+  {
+    id: 'mimo',
+    name: '小米 MiMo',
+    // 官网图标来源：https://mimo.mi.com/
+    iconSrc: '/brand-icons/mimo.png',
+    kind: 'text',
+    groupIds: ['mimo'],
   },
   {
     id: 'hunyuan',
@@ -306,12 +341,6 @@ export const TEXT_MODELS = [
     name: 'GPT-5.6 Luna',
     description: '轻量任务、批量处理和成本优先',
     officialUsd: { input: 1, output: 6, cachedInput: 0.1 },
-  },
-  {
-    id: 'gpt-5.5',
-    name: 'GPT-5.5',
-    description: '重要任务、复杂代码和专业分析',
-    officialUsd: { input: 5, output: 30, cachedInput: 0.5 },
   },
   {
     id: 'claude-fable-5',
@@ -380,7 +409,7 @@ export const TEXT_MODELS = [
     id: 'claude-sonnet-4-5-20250929',
     aliases: ['claude-sonnet-4-5'],
     name: 'Claude Sonnet 4.5',
-    description: 'Anthropic 均衡型模型，适合代码和综合任务',
+    description: '2026-11-30 停止官方 API 服务，新任务使用 Claude Sonnet 5.5',
     officialUsd: { input: 3, output: 15, cachedInput: 0.3 },
   },
   {
@@ -479,18 +508,6 @@ export const TEXT_MODELS = [
     officialUsd: { input: 0.25, output: 1.5, cachedInput: 0.025 },
   },
   {
-    id: 'gemini-3.1-flash-lite-preview',
-    name: 'Gemini 3.1 Flash-Lite Preview',
-    description: '2026-03 更新，适合高频轻量任务和低成本批量处理',
-    officialUsd: { input: 0.25, output: 1.5, cachedInput: 0.025 },
-  },
-  {
-    id: 'gemini-3-pro-preview',
-    name: 'Gemini 3 Pro Preview',
-    description: '2025-11 更新，适合复杂推理、多模态理解和代码规划',
-    officialUsd: { input: 2, output: 12, cachedInput: 0.2 },
-  },
-  {
     id: 'gemini-3-flash',
     name: 'Gemini 3 Flash',
     description: '3 系列 Flash 入口，适合速度、成本和代理能力平衡',
@@ -537,7 +554,7 @@ export const TEXT_MODELS = [
   {
     id: 'deepseek-v4-pro',
     name: 'DeepSeek V4 Pro 0813',
-    description: 'V4-Pro-0813 正式版；2026-09-14 12:00 起将路由到 V4.1 Flash 并按 Flash 价格计费',
+    description: 'V4-Pro-0813 正式版；官方继续提供 API 服务，计费方式保持不变',
     officialCny: { input: 4.5, output: 13.5, cachedInput: 0.15 },
     officialPeakCny: { input: 9, output: 27, cachedInput: 0.3 },
   },
@@ -545,12 +562,14 @@ export const TEXT_MODELS = [
     id: 'glm-5.3-flash',
     name: 'GLM-5.3-Flash',
     description: '国产低成本原生多模态模型，适合代码、代理任务和视觉理解',
+    // 2026-10-16 核实：https://docs.bigmodel.cn/cn/guide/start/pricing
     officialCny: { input: 0.8, output: 2.8, cachedInput: 0.23 },
   },
   {
     id: 'glm-5.3',
     name: 'GLM-5.3',
     description: '国产旗舰模型，适合复杂推理、代码和逆向分析场景',
+    // 2026-10-16 核实：https://docs.bigmodel.cn/cn/guide/start/pricing
     officialCny: { input: 8, output: 28, cachedInput: 2 },
   },
   {
@@ -566,10 +585,42 @@ export const TEXT_MODELS = [
     officialCny: { input: 2, output: 8, cachedInput: 0.04 },
   },
   {
+    id: 'qwen3.8-max',
+    name: 'Qwen3.8 Max',
+    description: '原生多模态旗舰模型，适合复杂编程、专业办公和长文档分析',
+    // 2026-10-16 核实：https://help.aliyun.com/zh/model-studio/qwen3-8-max
+    // 北京地域人民币原价；缓存读取采用普通缓存命中价，不采用显式缓存或批量价格。
+    officialCny: { input: 12, output: 36, cachedInput: 1.5 },
+  },
+  {
+    id: 'qwen3.8-flash',
+    name: 'Qwen3.8 Flash',
+    description: '百万上下文多模态模型，适合高频编程辅助、图文理解和智能体协作',
+    // 2026-10-16 核实：https://help.aliyun.com/zh/model-studio/qwen3-8-flash
+    // 北京地域人民币原价；缓存读取采用普通缓存命中价。
+    officialCny: { input: 0.8, output: 2.7, cachedInput: 0.1 },
+  },
+  {
     id: 'kimi-k3',
     name: 'Kimi K3',
     description: '旗舰模型，适合长程编程、知识工作和深度推理',
     officialCny: { input: 20, output: 100, cachedInput: 2 },
+  },
+  {
+    id: 'mimo-v2.6-pro',
+    name: 'MiMo-V2.6-Pro',
+    description: '全模态旗舰模型，适合复杂编程、长程任务、专业办公和科学研究',
+    // 2026-10-16 核实：https://mimo.mi.com/docs/zh-CN/price/pay-as-you-go
+    // 国内人民币实时推理价格，不采用批量推理或 UltraSpeed 价格。
+    officialCny: { input: 3, output: 6, cachedInput: 0.025 },
+  },
+  {
+    id: 'mimo-v2.6-flash',
+    name: 'MiMo-V2.6-Flash',
+    description: '低成本全模态模型，适合高频办公、图像音视频理解和规模化任务',
+    // 2026-10-16 核实：https://mimo.mi.com/docs/zh-CN/price/pay-as-you-go
+    // 国内人民币实时推理价格。
+    officialCny: { input: 1, output: 2, cachedInput: 0.02 },
   },
   {
     id: 'hy4-preview',
@@ -730,5 +781,6 @@ export function formatCny(value) {
     return `¥${value.toFixed(4).replace(/0+$/, '').replace(/\.$/, '')}`
   }
 
-  return `¥${value.toFixed(2)}`
+  const rounded = Math.round((value + Number.EPSILON) * 100) / 100
+  return `¥${rounded.toFixed(2)}`
 }

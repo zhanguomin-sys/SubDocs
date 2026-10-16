@@ -1,0 +1,112 @@
+#!/bin/sh
+set -eu
+
+say() { printf '%s\n' "$*"; }
+
+# @PARENT_PROCESS_FUNCTIONS@
+
+target_codex_home="${CODEX_HOME:-$HOME/.codex}"
+app_backend=""
+model_action="import"
+script_platform="$(uname -s)"
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --uninstall) model_action="uninstall"; shift ;;
+    --codex-home|--codex-path)
+      [ "$#" -ge 2 ] || { say "参数缺少路径。" >&2; exit 1; }
+      if [ "$1" = --codex-home ]; then target_codex_home="$2"; else app_backend="$2"; fi
+      shift 2 ;;
+    --help)
+      say '用法：sh codex-models.sh [--uninstall] [--codex-home 配置目录] [--codex-path Codex后端路径]'
+      exit 0 ;;
+    *) say "未知参数。" >&2; exit 1 ;;
+  esac
+done
+case "$script_platform" in
+  Darwin) run_model_import() { /usr/bin/osascript -l JavaScript - "$@"; } ;;
+  Linux)
+    js_runtime=""
+    for runtime_name in node nodejs; do
+      runtime_candidate="$(command -v "$runtime_name" || true)"
+      if [ -n "$runtime_candidate" ] && "$runtime_candidate" --input-type=commonjs -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 16 ? 0 : 1)' >/dev/null 2>&1; then
+        js_runtime="$runtime_candidate"
+        break
+      fi
+    done
+    [ -n "$js_runtime" ] || {
+      say 'Linux 需要本机已有 Node.js 16 或以上版本；未修改配置，也不会自动安装依赖。' >&2
+      exit 1
+    }
+    run_model_import() { "$js_runtime" --input-type=commonjs - "$@"; }
+    ;;
+  *) say '这个脚本用于 Linux/macOS；Windows 请运行 codex-models.ps1。' >&2; exit 1 ;;
+esac
+if [ "$model_action" = uninstall ]; then
+  say '移除当前启用目录中的国产模型后会自动关闭 ChatGPT/Codex，运行中的任务会中断。'
+else
+  say '成功导入后会自动关闭 ChatGPT/Codex，运行中的任务会中断。'
+fi
+if [ "$model_action" = import ]; then
+if [ -z "$app_backend" ] && [ "$script_platform" = Darwin ]; then
+  for app_root in /Applications/Codex.app /Applications/ChatGPT.app "$HOME/Applications/Codex.app" "$HOME/Applications/ChatGPT.app"; do
+    if [ -f "$app_root/Contents/Info.plist" ]; then
+      bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app_root/Contents/Info.plist" 2>/dev/null || true)"
+      [ "$bundle_id" = com.openai.codex ] || continue
+      for candidate in "$app_root/Contents/Resources/codex" "$app_root/Contents/Resources/bin/codex"; do
+        if [ -f "$candidate" ] && [ -x "$candidate" ]; then app_backend="$candidate"; break; fi
+      done
+    fi
+    [ -z "$app_backend" ] || break
+  done
+fi
+if [ -z "$app_backend" ] && [ "$script_platform" = Linux ]; then
+  # Prefer the running App's backend when it is available, then the existing codex command.
+  while read -r client_pid client_kind client_action; do
+    [ "$client_kind" = codex ] || continue
+    candidate="$(readlink "/proc/$client_pid/exe" 2>/dev/null || true)"
+    case "$candidate" in
+      */resources/*|*/Resources/*)
+        if [ -f "$candidate" ] && [ -x "$candidate" ]; then app_backend="$candidate"; break; fi
+        ;;
+    esac
+  done <<EOF
+$(list_running_clients || true)
+EOF
+fi
+if [ -z "$app_backend" ]; then app_backend="$(command -v codex || true)"; fi
+[ -n "$app_backend" ] && [ -f "$app_backend" ] && [ -x "$app_backend" ] || {
+  say '未找到 Codex 后端；请先安装 Codex，或用 --codex-path 指定现有的 Codex 后端。' >&2
+  exit 1
+}
+fi
+
+if import_message="$(run_model_import "$target_codex_home" "$app_backend" "$model_action" <<'MYAUTOAPI_JAVASCRIPT'
+// @DOMESTIC_CATALOG@
+// @CORE@
+// @MACOS_HOST@
+// @LINUX_HOST@
+MYAUTOAPI_JAVASCRIPT
+)"
+then
+  if [ "$model_action" = uninstall ]; then
+    case "$import_message" in
+      '没有需要移除的国产模型，软件未关闭。'|'已清理原导入目录；软件未关闭。') say "$import_message"; exit 0 ;;
+      '已移除本工具导入的国产模型，原 GPT 和其他模型已保留。') ;;
+      *) say '卸载未确认：运行器没有返回完整卸载结果。软件未关闭。' >&2; exit 1 ;;
+    esac
+  elif [ "$import_message" != '已导入 @MODEL_COUNT@ 个国产模型，原 GPT 和其他模型已保留。' ]; then
+    say '导入未确认：运行器没有返回完整导入结果。软件未关闭。' >&2
+    exit 1
+  fi
+  say "$import_message"
+  stop_running_clients
+  report_running_clients
+  if [ "$model_action" = uninstall ]; then
+    say '重新打开 Codex，新建任务后选择模型。'
+  else
+    say '重新打开 Codex，新建任务后选择模型；API Key 分组由你在中转站切换。'
+  fi
+else
+  if [ "$model_action" = uninstall ]; then say '卸载未完成，软件未关闭。' >&2; else say '导入未完成，软件未关闭。' >&2; fi
+  exit 1
+fi
