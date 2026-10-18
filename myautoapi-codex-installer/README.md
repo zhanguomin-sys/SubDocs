@@ -20,7 +20,7 @@ curl -fsSL https://docs.myautoapi.com/install/myautoapi-codex-installer/install.
 
 ## 给 Codex 增加国产模型
 
-已经接入 Codex 后，运行对应命令可导入 10 个国产模型，同时保留原有 GPT、默认模型、接口和 Key。Windows 只读写 `CODEX_HOME` 中的配置和模型文件，不依赖 Codex CLI；导入成功后各平台都会自动关闭 ChatGPT/Codex。完成后把 MyAutoAPI API Key 切换到 **国产模型大全 0.45x** 分组，重新打开 App 并新建任务选择模型。重复运行同一命令就是更新。
+已经接入 Codex 后，运行对应命令可导入 11 个国产模型，同时保留原有 GPT、默认模型、接口和 Key。Windows 只读写 `CODEX_HOME` 中的配置和模型文件，不依赖 Codex CLI；导入成功后各平台都会自动关闭 ChatGPT/Codex。完成后把 MyAutoAPI API Key 切换到 **国产模型大全 0.45x** 分组，重新打开 App 并新建任务选择模型。重复运行同一命令就是更新。
 
 Windows：
 

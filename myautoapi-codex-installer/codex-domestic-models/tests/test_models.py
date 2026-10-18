@@ -59,8 +59,11 @@ add('empty_config', case(''))
 add('only_comment', case('# existing comment'))
 add('preserve_full_objects', case(existing={'models': [model('gpt-original', custom={'nested': ['keep', {'a': True}]}), model('user-custom'), model('Custom'), model('custom')], 'unknown': {'keep': True}}))
 add('update_replace_owned', case(existing={'models': [GPT, model('qwen3.8-max', cancelled_field=True), model('removed-domestic'), model('user-custom')]}, managed=['qwen3.8-max', 'removed-domestic']))
-legacy_models = [m for m in reversed(DOMESTIC['models']) if not m['slug'].startswith('mimo-')]
+legacy_models = [m for m in reversed(DOMESTIC['models']) if not m['slug'].startswith('mimo-') and m['slug'] != 'deepseek-v4.1-flash-1017']
 add('upgrade_existing_catalog_order', case(existing={'models': [GPT] + legacy_models}, managed=[m['slug'] for m in legacy_models]))
+previous_ten_models = [m for m in DOMESTIC['models'] if m['slug'] != 'deepseek-v4.1-flash-1017']
+add('upgrade_previous_ten_models', case(existing={'models': [GPT] + previous_ten_models}, managed=[m['slug'] for m in previous_ten_models]))
+add('existing_deepseek_snapshot_not_duplicated', case(existing={'models': [GPT, next(m for m in DOMESTIC['models'] if m['slug'] == 'deepseek-v4.1-flash-1017')]}))
 add('existing_mimo_ids_not_duplicated', case(existing={'models': [GPT] + DOMESTIC['models'][-2:]}))
 add('existing_desktop', case('model="gpt-original"\n[desktop]\nenabled-reasoning-efforts = ["ultra", # keep\n "high",]\ntheme="dark"\n[features]\nx=true\n'))
 add('quoted_keys', case('"model_catalog_json" = \'old.json\' # old path\n"model"="gpt-original"\n["desktop"]\n"enabled-reasoning-efforts" = [\'ultra\',\'high\']\n'))
@@ -155,7 +158,25 @@ class ModelTests(unittest.TestCase):
                         self.assertEqual(result[item['slug']], item)
 
     def test_exact_ids(self):
-        self.assertEqual([m['slug'] for m in DOMESTIC['models']], ['deepseek-flash','glm-5.3','glm-5.3-flash','qwen3.8-max','qwen3.8-flash','kimi-k3','minimax-m3','hy4-preview','mimo-v2.6-pro','mimo-v2.6-flash'])
+        self.assertEqual([m['slug'] for m in DOMESTIC['models']], ['deepseek-flash','deepseek-v4.1-flash-1017','glm-5.3','glm-5.3-flash','qwen3.8-max','qwen3.8-flash','kimi-k3','minimax-m3','hy4-preview','mimo-v2.6-pro','mimo-v2.6-flash'])
+
+    def test_deepseek_official_codex_capabilities(self):
+        snapshot_id = 'deepseek-v4.1-flash-1017'
+        for item in DOMESTIC['models'][:2]:
+            with self.subTest(model=item['slug']):
+                self.assertEqual(item['context_window'], 1048576)
+                self.assertEqual(item['max_context_window'], 1048576)
+                self.assertEqual(item['input_modalities'], ['text', 'image'])
+                self.assertEqual(item['default_reasoning_level'], 'high')
+                self.assertEqual([level['effort'] for level in item['supported_reasoning_levels']], ['low', 'high', 'max'])
+                self.assertEqual(item['apply_patch_tool_type'], 'freeform')
+                self.assertTrue(item['supports_parallel_tool_calls'])
+                self.assertTrue(item['supports_image_detail_original'])
+                self.assertTrue(item['support_verbosity'])
+                self.assertEqual(item['default_verbosity'], 'low')
+                self.assertFalse(item['use_responses_lite'])
+                if item['slug'] == snapshot_id:
+                    self.assertEqual(item['display_name'], snapshot_id)
 
     def test_mimo_official_codex_capabilities(self):
         mimo_ids = {'mimo-v2.6-pro', 'mimo-v2.6-flash'}

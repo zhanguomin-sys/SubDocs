@@ -18,14 +18,14 @@ def catalog():
         model.update({
             'shell_type': 'shell_command', 'visibility': 'list', 'supported_in_api': True,
             'priority': 100 + index, 'availability_nux': None, 'upgrade': None,
-            'support_verbosity': model['slug'] == 'deepseek-flash',
-            'default_verbosity': 'low' if model['slug'] == 'deepseek-flash' else None,
+            'support_verbosity': model.get('support_verbosity', False),
+            'default_verbosity': model.get('default_verbosity'),
             # Legacy Codex uses this flag for the entire reasoning object, including effort.
             'supports_reasoning_summaries': bool(model['supported_reasoning_levels']), 'supports_reasoning_summary_parameter': False,
             'default_reasoning_summary': 'none', 'prefer_websockets': False,
             'web_search_tool_type': 'text', 'supports_search_tool': False,
             'truncation_policy': {'mode': 'tokens', 'limit': 10000},
-            'supports_image_detail_original': model.get('supports_image_detail_original', model['slug'] == 'deepseek-flash'),
+            'supports_image_detail_original': model.get('supports_image_detail_original', False),
             'max_context_window': model['context_window'], 'auto_compact_token_limit': None,
             'effective_context_window_percent': 95, 'experimental_supported_tools': [],
             'base_instructions': definition['instructions'],
