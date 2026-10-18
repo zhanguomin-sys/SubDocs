@@ -122,26 +122,30 @@ body {
 
 .VPSidebar .VPSidebarItem.level-1:has(> .item > .link[href='/quick-start.html']),
 .VPSidebar .VPSidebarItem.level-1:has(> .item > .link[href='/codex-cc-switch.html']),
-.VPSidebar .VPSidebarItem.level-1:has(> .item > .link[href='/image-video-group-image.html']) {
+.VPSidebar .VPSidebarItem.level-1:has(> .item > .link[href='/image-video-group-image.html']),
+.VPSidebar .VPSidebarItem.level-1:has(> .item > .link[href='/codex-models.html']) {
   margin: 0 0 8px;
 }
 
 .VPSidebar .VPSidebarItem.level-1:has(> .item > .link[href='/quick-start.html']) > .item,
 .VPSidebar .VPSidebarItem.level-1:has(> .item > .link[href='/codex-cc-switch.html']) > .item,
-.VPSidebar .VPSidebarItem.level-1:has(> .item > .link[href='/image-video-group-image.html']) > .item {
+.VPSidebar .VPSidebarItem.level-1:has(> .item > .link[href='/image-video-group-image.html']) > .item,
+.VPSidebar .VPSidebarItem.level-1:has(> .item > .link[href='/codex-models.html']) > .item {
   min-height: 54px;
   padding: 0;
 }
 
 .VPSidebar .VPSidebarItem.level-1:has(> .item > .link[href='/quick-start.html']) .indicator,
 .VPSidebar .VPSidebarItem.level-1:has(> .item > .link[href='/codex-cc-switch.html']) .indicator,
-.VPSidebar .VPSidebarItem.level-1:has(> .item > .link[href='/image-video-group-image.html']) .indicator {
+.VPSidebar .VPSidebarItem.level-1:has(> .item > .link[href='/image-video-group-image.html']) .indicator,
+.VPSidebar .VPSidebarItem.level-1:has(> .item > .link[href='/codex-models.html']) .indicator {
   display: none;
 }
 
 .VPSidebar .link[href='/quick-start.html'],
 .VPSidebar .link[href='/codex-cc-switch.html'],
-.VPSidebar .link[href='/image-video-group-image.html'] {
+.VPSidebar .link[href='/image-video-group-image.html'],
+.VPSidebar .link[href='/codex-models.html'] {
   display: grid;
   width: 100%;
   min-height: 54px;
@@ -158,7 +162,8 @@ body {
 
 .VPSidebar .link[href='/quick-start.html']::before,
 .VPSidebar .link[href='/codex-cc-switch.html']::before,
-.VPSidebar .link[href='/image-video-group-image.html']::before {
+.VPSidebar .link[href='/image-video-group-image.html']::before,
+.VPSidebar .link[href='/codex-models.html']::before {
   display: inline-flex;
   width: 30px;
   height: 30px;
@@ -172,7 +177,8 @@ body {
 
 .VPSidebar .link[href='/quick-start.html'] .text,
 .VPSidebar .link[href='/codex-cc-switch.html'] .text,
-.VPSidebar .link[href='/image-video-group-image.html'] .text {
+.VPSidebar .link[href='/image-video-group-image.html'] .text,
+.VPSidebar .link[href='/codex-models.html'] .text {
   margin: 0;
   font-size: 17px;
   font-weight: 780;
@@ -188,7 +194,7 @@ body {
 }
 
 .VPSidebar .link[href='/quick-start.html']::before {
-  content: '1';
+  content: '1.';
   background: rgba(255, 255, 255, 0.16);
   color: #fff;
 }
@@ -204,7 +210,7 @@ body {
 }
 
 .VPSidebar .link[href='/codex-cc-switch.html']::before {
-  content: '2';
+  content: '2.';
   background: #356456;
   color: #fff;
 }
@@ -220,13 +226,29 @@ body {
 }
 
 .VPSidebar .link[href='/image-video-group-image.html']::before {
-  content: '3';
+  content: '3.';
   background: #a66d12;
   color: #fff;
 }
 
 .VPSidebar .link[href='/image-video-group-image.html'] .text {
   color: #704b0b;
+}
+
+.VPSidebar .link[href='/codex-models.html'] {
+  border-color: #b4c8e4;
+  background: #f0f5fd;
+  box-shadow: 0 4px 12px rgba(49, 79, 118, 0.07);
+}
+
+.VPSidebar .link[href='/codex-models.html']::before {
+  content: '4.';
+  background: #426593;
+  color: #fff;
+}
+
+.VPSidebar .link[href='/codex-models.html'] .text {
+  color: #314f76;
 }
 
 .VPSidebar .link[href='/quick-start.html']:hover {
@@ -247,9 +269,16 @@ body {
   transform: translateX(2px);
 }
 
+.VPSidebar .link[href='/codex-models.html']:hover {
+  border-color: #7f9fc9;
+  background: #e5eefb;
+  transform: translateX(2px);
+}
+
 .VPSidebar .link[href='/quick-start.html']:focus-visible,
 .VPSidebar .link[href='/codex-cc-switch.html']:focus-visible,
-.VPSidebar .link[href='/image-video-group-image.html']:focus-visible {
+.VPSidebar .link[href='/image-video-group-image.html']:focus-visible,
+.VPSidebar .link[href='/codex-models.html']:focus-visible {
   outline: 3px solid rgba(154, 79, 22, 0.22);
   outline-offset: 3px;
 }
@@ -280,6 +309,15 @@ body {
   color: #704b0b !important;
 }
 
+.VPSidebar .VPSidebarItem.is-active > .item > .link[href='/codex-models.html'] {
+  border-color: #426593;
+  box-shadow: 0 0 0 2px rgba(66, 101, 147, 0.13);
+}
+
+.VPSidebar .VPSidebarItem.is-active > .item > .link[href='/codex-models.html'] .text {
+  color: #314f76 !important;
+}
+
 .dark .VPSidebar .link[href='/quick-start.html'] {
   border-color: #d68c49;
   background: #a95e24;
@@ -301,6 +339,16 @@ body {
 
 .dark .VPSidebar .link[href='/image-video-group-image.html'] .text {
   color: #f3dcad !important;
+}
+
+.dark .VPSidebar .link[href='/codex-models.html'] {
+  border-color: rgba(132, 167, 213, 0.45);
+  background: rgba(34, 49, 71, 0.92);
+}
+
+.dark .VPSidebar .link[href='/codex-models.html'] .text,
+.dark .VPSidebar .VPSidebarItem.is-active > .item > .link[href='/codex-models.html'] .text {
+  color: #d8e6fa !important;
 }
 
 .VPDoc {

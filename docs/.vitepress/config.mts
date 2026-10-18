@@ -47,8 +47,8 @@ export default withSidebar(config, {
   manualSortFileNameByPriority: [
     'quick-start.md',
     'codex-cc-switch.md',
-    'codex-models.md',
     'image-video-group-image.md',
+    'codex-models.md',
     'models.md',
     'clients',
     'kimi-code.md',

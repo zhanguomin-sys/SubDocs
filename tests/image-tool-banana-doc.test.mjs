@@ -65,16 +65,17 @@ test('documents the verified Nano Banana 2 Responses request contract', () => {
   assert.match(imageToolDocSource, /只扫描 `output`/)
 })
 
-test('keeps the three primary sidebar paths in the requested order and visually numbered', () => {
+test('keeps the four primary sidebar paths in the requested order and visually numbered', () => {
   assert.match(
     configSource,
-    /'quick-start\.md',\s*'codex-cc-switch\.md',\s*'codex-models\.md',\s*'image-video-group-image\.md',[\s\S]*?'clients'/,
+    /'quick-start\.md',\s*'codex-cc-switch\.md',\s*'image-video-group-image\.md',\s*'codex-models\.md',[\s\S]*?'clients'/,
   )
   assert.match(configSource, /frontmatterTitleFieldName:\s*'sidebarTitle'/)
   assert.match(ccSwitchSource, /^sidebarTitle:\s*CC Switch 接入$/m)
-  assert.match(customCssSource, /\.link\[href='\/quick-start\.html'\]::before\s*\{[\s\S]*?content:\s*'1'/)
-  assert.match(customCssSource, /\.link\[href='\/codex-cc-switch\.html'\]::before\s*\{[\s\S]*?content:\s*'2'/)
-  assert.match(customCssSource, /\.link\[href='\/image-video-group-image\.html'\]::before\s*\{[\s\S]*?content:\s*'3'/)
+  assert.match(customCssSource, /\.link\[href='\/quick-start\.html'\]::before\s*\{[\s\S]*?content:\s*'1\.'/)
+  assert.match(customCssSource, /\.link\[href='\/codex-cc-switch\.html'\]::before\s*\{[\s\S]*?content:\s*'2\.'/)
+  assert.match(customCssSource, /\.link\[href='\/image-video-group-image\.html'\]::before\s*\{[\s\S]*?content:\s*'3\.'/)
+  assert.match(customCssSource, /\.link\[href='\/codex-models\.html'\]::before\s*\{[\s\S]*?content:\s*'4\.'/)
   assert.match(customCssSource, /\.VPSidebar \.link\[href='\/codex-cc-switch\.html'\] \.text/)
   assert.match(customCssSource, /white-space:\s*nowrap/)
   assert.match(quickStartSource, /\[安装生图工具\]\(\/image-video-group-image\)/)
