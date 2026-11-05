@@ -318,9 +318,11 @@ class SkillContractTests(unittest.TestCase):
     def test_powershell_prompt_is_passed_as_a_here_string_variable(self) -> None:
         for content in (self.skill, self.agents_rule):
             self.assertIn("单引号 here-string", content)
-            self.assertIn("作为 `--prompt` 的独立参数", content)
+            self.assertIn("作为 `--prompt-file` 的独立参数", content)
         self.assertIn("$Prompt = @'", self.skill)
-        self.assertIn("--prompt $Prompt", self.skill)
+        self.assertIn("--prompt-file $PromptFile", self.skill)
+        self.assertIn("UTF8Encoding", self.skill)
+        self.assertIn("Remove-Item -LiteralPath $PromptFile", self.skill)
         self.assertIn("--model $Model", self.skill)
         powershell_example = self.skill.split("```powershell", 1)[1].split("```", 1)[0]
         self.assertNotIn('--prompt "用户给出的完整图片描述"', powershell_example)

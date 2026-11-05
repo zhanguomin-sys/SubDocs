@@ -178,7 +178,7 @@ Nano Banana 的参考图和修图使用重复的 `--image` 说明人物、物体
 2. 不要先在无网络权限的沙箱中试跑。当前权限不允许工具联网或读取输入图片时，为已安装原生工具的 `generate` 或 `edit` 子命令申请可复用的最小许可；许可范围不能扩大到整个 PowerShell、Bash 或其它命令，不要求用户开启“完全访问”，也不修改 `config.toml`。宿主只提供单次批准时申请单次；用户拒绝时停止。
 3. 单模型普通任务只运行一次工具并提交一个前台调用。用户明确要求两个或更多不同模型分别生成时，为每个模型构造一个独立工具命令，并使用宿主的并发工具调用能力，在同一批并发工具调用中同时提交；三个模型就是一次提交三个工具调用，不能先等第一个完成再提交第二个。每个模型只运行一次。每个命令都是可等待、可收集 stdout 的独立前台调用，不能因为“每个模型需要独立前台调用”而改成顺序执行。禁止用 shell 后台符号、PowerShell `Start-Job`、脱离会话任务或进程轮询模拟并发。不要搜索工具或 Skill，不要预检输出目录。
 4. 单模型调用仍在运行时继续等待同一个调用完成；多模型并发时继续等待这一批调用全部完成。保存模型、工具调用和 stdout 结果的对应关系，不使用其它命令检查进程。任一调用未退出时不得结束当前轮次，不得把“正在运行”当成最终结果，也不得声称图片稍后会自动显示。
-5. Windows PowerShell 先用单引号 here-string 保存完整描述，再把变量作为 `--prompt` 的独立参数；不要把提示词拼进双引号命令文本。
+5. Windows PowerShell 先用单引号 here-string 保存完整描述，将变量写入 UTF-8 临时文件，再把文件路径作为 `--prompt-file` 的独立参数；在 `finally` 中删除临时文件；不要把提示词拼进双引号命令文本。
 
 下面 GPT Image 示例中的 `model`、`size`、`quality` 和 PowerShell 对应变量，必须先按“模型选择”和“参数”确定；示例只引用已经选定的值，不重新写死模型。
 
@@ -279,17 +279,23 @@ $ToolPath = Join-Path $ToolCodexHome "tools\myautoapi-imagines-tool\myautoapi-im
 $Prompt = @'
 用户给出的完整图片描述或修改要求
 '@
-& $ToolPath generate `
-  --model $Model `
-  --prompt $Prompt `
-  --n 1 `
-  --size $Size `
-  --quality $Quality `
-  --output-name "准确的图片名称" `
-  --output-dir "$OutputDir"
+$PromptFile = [System.IO.Path]::GetTempFileName()
+try {
+  [System.IO.File]::WriteAllText($PromptFile, $Prompt, [System.Text.UTF8Encoding]::new($false))
+  & $ToolPath generate `
+    --model $Model `
+    --prompt-file $PromptFile `
+    --n 1 `
+    --size $Size `
+    --quality $Quality `
+    --output-name "准确的图片名称" `
+    --output-dir "$OutputDir"
+} finally {
+  Remove-Item -LiteralPath $PromptFile -Force
+}
 ```
 
-参考图或修改图时把最后一段改为 `& $ToolPath edit`，并在 `--prompt` 前加入一个或多个独立的 `--image "$InputImage"` 参数。Windows 调用 Grok Imagine 或 Nano Banana 时使用对应模型名，并用独立的 `--resolution` 和 `--aspect-ratio` 参数代替 `--size`；Nano Banana 不传 `--quality`。
+参考图或修改图时把最后一段改为 `& $ToolPath edit`，并在 `--prompt-file` 前加入一个或多个独立的 `--image "$InputImage"` 参数。Windows 调用 Grok Imagine 或 Nano Banana 时使用对应模型名，并用独立的 `--resolution` 和 `--aspect-ratio` 参数代替 `--size`；Nano Banana 不传 `--quality`。
 
 工具是独立程序，不安装或调用 Python、Node 或其它运行环境。宿主为加载本 `SKILL.md` 进行的一次读取属于 Skill 加载；加载后不要再次搜索或读取 Skill。生图调用不要使用 `Get-ChildItem`、`Get-Content`、`Get-Process`、`Test-Path` 或 `mkdir` 做调用前检查或运行中轮询；模型探测只按上一节的固定命令读取专用 Key。
 

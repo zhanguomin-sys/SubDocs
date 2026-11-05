@@ -19,6 +19,7 @@ import (
 	"strings"
 	"time"
 	"unicode"
+	"unicode/utf8"
 )
 
 const (
@@ -220,9 +221,11 @@ func parseEditOptions(arguments []string) (generationOptions, error) {
 
 func parseImageOptions(command string, arguments []string, requireImages bool) (generationOptions, error) {
 	options := generationOptions{}
+	var promptFile string
 	flags := flag.NewFlagSet(command, flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
 	flags.StringVar(&options.prompt, "prompt", "", "图片描述")
+	flags.StringVar(&promptFile, "prompt-file", "", "UTF-8 图片描述文件")
 	flags.StringVar(&options.model, "model", defaultModelName, "模型")
 	flags.IntVar(&options.n, "n", 1, "返回图片数量")
 	flags.StringVar(&options.size, "size", "", "图片尺寸")
@@ -239,6 +242,19 @@ func parseImageOptions(command string, arguments []string, requireImages bool) (
 	if flags.NArg() != 0 {
 		return options, fmt.Errorf("存在无法识别的参数：%s", strings.Join(flags.Args(), " "))
 	}
+	if promptFile != "" {
+		if options.prompt != "" {
+			return options, errors.New("--prompt 和 --prompt-file 不能同时使用。")
+		}
+		content, err := os.ReadFile(promptFile)
+		if err != nil {
+			return options, fmt.Errorf("无法读取图片描述文件：%w", err)
+		}
+		if !utf8.Valid(content) {
+			return options, errors.New("图片描述文件必须使用 UTF-8 编码。")
+		}
+		options.prompt = strings.TrimPrefix(string(content), "\ufeff")
+	}
 	if strings.TrimSpace(options.prompt) == "" {
 		return options, errors.New("图片描述不能为空。")
 	}
@@ -253,7 +269,7 @@ func parseImageOptions(command string, arguments []string, requireImages bool) (
 	options.outputName = strings.TrimSpace(options.outputName)
 	modelSpec, ok := imageModelSpecs[options.model]
 	if !ok {
-		return options, fmt.Errorf("V0.8.1 支持的模型只有：%s", strings.Join(supportedImageModels, "、"))
+		return options, fmt.Errorf("V0.8.2 支持的模型只有：%s", strings.Join(supportedImageModels, "、"))
 	}
 	provided := map[string]bool{}
 	flags.Visit(func(visited *flag.Flag) { provided[visited.Name] = true })
@@ -427,6 +443,10 @@ func runGeneration(options generationOptions, stdout io.Writer, client httpDoer,
 		return fmt.Errorf("无法保存图片：%w", saveErr)
 	}
 	summary := outputSummary(outputFiles, options.n)
+	if saveErr != nil {
+		summary["warning"] = "部分图片保存失败，已保留其余成功图片。"
+		summary["diagnostic"] = redactError(saveErr.Error(), apiKey)
+	}
 	writeResult(stdout, summary)
 	return nil
 }
@@ -510,7 +530,12 @@ func runEdit(options generationOptions, stdout io.Writer, client httpDoer, endpo
 	if len(outputFiles) == 0 && saveErr != nil {
 		return fmt.Errorf("无法保存图片：%w", saveErr)
 	}
-	writeResult(stdout, outputSummary(outputFiles, options.n))
+	summary := outputSummary(outputFiles, options.n)
+	if saveErr != nil {
+		summary["warning"] = "部分图片保存失败，已保留其余成功图片。"
+		summary["diagnostic"] = redactError(saveErr.Error(), apiKey)
+	}
+	writeResult(stdout, summary)
 	return nil
 }
 
@@ -933,6 +958,7 @@ func saveOutputImage(outputRoot, requestedName, extension string, content []byte
 
 func saveOutputImages(outputRoot, requestedName string, contents [][]byte) ([]string, error) {
 	paths := make([]string, 0, len(contents))
+	var failures []error
 	for index, content := range contents {
 		info := inspectImage(content)
 		name := requestedName
@@ -942,11 +968,12 @@ func saveOutputImages(outputRoot, requestedName string, contents [][]byte) ([]st
 		}
 		path, err := saveOutputImage(outputRoot, name, info.extension, content)
 		if err != nil {
-			return paths, err
+			failures = append(failures, fmt.Errorf("第 %d 张图片无法保存：%w", index+1, err))
+			continue
 		}
 		paths = append(paths, path)
 	}
-	return paths, nil
+	return paths, errors.Join(failures...)
 }
 
 func sanitizeOutputName(value string) string {
@@ -1195,7 +1222,8 @@ func downloadImage(candidate string, client httpDoer) ([]byte, error) {
 	request.Header.Set("User-Agent", "myautoapi-imagines-tool/"+version())
 	response, err := client.Do(request)
 	if err != nil {
-		return nil, fmt.Errorf("图片下载失败：%w", err)
+		message := regexp.MustCompile(`https?://[^\s"'<>]+`).ReplaceAllString(err.Error(), "[图片地址已隐藏]")
+		return nil, fmt.Errorf("图片下载失败：%s", message)
 	}
 	defer response.Body.Close()
 	body, err := readLimited(response.Body)

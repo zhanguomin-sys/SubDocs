@@ -62,10 +62,11 @@ type desiredFile struct {
 }
 
 type backupEntry struct {
-	path    string
-	existed bool
-	content []byte
-	mode    os.FileMode
+	path      string
+	existed   bool
+	content   []byte
+	mode      os.FileMode
+	movedPath string
 }
 
 type fileTransaction struct {
@@ -235,7 +236,7 @@ func installWithOptions(stdout io.Writer, input io.Reader, options installOption
 		}
 	}
 	showInstallStep(stdout, "正在保存专门画图分组 Key……")
-	if err := transaction.writePreservingMode(keyPath, []byte(pendingKey), 0o666); err != nil {
+	if err := transaction.write(keyPath, []byte(pendingKey), 0o600); err != nil {
 		return rollback(fmt.Errorf("无法保存专门画图分组 Key：%w", err))
 	}
 	if options.failureHook != nil {
@@ -470,7 +471,7 @@ func readInstallState(layout installLayout) (*installState, error) {
 		if json.Unmarshal(content, state) != nil || state.SchemaVersion != 1 || state.ManagedBy != managedBy {
 			return nil, fmt.Errorf("目标目录无法确认由本工具管理：%s", layout.toolDir)
 		}
-		if state.Version != version() && state.Version != "0.2.0" && state.Version != "0.3.0" && state.Version != "0.4.0" && state.Version != "0.4.1" && state.Version != "0.5.0" && state.Version != "0.6.0" && state.Version != "0.7.0" && state.Version != "0.7.1" && state.Version != "0.7.2" && state.Version != "0.7.3" && state.Version != "0.7.4" && state.Version != "0.7.5" && state.Version != "0.7.6" && state.Version != "0.8.0" {
+		if state.Version != version() && state.Version != "0.2.0" && state.Version != "0.3.0" && state.Version != "0.4.0" && state.Version != "0.4.1" && state.Version != "0.5.0" && state.Version != "0.6.0" && state.Version != "0.7.0" && state.Version != "0.7.1" && state.Version != "0.7.2" && state.Version != "0.7.3" && state.Version != "0.7.4" && state.Version != "0.7.5" && state.Version != "0.7.6" && state.Version != "0.8.0" && state.Version != "0.8.1" {
 			return nil, fmt.Errorf("已安装版本为 %s，当前安装包为 %s；不支持直接升级。", state.Version, version())
 		}
 		return state, nil
@@ -799,8 +800,41 @@ func (transaction *fileTransaction) remove(path string) error {
 	if err != nil {
 		return err
 	}
-	transaction.journal = append(transaction.journal, backupEntry{path: path, existed: true, content: content, mode: info.Mode().Perm()})
-	return os.Remove(path)
+	entry := backupEntry{path: path, existed: true, content: content, mode: info.Mode().Perm()}
+	removeErr := os.Remove(path)
+	if removeErr == nil {
+		transaction.journal = append(transaction.journal, entry)
+		return nil
+	}
+	if runtime.GOOS != "windows" {
+		return removeErr
+	}
+	executable, err := os.Executable()
+	if err != nil || !strings.EqualFold(filepath.Clean(executable), filepath.Clean(path)) {
+		return removeErr
+	}
+	// Windows permits moving a running executable, but prevents deleting it.
+	// Keep the move in the journal so any later failure can restore the install.
+	temporaryRoot := os.TempDir()
+	if !strings.EqualFold(filepath.VolumeName(path), filepath.VolumeName(temporaryRoot)) {
+		temporaryRoot = filepath.Dir(filepath.Dir(path))
+	}
+	temporary, err := os.CreateTemp(temporaryRoot, "myautoapi-uninstalled-*.exe")
+	if err != nil {
+		return removeErr
+	}
+	temporaryPath := temporary.Name()
+	if err := temporary.Close(); err != nil {
+		_ = os.Remove(temporaryPath)
+		return err
+	}
+	if err := os.Rename(path, temporaryPath); err != nil {
+		_ = os.Remove(temporaryPath)
+		return fmt.Errorf("无法移走运行中的程序：%w", err)
+	}
+	entry.movedPath = temporaryPath
+	transaction.journal = append(transaction.journal, entry)
+	return nil
 }
 
 func (transaction *fileTransaction) rollback() error {
@@ -808,7 +842,9 @@ func (transaction *fileTransaction) rollback() error {
 	for index := len(transaction.journal) - 1; index >= 0; index-- {
 		entry := transaction.journal[index]
 		var err error
-		if entry.existed {
+		if entry.movedPath != "" {
+			err = os.Rename(entry.movedPath, entry.path)
+		} else if entry.existed {
 			err = atomicWrite(entry.path, entry.content, entry.mode)
 		} else if removeErr := os.Remove(entry.path); removeErr != nil && !os.IsNotExist(removeErr) {
 			err = removeErr

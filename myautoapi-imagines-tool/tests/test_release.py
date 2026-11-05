@@ -1,4 +1,4 @@
-"""V0.8.1 native artifact and online installer contracts."""
+"""V0.8.2 native artifact and online installer contracts."""
 
 from __future__ import annotations
 
@@ -86,7 +86,7 @@ class ReleaseContractTests(unittest.TestCase):
             self.run_linux_entry(Path(temporary), damage_binary=True)
 
     def test_builder_defines_all_supported_native_targets(self) -> None:
-        self.assertEqual(release.RELEASE_REVISION, "v0.8.1")
+        self.assertEqual(release.RELEASE_REVISION, "v0.8.2")
         self.assertEqual(
             set(release.TARGETS),
             {
@@ -105,7 +105,7 @@ class ReleaseContractTests(unittest.TestCase):
             self.bash_installer,
             self.powershell_installer,
         ):
-            self.assertIn("releases/v0.8.1", script)
+            self.assertIn("releases/v0.8.2", script)
             self.assertNotIn("v0.2-r1.zip", script)
             self.assertNotRegex(script, r"(?i)python|安装\.py|Expand-Archive")
         bash_hashes = re.findall(r'expected_sha256="([0-9a-f]{64})"', self.bash_installer)
@@ -223,7 +223,7 @@ class ReleaseContractTests(unittest.TestCase):
             self.assertEqual(result_path.read_text(encoding="utf-8"), "terminal-input-ok\n")
 
     def test_install_state_version_is_v081(self) -> None:
-        self.assertEqual((PROJECT_ROOT / "VERSION").read_text(encoding="utf-8").strip(), "0.8.1")
+        self.assertEqual((PROJECT_ROOT / "VERSION").read_text(encoding="utf-8").strip(), "0.8.2")
 
     def test_powershell_entry_points_do_not_exit_the_calling_session(self) -> None:
         for script in (self.powershell_installer,):
@@ -334,7 +334,7 @@ class ReleaseContractTests(unittest.TestCase):
                     self.assertNotEqual(completed.returncode, 0)
                     self.assertEqual(
                         download_log.read_text(encoding="utf-8").strip(),
-                        f"https://docs.myautoapi.com/install/myautoapi-imagines-tool/releases/v0.8.1/{artifact}",
+                        f"https://docs.myautoapi.com/install/myautoapi-imagines-tool/releases/v0.8.2/{artifact}",
                     )
 
     def test_shell_installer_repairs_same_version_linux_binary_without_execute_permission(self) -> None:
@@ -358,7 +358,7 @@ class ReleaseContractTests(unittest.TestCase):
             installed_binary = installed_tool_dir / "myautoapi-imagines-tool"
             installed_binary.write_text("stale installed binary\n", encoding="utf-8")
             installed_binary.chmod(0o644)
-            (installed_tool_dir / "RELEASE").write_text("V0.8.1\n", encoding="utf-8")
+            (installed_tool_dir / "RELEASE").write_text("V0.8.2\n", encoding="utf-8")
 
             download_log = temporary_root / "download-url"
             result_path = temporary_root / "result"
@@ -425,7 +425,7 @@ class ReleaseContractTests(unittest.TestCase):
             self.assertEqual(result_path.read_text(encoding="utf-8"), "repaired-and-launched\n")
             self.assertEqual(
                 download_log.read_text(encoding="utf-8").strip(),
-                f"https://docs.myautoapi.com/install/myautoapi-imagines-tool/releases/v0.8.1/{artifact}",
+                f"https://docs.myautoapi.com/install/myautoapi-imagines-tool/releases/v0.8.2/{artifact}",
             )
 
 

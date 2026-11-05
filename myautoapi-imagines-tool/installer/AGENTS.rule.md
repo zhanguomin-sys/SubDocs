@@ -19,7 +19,7 @@
 - Linux 或 macOS Code Mode 使用嵌套 `exec_command()` 调用工具时，外层代码首行设置 `@exec` 的 `yield_time_ms: 120000`；外层返回 `Script running with cell ID ...` 时立即对同一个 `cell_id` 调用 `functions.wait`，不等待用户再次发消息或催促。调用前分别保存每个命令的 `output_dir`、`output_name`、请求数量、模型和开始时间；必须用 `text(...)` 显式转发嵌套返回对象中的退出码、`output` 和 `session_id`。返回 `session_id` 后每 5 秒收取同一个 `session_id`；每累计 30 秒仍未退出时用 Code Mode 的 `notify(...)` 发出中文状态并继续收取。Windows PowerShell 调用流程不变。
 - stdout 的 `requested_count` 是请求数量，`output_count` 是实际成功数量；单张使用 `output_file`，多张使用 `output_files`。正常取得 stdout 时不扫描输出目录，也不调用 `view_image` 或其它工具重新读取图片。取得路径后立即使用绝对路径 Markdown 图片语法直接展示，例如 `![生成结果](/absolute/path/image.png)`；最终回复必须再次嵌入全部成功图片，嵌入数量与 `output_count` 一致。多模型结果按保存的对应关系处理，保留准确模型 ID 和 `第 i/output_count 张`。只有 Linux 或 macOS Code Mode 的嵌套命令已经结束、外层没有可解析 JSON 时，才对本次已知的 `output_dir` 做一次只读恢复核查；不能只取最近 N 张，不重新生图、不更新或重装工具。
 - 工具完全失败时只显示 `error` 的简短提示，提醒用户到后台查看是否有生成记录，或让 AI 修复生图工具。只有修复任务才使用 `diagnostic` 字段；不自动重试或换模型。
-- Windows PowerShell 不把用户画面描述直接拼进 `powershell -Command` 的双引号命令文本；先用单引号 here-string 保存完整描述，再把变量作为 `--prompt` 的独立参数传给工具。
+- Windows PowerShell 不把用户画面描述直接拼进 `powershell -Command` 的双引号命令文本；先用单引号 here-string 保存完整描述，将变量写入 UTF-8 临时文件，再把文件路径作为 `--prompt-file` 的独立参数传给工具，并在 `finally` 中删除临时文件。
 - 调用前提示、等待状态、成功结果和失败说明全部使用中文，不输出英文进度说明。
 - 不换模型、不伪造图片。
 - API Key 由工具直接从 `$CODEX_HOME/tools/myautoapi-imagines-tool/api-key` 读取。AI 不打开、读取、复制、展示、记录、扫描或提交 `auth.json`；旧版 `auth.json` 读取仅作为工具内部回退模式，不在 Skill 中主动切换。

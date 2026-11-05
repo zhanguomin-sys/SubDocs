@@ -20,7 +20,7 @@ node --test tests/*.test.mjs
 - `docs/public/install/codex-models.sh`
 - `docs/public/install/myautoapi-imagines-tool/install.ps1`
 - `docs/public/install/myautoapi-imagines-tool/install.sh`
-- `docs/public/install/myautoapi-imagines-tool/releases/v0.8.1/`
+- `docs/public/install/myautoapi-imagines-tool/releases/v0.8.2/`
 
 ## 2. 上传 GitHub
 
@@ -81,6 +81,6 @@ https://docs.myautoapi.com/install/myautoapi-imagines-tool/install.ps1
 https://docs.myautoapi.com/install/myautoapi-imagines-tool/install.sh
 ```
 
-安装脚本必须直接显示纯文本，V0.8.1 的四个平台制品必须可以下载。之后每次推送到 `main`，Cloudflare Pages 会自动重新构建并发布。
+安装脚本必须直接显示纯文本，V0.8.2 的四个平台制品必须可以下载。之后每次推送到 `main`，Cloudflare Pages 会自动重新构建并发布。
 
 官方操作参考：[VitePress 部署](https://developers.cloudflare.com/pages/framework-guides/deploy-a-vitepress-site/)、[自定义域名](https://developers.cloudflare.com/pages/configuration/custom-domains/)。
