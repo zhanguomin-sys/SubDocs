@@ -30,7 +30,7 @@ Thumbs.db
 .gitrepo/
 
 # Local Codex-only project notes, not for deploy or git transfer
-codex/
+/codex/
 .codex/
 AGENTS.md
 
