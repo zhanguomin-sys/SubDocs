@@ -145,6 +145,37 @@ image_generation = false
 `,
   },
   {
+    name: 'ignores table headers and keys inside multi-line strings',
+    config: `model = "relay-model"
+review_model = '''
+relay-review
+'''
+developer_instructions = """
+Example:
+[model_providers.example]
+model = "inside string"
+"""
+
+[model_providers.relay]
+base_url = "https://relay.example.com"
+note = '''
+[features]
+'''
+
+[features]
+goals = true
+`,
+    expected: `developer_instructions = """
+Example:
+[model_providers.example]
+model = "inside string"
+"""
+
+[features]
+goals = true
+`,
+  },
+  {
     name: 'preserves CRLF line endings while removing provider config',
     config: 'model_provider = "edge"\r\nmodel = "edge-model"\r\nreview_model = "edge-review"\r\n\r\n[model_providers.edge]\r\nbase_url = "https://edge.example.com"\r\n\r\n[mcp_servers.edge]\r\ncommand = "edge-mcp"\r\n',
     expected: '[mcp_servers.edge]\r\ncommand = "edge-mcp"\r\n',

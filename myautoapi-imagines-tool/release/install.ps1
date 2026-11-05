@@ -44,8 +44,8 @@ function Download-WithPercent {
     }
 }
 
-$ReleaseRevision = "V0.8.2"
-$ReleaseBase = "https://docs.myautoapi.com/install/myautoapi-imagines-tool/releases/v0.8.2"
+$ReleaseRevision = "V0.8.3"
+$ReleaseBase = "https://docs.myautoapi.com/install/myautoapi-imagines-tool/releases/v0.8.3"
 $Architecture = if ([string]::IsNullOrWhiteSpace($env:PROCESSOR_ARCHITEW6432)) {
     $env:PROCESSOR_ARCHITECTURE
 } else {
@@ -53,10 +53,10 @@ $Architecture = if ([string]::IsNullOrWhiteSpace($env:PROCESSOR_ARCHITEW6432)) {
 }
 
 if ($Architecture.ToUpperInvariant() -ne "AMD64") {
-    throw ("安装失败：V0.8.2 仅支持 64 位 x64 Windows，当前架构为 " + $Architecture + "。")
+    throw ("安装失败：V0.8.3 仅支持 64 位 x64 Windows，当前架构为 " + $Architecture + "。")
 }
-$Artifact = "myautoapi-imagines-tool-v0.8.2-windows-amd64.exe"
-$ExpectedSha256 = "9d4f529113a933a837df5903ec7f2d1a4d04419d929e48dbeedba87047649610"
+$Artifact = "myautoapi-imagines-tool-v0.8.3-windows-amd64.exe"
+$ExpectedSha256 = "60640bc0ca6a80c13665bdbad640a49148a4e69a1859ecc38579549ce9f80b13"
 
 $ToolCodexHome = if ([string]::IsNullOrWhiteSpace($env:CODEX_HOME)) { Join-Path $HOME ".codex" } else { $env:CODEX_HOME }
 $InstalledReleasePath = Join-Path $ToolCodexHome "tools\myautoapi-imagines-tool\RELEASE"
@@ -81,7 +81,7 @@ try {
         $TemporaryRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("myautoapi-imagines-tool-" + [System.Guid]::NewGuid().ToString("N"))
         $BinaryPath = Join-Path $TemporaryRoot $Artifact
         New-Item -ItemType Directory -Path $TemporaryRoot | Out-Null
-        Download-WithPercent -Uri "$ReleaseBase/$Artifact" -Destination $BinaryPath -Activity "正在下载中转站生图工具 V0.8.2"
+        Download-WithPercent -Uri "$ReleaseBase/$Artifact" -Destination $BinaryPath -Activity "正在下载中转站生图工具 V0.8.3"
         $ActualSha256 = (Get-FileHash -LiteralPath $BinaryPath -Algorithm SHA256).Hash.ToLowerInvariant()
         if ($ActualSha256 -ne $ExpectedSha256) {
             throw "安装程序 SHA-256 校验不通过，已停止安装。"

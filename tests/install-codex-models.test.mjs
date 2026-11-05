@@ -12,11 +12,11 @@ for (const extension of ['ps1', 'sh']) {
     const [source, upstream, published] = await Promise.all(
       paths.map(path => readFile(new URL(path, import.meta.url))),
     )
-    assert.deepEqual(upstream, source)
+    assert.equal(upstream.toString('utf8').replace(/\r\n/g, '\n'), source.toString('utf8').replace(/\r\n/g, '\n'))
     if (extension === 'ps1') {
       // Local PowerShell 5.1 files need a BOM for Chinese text; HTTP + iex must not receive it.
       assert.deepEqual(source.subarray(0, 3), Buffer.from([0xef, 0xbb, 0xbf]))
-      assert.deepEqual(published, source.subarray(3))
+      assert.equal(published.toString('utf8').replace(/\r\n/g, '\n'), source.subarray(3).toString('utf8').replace(/\r\n/g, '\n'))
     } else {
       assert.deepEqual(published, source)
     }

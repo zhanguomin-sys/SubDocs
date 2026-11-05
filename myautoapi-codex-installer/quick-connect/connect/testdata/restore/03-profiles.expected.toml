@@ -1,0 +1,7 @@
+[profiles.official]
+model_provider = "openai"
+model = "official-model"
+review_model = "official-review"
+
+[projects."/workspace/demo"]
+trust_level = "trusted"

@@ -121,7 +121,7 @@ func TestNativeInstallUpgradesV073ReplacesExistingKey(t *testing.T) {
 	if err := installWithInput(&output, strings.NewReader("upgrade-replacement-key\n")); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(output.String(), "升级完成：V0.8.2") {
+	if !strings.Contains(output.String(), "升级完成：V0.8.3") {
 		t.Fatalf("version upgrade output missing: %s", output.String())
 	}
 	if !strings.Contains(output.String(), "请输入专门画图分组 Key") {
@@ -261,13 +261,13 @@ func TestNativeInstallUpgradesV02StateAndRequiresDedicatedKey(t *testing.T) {
 	if err := installWithInput(&output, strings.NewReader("new-dedicated-key\n")); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(output.String(), "升级完成：V0.8.2") {
+	if !strings.Contains(output.String(), "升级完成：V0.8.3") {
 		t.Fatalf("upgrade output missing: %s", output.String())
 	}
 	if !nonEmptyRegularFile(filepath.Join(layout.toolDir, keyFileName)) {
 		t.Fatal("upgrade did not save a dedicated key")
 	}
-	if !strings.Contains(string(mustReadFile(t, layout.versionPath)), "0.8.2") {
+	if !strings.Contains(string(mustReadFile(t, layout.versionPath)), "0.8.3") {
 		t.Fatal("upgrade did not update VERSION")
 	}
 }
@@ -306,10 +306,10 @@ func TestNativeInstallUpgradesV075ReplacesExistingKey(t *testing.T) {
 	if err := installWithInput(&output, strings.NewReader("upgrade-replacement-key\n")); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(output.String(), "升级完成：V0.8.2") {
+	if !strings.Contains(output.String(), "升级完成：V0.8.3") {
 		t.Fatalf("version upgrade output missing: %s", output.String())
 	}
-	if !strings.Contains(string(mustReadFile(t, layout.versionPath)), "0.8.2") {
+	if !strings.Contains(string(mustReadFile(t, layout.versionPath)), "0.8.3") {
 		t.Fatal("upgrade did not update VERSION")
 	}
 }
@@ -350,7 +350,7 @@ func TestNativeInstallUpgradesV076ReplacesExistingKey(t *testing.T) {
 	if err := installWithInput(&output, strings.NewReader("upgrade-replacement-key\n")); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(output.String(), "升级完成：V0.8.2") {
+	if !strings.Contains(output.String(), "升级完成：V0.8.3") {
 		t.Fatalf("version upgrade output missing: %s", output.String())
 	}
 	if !strings.Contains(output.String(), "请输入专门画图分组 Key") {
@@ -617,7 +617,7 @@ func TestNativeInstallUpgradesV080AndReplacesKey(t *testing.T) {
 	if err := installWithInput(&output, strings.NewReader("v080-upgrade-test-key\n")); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(output.String(), "升级完成：V0.8.2") {
+	if !strings.Contains(output.String(), "升级完成：V0.8.3") {
 		t.Fatal("V0.8.0 was not upgraded")
 	}
 	if string(mustReadFile(t, filepath.Join(layout.toolDir, keyFileName))) != "v080-upgrade-test-key" {

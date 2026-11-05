@@ -25,6 +25,34 @@ function Write-Utf8NoBom([string]$Path, [string]$Content) {
   [System.IO.File]::WriteAllText($Path, $Content, $utf8NoBom)
 }
 
+# Track TOML multi-line strings so their contents are never read as tables or keys.
+function Update-MultilineState([string]$Line, [string]$Open) {
+  $rest = $Line
+  while ($true) {
+    if ($Open -eq '') {
+      $doubleAt = $rest.IndexOf('"""')
+      $singleAt = $rest.IndexOf("'''")
+      if ($doubleAt -lt 0 -and $singleAt -lt 0) {
+        return $Open
+      }
+      if ($doubleAt -ge 0 -and ($singleAt -lt 0 -or $doubleAt -lt $singleAt)) {
+        $Open = '"""'
+        $at = $doubleAt
+      } else {
+        $Open = "'''"
+        $at = $singleAt
+      }
+    } else {
+      $at = $rest.IndexOf($Open)
+      if ($at -lt 0) {
+        return $Open
+      }
+      $Open = ''
+    }
+    $rest = $rest.Substring($at + 3)
+  }
+}
+
 function Clear-CodexConfig {
   if (-not (Test-Path -LiteralPath $ConfigFile -PathType Leaf)) {
     return
@@ -38,8 +66,23 @@ function Clear-CodexConfig {
   $inRoot = $true
   $skipProvider = $false
   $removedRoot = $false
+  $multiline = ''
+  $skipValue = $false
 
   foreach ($line in $lines) {
+    $inString = $multiline -ne ''
+    $multiline = Update-MultilineState $line $multiline
+    if ($inString) {
+      if ($skipProvider -or $skipValue) {
+        if ($multiline -eq '') {
+          $skipValue = $false
+        }
+        continue
+      }
+      $keptLines.Add($line)
+      continue
+    }
+
     $isTable = $line -match '^[\t ]*\[\[?[^\]]+\]\]?[\t ]*(?:#.*)?$'
     $isProvider = $line -match '^[\t ]*\[model_providers\.[^\]]+\][\t ]*(?:#.*)?$'
 
@@ -58,6 +101,7 @@ function Clear-CodexConfig {
 
     if ($inRoot -and $line -match '^[\t ]*(?:model_provider|model|review_model)[\t ]*=') {
       $removedRoot = $true
+      $skipValue = $multiline -ne ''
       continue
     }
 

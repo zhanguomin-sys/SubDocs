@@ -4,7 +4,7 @@
 
 | 使用入口 | 进入 |
 | --- | --- |
-| 用 ChatGPT 桌面应用中的 Codex 生图 | [Codex 内置生图](/images/codex-image-direct) |
+| 用 ChatGPT 桌面应用中的 Codex 生图 | [Codex 内置生图](/image-video-group-image) |
 | 用浏览器画布整理提示词、参考图和结果 | [无限画布](/images/infinite-canvas) |
 | 自己写脚本或服务端接口调用 | [GPT 生图 API](/images/image-generation) |
 

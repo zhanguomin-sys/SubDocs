@@ -34,7 +34,7 @@ test('includes the updated text pricing groups in order', () => {
       { id: 'full', name: 'GPT 正价 Pro 满血分组', multiplier: 0.27 },
       { id: 'anthropic-main', name: '低价分组', multiplier: 0.2 },
       { id: 'anthropic-cc-test', name: 'Anthropic CC TEST 满分渠道', multiplier: 0.4 },
-      { id: 'anthropic-cc-test-0.7', name: 'CC TEST 满分99缓（临时渠道，会下线）', multiplier: 0.7 },
+      { id: 'anthropic-cc-test-0.7', name: 'CC TEST 临时渠道（会下线）', multiplier: 0.7 },
       { id: 'anthropic-max', name: 'CC MAX 满血版本', multiplier: 1.4 },
       { id: 'anthropic-max-external', name: 'CC MAX 外接分组', multiplier: 1.4 },
       { id: 'grok-free', name: 'free号池', multiplier: 0.1 },
@@ -355,8 +355,8 @@ test('prices only the 11 screenshot models in the temporary 0.7 CC TEST group', 
   ])
 
   assert.equal(group.multiplier, 0.7)
-  assert.match(group.name, /临时渠道，会下线/)
-  assert.equal(group.description, '不保证长久，缓存 96–99%，其余与 CC TEST 0.4 倍分组一致')
+  assert.match(group.name, /临时渠道（会下线）/)
+  assert.equal(group.description, '临时渠道，缓存效果取决于实际请求，其余与 CC TEST 0.4 倍分组一致')
   assert.deepEqual(models.map((model) => model.id), [...expectedPrices.keys()])
 
   for (const model of models) {
@@ -972,7 +972,7 @@ test('keeps the requested drawing prices in RMB without applying USD conversion'
   assert.match(pricingComponentSource, /按分辨率计费/)
 })
 
-test('places the latest recommended GPT Image 2.5 models first at GPT Image 2 prices', () => {
+test('places the latest recommended GPT Image 2.6 models first at GPT Image 2 prices', () => {
   const gptImage2 = IMAGE_MODELS.find((model) => model.id === 'gpt-image-2')
   const latestModels = IMAGE_MODELS.slice(0, 2)
 
@@ -980,14 +980,14 @@ test('places the latest recommended GPT Image 2.5 models first at GPT Image 2 pr
     latestModels.map(({ id, name, description, recommended }) => ({ id, name, description, recommended })),
     [
       {
-        id: 'gpt-image-2.5-flare',
-        name: 'GPT Image 2.5 Flare',
+        id: 'gpt-image-2.6-flare',
+        name: 'GPT Image 2.6 Flare',
         description: '最新推荐模型，适合快速生成、普通生图和批量任务',
         recommended: true,
       },
       {
-        id: 'gpt-image-2.5-sunburst',
-        name: 'GPT Image 2.5 Sunburst',
+        id: 'gpt-image-2.6-sunburst',
+        name: 'GPT Image 2.6 Sunburst',
         description: '最新推荐模型，适合高清、精修和重要成品',
         recommended: true,
       },
@@ -1004,11 +1004,11 @@ test('places the latest recommended GPT Image 2.5 models first at GPT Image 2 pr
   assert.equal(gptImage2.recommended, undefined)
   assert.deepEqual(
     IMAGE_MODELS.filter((model) => model.recommended).map((model) => model.id),
-    ['gpt-image-2.5-flare', 'gpt-image-2.5-sunburst'],
+    ['gpt-image-2.6-flare', 'gpt-image-2.6-sunburst'],
   )
   assert.match(pricingComponentSource, /v-if="model\.recommended"/)
   assert.match(pricingComponentSource, /<span v-if="model\.recommended">最新推荐模型<\/span>/)
-  assert.match(pricingComponentSource, /IMAGE_MODELS\.find\(\(model\) => model\.id === 'gpt-image-2\.5-flare'\)/)
+  assert.match(pricingComponentSource, /IMAGE_MODELS\.find\(\(model\) => model\.id === 'gpt-image-2\.6-flare'\)/)
 })
 
 test('shows the unified size-price note only for gpt-image-2-adobe', () => {
@@ -1016,6 +1016,20 @@ test('shows the unified size-price note only for gpt-image-2-adobe', () => {
 
   assert.equal(adobe.priceNote, '1/2/4k统一价')
   assert.match(pricingComponentSource, /model\.priceNote \?\? '当前分组默认价'/)
+})
+
+test('keeps GPT Image 2.5 compatibility models at the confirmed unchanged prices', () => {
+  for (const id of ['gpt-image-2.5-flare', 'gpt-image-2.5-sunburst']) {
+    const model = IMAGE_MODELS.find((entry) => entry.id === id)
+    assert.ok(model, id)
+    assert.equal(model.recommended, undefined)
+    assert.equal(model.groupCnyPerImage, 0.05)
+    assert.deepEqual(model.sizePricesCny, [
+      { size: '1K', cnyPerImage: 0.04 },
+      { size: '2K', cnyPerImage: 0.05 },
+      { size: '4K', cnyPerImage: 0.08 },
+    ])
+  }
 })
 
 test('removes nonexistent GPT Image size aliases and the YS model from the pricing page', () => {

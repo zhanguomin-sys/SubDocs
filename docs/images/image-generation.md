@@ -1,6 +1,6 @@
 # GPT 生图 API
 
-自己写脚本或服务端流程时，直接调用 `gpt-image-2` 生成并保存图片。需要让 Codex 安装中转站生图工具并在对话中显示图片，查看[安装生图工具](/image-video-group-image)；需要用画布连续创作图片，查看[无限画布](/images/infinite-canvas)。
+自己写脚本或服务端流程时，可以直接调用 API 生成并保存图片。本页保留 `gpt-image-2` 的兼容示例；当前推荐的 GPT Image 2.6 模型及参数见[模型参数](/image-video-group-image#gpt-image-2-6)。需要让 Codex 安装中转站生图工具并在对话中显示图片，查看[安装生图工具](/image-video-group-image)；需要用画布连续创作图片，查看[无限画布](/images/infinite-canvas)。
 
 ## 懒人方法：让 AI 帮你快速测试
 
@@ -129,7 +129,7 @@ with open("outputs/image.png", "wb") as file:
 
 ## 常用参数
 
-下面的尺寸规则针对本站 GPT Image 像素尺寸接口。1K、2K、4K 是分辨率档位，不是 `size` 可以直接填写的值；请求必须使用 `1024x1024`、`2048x2048`、`3840x2160` 这类具体像素尺寸。方图、横图和竖图的完整对应关系，前往[中转站生图工具的 GPT Image 2.5 说明](/image-video-group-image#gpt-image-2-5)，点击“GPT Image 2.5：当前主模型、尺寸、质量和比例”展开查看。
+下面的尺寸规则针对本站 GPT Image 像素尺寸接口。1K、2K、4K 是分辨率档位，不是 `size` 可以直接填写的值；请求必须使用 `1024x1024`、`2048x2048`、`3840x2160` 这类具体像素尺寸。方图、横图和竖图的完整对应关系，前往[中转站生图工具的 GPT Image 2.6 说明](/image-video-group-image#gpt-image-2-6)，点击“GPT Image 2.6：当前主模型、尺寸、质量和比例”展开查看。
 
 | 参数 | 说明 |
 | --- | --- |

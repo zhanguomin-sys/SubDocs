@@ -1,0 +1,8 @@
+developer_instructions = """
+Example:
+[model_providers.example]
+model = "inside string"
+"""
+
+[features]
+goals = true

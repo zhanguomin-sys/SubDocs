@@ -1,0 +1,8 @@
+model_reasoning_effort = "high"
+disable_response_storage = true
+network_access = "enabled"
+windows_wsl_setup_acknowledged = true
+
+[features]
+goals = true
+image_generation = true

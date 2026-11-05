@@ -14,7 +14,7 @@ head:
       content: noindex
 ---
 
-<iframe class="radar-frame" src="https://radar.usegoodai.com/" title="智商雷达" referrerpolicy="no-referrer"></iframe>
+<iframe class="radar-frame" src="https://radar.myautoapi.com/" title="智商雷达" referrerpolicy="no-referrer"></iframe>
 
 <style>
 html, body { margin: 0; height: 100%; background: #0d1420; }

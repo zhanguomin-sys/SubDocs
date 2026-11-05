@@ -1,11 +1,11 @@
 # Runs the Windows importer (or uninstaller) on every case directory under CasesRoot.
-param([string]$CasesRoot, [string]$Action='import')
+param([string]$CasesRoot, [string]$Action='import', [string]$SnapshotVersion)
 $ErrorActionPreference='Stop'
 . (Join-Path $PSScriptRoot '../src/core.ps1')
 . (Join-Path $PSScriptRoot '../src/windows-host.ps1')
 $DomesticCatalog=ConvertFrom-Json -InputObject ([IO.File]::ReadAllText((Join-Path $CasesRoot 'domestic.json')))
 $BundledOfficialCatalog=ConvertFrom-Json -InputObject ([IO.File]::ReadAllText((Join-Path $PSScriptRoot '../src/gpt-catalog.json')))
-$BundledOfficialVersion='0.162.1'
+$BundledOfficialVersion=$SnapshotVersion
 $results=[ordered]@{}
 foreach ($dir in (Get-ChildItem -LiteralPath $CasesRoot -Directory)) {
   try {

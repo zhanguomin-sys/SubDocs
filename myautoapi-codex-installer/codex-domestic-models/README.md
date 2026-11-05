@@ -1,8 +1,8 @@
 # 给 Codex 导入国产模型
 
-这个脚本给已安装 Codex 的用户导入 11 个国产模型，让 GPT 与国产模型并列可选。官方账号、任意中转站和自定义接口均可导入；它只修改用户配置目录的 `config.toml` 中两项设置，并生成完整的本地模型目录，保留默认模型、服务名称、接口、Key 和其他配置。
+这个脚本给已安装 Codex 的用户导入 10 个国产模型，让 GPT 与国产模型并列可选。官方账号、任意中转站和自定义接口均可导入；它只修改用户配置目录的 `config.toml` 中两项设置，并生成完整的本地模型目录，保留默认模型、服务名称、接口、Key 和其他配置。
 
-Windows 只读写 `CODEX_HOME` 内的配置和模型文件，不查找、启动或复制任何可执行文件；本机是否安装 CLI 不影响导入。导入成功后沿用一键安装脚本 `install/install.ps1` 的进程关闭代码（构建时原样取出）关闭当前用户会话里的 ChatGPT 和 Codex，因为 Codex 启动时才读取 `config.toml` 和模型目录。macOS 优先定位 App，再查找现有 Codex CLI。Linux 使用已有的 Codex 后端和 Node.js 16+；仅安装原生 Codex 二进制并不代表本机有 Node，脚本缺少运行环境时会在写入前退出。
+Windows 只读写 `CODEX_HOME` 内的配置和模型文件，不查找、启动或复制任何可执行文件；本机是否安装 CLI 不影响导入。导入成功后沿用一键安装脚本 `install/codex.ps1` 的进程关闭代码（构建时原样取出）关闭当前用户会话里的 ChatGPT 和 Codex，因为 Codex 启动时才读取 `config.toml` 和模型目录。macOS 优先定位 App，再查找现有 Codex CLI。Linux 使用已有的 Codex 后端和 Node.js 16+；仅安装原生 Codex 二进制并不代表本机有 Node，脚本缺少运行环境时会在写入前退出。
 
 当前交付物是 [Windows 脚本](install/codex-models.ps1) 和 [Linux/macOS 共用脚本](install/codex-models.sh)。源码、设定和测试都在本子项目；交付物按用户要求迁移到上级安装目录与站点发布目录，供用户实机测试。
 
@@ -50,11 +50,11 @@ python3 build.py
 
 生成的两个脚本内嵌同一份数据，不依赖相邻文件，支持下载执行或管道执行。Windows 使用内置 PowerShell，macOS 使用内置 JXA，Linux 使用已有 Node.js；Linux/macOS 共用同一份 JavaScript 模型处理核心。脚本不自动安装运行环境或另一份 Codex。
 
-Linux/macOS 的进程检测、祖先排除、结束和结果报告在构建时直接从上级 `install/install.sh` 取出。Windows 交付物同样原样取出 `install/install.ps1` 的进程函数，但不包含后端定位和执行函数。
+Linux/macOS 的进程检测、祖先排除、结束和结果报告在构建时直接从上级 `install/codex.sh` 取出。Windows 交付物同样原样取出 `install/codex.ps1` 的进程函数，但不包含后端定位和执行函数。
 
 模型能力依据和保守设置见 [元数据来源](元数据来源.md)。`minimax-m3` 保留已确定的小写请求 ID，正式中转站别名仍需发布者核对；脚本不更改大小写。
 
-Codex 更新后什么时候要改本项目、怎么检查，见[开发文档第 8 节](开发文档.md)。普通更新不需要处理。
+Codex 软件升级与官方模型更新后的维护方式，见[开发文档第 8 节](开发文档.md)。
 
 ## 运行开发测试
 
@@ -72,7 +72,7 @@ python3 tests/test_models.py
 
 生成 `myautoapi-models.json` 与 `myautoapi-models.managed.json`，前者保存完整模型元数据，后者只记录本工具管理的模型 ID。修改前在同目录生成带时间和随机后缀的 `.bak` 备份；用户原来指向其他位置的模型目录继续保留。
 
-文件位于用户配置目录，正常 App 升级继续使用，不设置后台程序或升级任务。静态目录不会自动加入将来的 GPT；主动重新运行时，Windows 的官方模型（含 `codex-auto-review` 等隐藏条目，不只 `gpt-` 开头）来自内嵌快照和 Codex 自己维护的 `models_cache.json`：缓存的 `client_version` 不低于快照版本时，缓存条目覆盖快照和原目录里的同 ID 官方条目；缓存较旧、损坏或格式不符时只补缺失条目，不会让官方条目变少。用户自定义的非官方模型、目录顶层字段原样保留。快照来自开发验证用 Codex 0.162.1 的内置目录，保存在 `src/gpt-catalog.json`，版本记在 `build.py` 的 `OFFICIAL_SNAPSHOT_VERSION`，两者须一起更新；Codex 大版本更新后由维护者重新导出。设置本地目录后 Codex 不再刷新缓存，所以普通更新后缓存可能停在旧版本，新增 GPT 需要更新脚本快照后重新运行。用户运行时不执行导出命令。再次运行原 GPT 接入脚本覆盖配置后，重新运行本导入脚本恢复目录指向。
+文件位于用户配置目录，正常 App 升级继续使用，不设置后台程序或升级任务。静态目录不会自动加入将来的 GPT；主动重新运行时，Windows 的官方模型（含 `codex-auto-review` 等隐藏条目，不只 `gpt-` 开头）来自内嵌快照和 Codex 自己维护的 `models_cache.json`：缓存的 `client_version` 不低于快照版本时，缓存条目覆盖快照和原目录里的同 ID 官方条目；缓存较旧、损坏或格式不符时只补缺失条目，不会让官方条目变少。用户自定义的非官方模型、目录顶层字段原样保留。快照原样来自官方 Codex 0.165.0 的完整内置目录（含 `gpt-6.1-terra`），保存在 `src/gpt-catalog.json`，版本记在 `build.py` 的 `OFFICIAL_SNAPSHOT_VERSION`，两者须一起更新；官方模型新增或目录格式变化后，由维护者更新快照并发布新版脚本。设置本地目录后 Codex 不再刷新缓存，所以普通更新后缓存可能停在旧版本，新增 GPT 需要更新脚本快照后重新运行。Linux/macOS 从本机后端取得目录后，也用同一份快照补齐缺少的官方模型，保留本机与原目录同 ID 元数据。Windows 用户运行时不执行导出命令。再次运行原 GPT 接入脚本覆盖配置后，重新运行本导入脚本恢复目录指向。
 
 移除本工具导入的国产模型，使用同一脚本的卸载参数：
 

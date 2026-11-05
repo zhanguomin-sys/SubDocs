@@ -12,15 +12,16 @@ description: "Use when a user asks to generate, draw, make, regenerate, compare,
 - 只调用 `$CODEX_HOME/tools/myautoapi-imagines-tool/` 下已安装的原生工具；未设置 `CODEX_HOME` 时使用 `~/.codex/tools/myautoapi-imagines-tool/`。
 - API Key 由工具从 `$CODEX_HOME/tools/myautoapi-imagines-tool/api-key` 读取。绝不打开、读取、列出、复制、打印、传递或扫描 `auth.json`，也不把 Key 放进命令、提示词或回答。
 - 除“低频模型探测”一节规定的单次 `GET /v1/models` 外，不自行发送 `curl`、SDK 或其它 HTTP 请求。GPT Image、Adobe 和 Grok 由工具使用 `https://api.myautoapi.com/v1/images/generations` 与 `https://api.myautoapi.com/v1/images/edits`；Nano Banana 由工具使用 `https://api.myautoapi.com/v1/responses`，不手动换接口。
-- 当前可调用模型是 `gpt-image-2.5-flare`、`gpt-image-2.5-sunburst`、`gpt-image-2`、`gpt-image-1k-th`、`gpt-image-2-adobe`、`grok-imagine-image`、`nano-banana-2` 和 `nano-banana-pro`。工具按响应中的真实图片格式保存最终结果。
+- 当前可调用模型是 `gpt-image-2.6-flare`、`gpt-image-2.6-sunburst`、`gpt-image-2.5-flare`、`gpt-image-2.5-sunburst`、`gpt-image-2`、`gpt-image-1k-th`、`gpt-image-2-adobe`、`grok-imagine-image`、`nano-banana-2` 和 `nano-banana-pro`。工具按响应中的真实图片格式保存最终结果。
 - 生图任务本身不安装、更新、删除或替换工具和 Skill。用户明确要求更新或修复时按“更新与修复的区分”一节处理，两者不可互相代替。
 
 ## 模型选择
 
-| 模型 | 已验证能力 | 默认参数 |
+| 模型 | 支持能力 | 默认参数 |
 | --- | --- | --- |
-| `gpt-image-2.5-flare` | 文生图、参考图、修图、多图 | `2048x2048`、`high`；普通任务默认 |
-| `gpt-image-2.5-sunburst` | 文生图、参考图、修图、多图 | `2048x2048`、`high`；高质量与精细编辑 |
+| `gpt-image-2.6-flare` | 文生图、参考图、修图、多图 | `2048x2048`、`high`；普通任务默认 |
+| `gpt-image-2.6-sunburst` | 文生图、参考图、修图、多图 | `2048x2048`、`high`；高质量与精细编辑 |
+| `gpt-image-2.5-flare`、`gpt-image-2.5-sunburst` | 文生图、参考图、修图、多图；兼容模型 | `2048x2048`、`high`；仅在明确指定时使用 |
 | `gpt-image-2` | 文生图、参考图、修图、多图 | `1024x1024`、`high` |
 | `gpt-image-1k-th` | 文生图、参考图、修图、多图 | `1024x1024`、`high`（也支持 `low`） |
 | `gpt-image-2-adobe` | 文生图、多图 | `1024x1536`、`1536x2304`、`2304x3456`、`low` |
@@ -28,11 +29,11 @@ description: "Use when a user asks to generate, draw, make, regenerate, compare,
 | `nano-banana-2` | 文生图、参考图、修图、多图 | `1k`、`1:1`；可选 `512`、`2k`、`4k` 和多种比例 |
 | `nano-banana-pro` | 文生图、参考图、修图、多图 | `1k`、`1:1`；可选 `2k`、`4k` 和多种比例 |
 
-- 模型选择顺序固定为：用户明确指定模型时使用该模型；未指定模型且明确要求高清、高质量、精细细节、精修、严格保留原图或重要成品时使用 `gpt-image-2.5-sunburst`；其余未指定模型的任务默认使用 `gpt-image-2.5-flare`。
+- 模型选择顺序固定为：用户明确指定模型时使用该模型；未指定模型且明确要求高清、高质量、精细细节、精修、严格保留原图或重要成品时使用 `gpt-image-2.6-sunburst`；其余未指定模型的任务默认使用 `gpt-image-2.6-flare`。
 - 快速生成、普通生图、普通参考图、普通修图和批量生成都属于 Flare 的默认范围；“批量生成”不会覆盖同一句要求中的高清、精修或重要成品条件。
 - 用户问有哪些模型时，直接给出上表。可以询问是否需要用同一个提示词分别生成，但只有用户明确同意后才并发调用这些模型；展示前标出准确模型名，不自动评价或排名。
 - 用户明确指定的模型不静默替换。`gpt-image-1k-th` 固定 `1024x1024`，质量使用 `low` 或 `high`；所有模型的多图都由工具内部拆成独立单张请求，并发上限为 3。`gpt-image-2-adobe` 使用上表中的尺寸和 `low`。
-- 参考图和修图可以使用 `gpt-image-2.5-flare`、`gpt-image-2.5-sunburst`、`gpt-image-2`、`gpt-image-1k-th`、`grok-imagine-image`、`nano-banana-2` 或 `nano-banana-pro`。Adobe 用于文生图和多图。
+- 参考图和修图可以使用 `gpt-image-2.6-flare`、`gpt-image-2.6-sunburst`、`gpt-image-2.5-flare`、`gpt-image-2.5-sunburst`、`gpt-image-2`、`gpt-image-1k-th`、`grok-imagine-image`、`nano-banana-2` 或 `nano-banana-pro`。Adobe 用于文生图和多图。
 
 ## 低频模型探测
 
@@ -103,7 +104,7 @@ try {
 - 用户没有指定尺寸或质量时，使用所选模型表中的默认参数。
 - 工具按接口返回的真实图片格式保存，不向用户追加格式选择。
 
-下面的像素尺寸建议适用于 `gpt-image-2.5-flare`、`gpt-image-2.5-sunburst` 和 `gpt-image-2`。两个 2.5 模型默认使用 2K，`gpt-image-2` 继续默认使用 1K；`gpt-image-1k-th` 和 Adobe 使用“模型选择”中的固定值，Grok Imagine 和 Nano Banana 使用后面的分辨率和比例表。
+下面的像素尺寸建议适用于 `gpt-image-2.6-flare`、`gpt-image-2.6-sunburst` 和 `gpt-image-2`。2.6 和 2.5 模型默认使用 2K，`gpt-image-2` 继续默认使用 1K；`gpt-image-1k-th` 和 Adobe 使用“模型选择”中的固定值，Grok Imagine 和 Nano Banana 使用后面的分辨率和比例表。
 
 | 用户要求 | `--size` 建议值 |
 | --- | --- |
@@ -122,11 +123,11 @@ try {
 | 草稿、快速预览 | `low` |
 | 普通质量 | `medium` |
 | 高质量、最终图片 | `high` |
-| 更高质量（两个 2.5 模型） | `xhigh` |
-| 最高质量（两个 2.5 模型） | `max` |
+| 更高质量（2.6 和 2.5 模型） | `xhigh` |
+| 最高质量（2.6 和 2.5 模型） | `max` |
 | 由模型决定 | `auto` |
 
-`xhigh` 和 `max` 只适用于 `gpt-image-2.5-flare` 和 `gpt-image-2.5-sunburst`。两个 2.5 模型仍默认使用 `high`；只有用户明确要求对应质量档位时才传入 `xhigh` 或 `max`。
+`xhigh` 和 `max` 只适用于 GPT Image 2.6 和 2.5 的 Flare / Sunburst。2.6 和 2.5 模型仍默认使用 `high`；只有用户明确要求对应质量档位时才传入 `xhigh` 或 `max`。
 
 其它精确尺寸必须使用 `WIDTHxHEIGHT`：宽高都是 16 的倍数，任一边不超过 3840，长边不超过短边 3 倍，总像素在 655360 到 8294400 之间。
 

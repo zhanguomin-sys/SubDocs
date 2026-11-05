@@ -85,7 +85,7 @@ function Start-ModelInstaller([string]$CodexHomePath, [string]$CodexPath, [switc
   Write-Host '成功导入后会自动关闭 ChatGPT/Codex，运行中的任务会中断。'
   $result=Invoke-ModelImport $targetHome $DomesticCatalog
   Write-Host ("已导入 "+$result.Count+" 个国产模型，原 GPT 和其他模型已保留。")
-  if (-not $result.UsedCache) { Write-Host '未读到本机模型缓存，GPT 列表来自脚本内置快照；Codex 更新后如缺少新模型，重新运行本命令即可。' }
+  if (-not $result.UsedCache) { Write-Host '未读到本机模型缓存，GPT 列表来自脚本内置快照；后续新增 GPT，请使用更新后的脚本重新导入。' }
   Report-RunningClients (Stop-RunningClients)
   Write-Host '重新打开 App，新建任务后选择模型；API Key 分组由你在中转站切换。'
 }

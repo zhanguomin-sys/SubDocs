@@ -6,7 +6,7 @@ const source = readFileSync(new URL('../docs/image-video-group-image.md', import
 
 const modelFolds = [
   {
-    summary: 'GPT Image 2.5：当前主模型、尺寸、质量和比例',
+    summary: 'GPT Image 2.6：当前主模型、尺寸、质量和比例',
     required: ['`size`、`quality` 和 `output_format`', '`3:4`', '`768x1024`', '`xhigh`', '`max`'],
   },
   {

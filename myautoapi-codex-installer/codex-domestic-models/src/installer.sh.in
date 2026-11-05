@@ -82,6 +82,7 @@ fi
 
 if import_message="$(run_model_import "$target_codex_home" "$app_backend" "$model_action" <<'MYAUTOAPI_JAVASCRIPT'
 // @DOMESTIC_CATALOG@
+// @OFFICIAL_CATALOG@
 // @CORE@
 // @MACOS_HOST@
 // @LINUX_HOST@

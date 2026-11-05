@@ -1,0 +1,8 @@
+notify = ["terminal-notifier"]
+
+[mcp_servers.context7]
+command = "npx"
+args = ["-y", "@upstash/context7-mcp"]
+
+[features]
+web_search = true

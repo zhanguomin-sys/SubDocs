@@ -2,6 +2,8 @@
 var DomesticModels = (function () {
     'use strict';
     var effortOrder = ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'ultra', 'max'];
+    // Models the relay has retired or the user dropped: removed from the snapshot, backend catalog and existing catalog alike.
+    var retiredModels = ['gpt-5.5', 'deepseek-v4.1-flash-1017'];
     function fail(message) { var error = new Error(message); error.safeMessage = message; throw error; }
     function atStep(name, target, action) {
         try { return action(); }
@@ -251,15 +253,17 @@ var DomesticModels = (function () {
         });
         return catalog;
     }
-    function merge(existing, app, domestic, managed, info) {
+    function merge(existing, app, domestic, managed, info, official) {
         validateCatalog(app); validateCatalog(domestic);
+        if (official) { validateCatalog(official); }
         if (existing) { validateCatalog(existing); }
         if (!Array.isArray(managed) || managed.some(function (x) { return typeof x !== 'string' || !x; })) { fail('已管理模型记录格式无效。'); }
         if (managed.some(function (x) { return /^gpt-/i.test(x); })) { fail('管理记录包含 GPT，停止导入以保留 GPT。'); }
         var byId = dict(), order = [], owned = dict(), result, levels = [], gotGPT = false;
-        managed.concat(domestic.models.map(function (x) { return x.slug; })).forEach(function (id) { owned[id] = true; });
+        managed.concat(domestic.models.map(function (x) { return x.slug; }), retiredModels).forEach(function (id) { owned[id] = true; });
         function add(models) { models.forEach(function (model) { if (!own(byId, model.slug) && !own(owned, model.slug)) { byId[model.slug] = model; order.push(model.slug); } }); }
         add(existing ? existing.models : []); add(app.models);
+        if (official) { add(official.models); }
         domestic.models.forEach(function (model) { byId[model.slug] = model; order.push(model.slug); });
         result = JSON.parse(JSON.stringify(existing || app)); result.models = order.map(function (id) { return byId[id]; });
         result.models.forEach(function (model) { if (/^gpt-/i.test(model.slug)) { gotGPT = true; } });
@@ -350,7 +354,7 @@ var DomesticModels = (function () {
             error.safeMessage = message; error.code = 'EJSON_PARSE'; throw error;
         }
     }
-    function importModels(io, home, executable, domestic) {
+    function importModels(io, home, executable, domestic, official) {
         var configPath = io.join(home, 'config.toml'), catalogPath = io.join(home, 'myautoapi-models.json'), managedPath = io.join(home, 'myautoapi-models.managed.json');
         atStep('创建 Codex 配置目录', home, function () { if (!io.exists(home)) { io.mkdir(home, true); } });
         var original = atStep('读取 Codex 配置', configPath, function () {
@@ -377,7 +381,7 @@ var DomesticModels = (function () {
                 /* Provider/auth failures do not prevent a local catalog import. */
             }
         }
-        var merged = atStep('校验并合并模型元数据', source || executable + ' debug models --bundled', function () { return merge(existing, app, domestic, managed, info); });
+        var merged = atStep('校验并合并模型元数据', source || executable + ' debug models --bundled', function () { return merge(existing, app, domestic, managed, info, official); });
         var config = atStep('合并模型目录指向和桌面档位', configPath, function () { return patchConfig(original || '', info, catalogPath, merged.efforts); });
         var files = [{path: catalogPath, text: JSON.stringify(merged.catalog, null, 2) + '\n'}, {path: managedPath, text: JSON.stringify(merged.managed, null, 2) + '\n'}, {path: configPath, text: config}];
         /* Host stages all files, validates with the selected App backend, then commits with rollback. */

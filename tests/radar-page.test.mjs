@@ -9,7 +9,7 @@ test('radar page only frames the radar site without theme chrome', async () => {
   const page = await readFile(pagePath, 'utf8')
 
   assert.match(page, /^layout:\s*false$/m)
-  assert.match(page, /<iframe[^>]+src="https:\/\/radar\.usegoodai\.com\/"/)
+  assert.match(page, /<iframe[^>]+src="https:\/\/radar\.myautoapi\.com\/"/)
   assert.equal(page.match(/<iframe/g).length, 1)
   assert.match(page, /name: robots\s+content: noindex/)
   assert.match(page, /^search:\s*false$/m)

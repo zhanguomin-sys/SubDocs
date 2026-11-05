@@ -6,7 +6,7 @@ title: 安装生图工具
 
 MyAutoAPI 中转站生图工具让 Codex 直接生成、修改并展示图片，适合已经完成[快速开始](/quick-start)、希望在 Codex 对话中使用图片模型的用户。
 
-安装后，Codex 会自动调用工具并把成品图显示在当前对话中。普通任务默认使用 `gpt-image-2.5-flare` 生成 2K 图片，明确要求高清、精修或重要成品时使用 `gpt-image-2.5-sunburst`；安装器会写入 `$CODEX_HOME/tools/myautoapi-imagines-tool/`、`$CODEX_HOME/skills/myautoapi-image-generation/` 和 `$CODEX_HOME/AGENTS.md`，用户不需要手动修改这些文件。
+安装后，Codex 会自动调用工具并把成品图显示在当前对话中。普通任务默认使用 `gpt-image-2.6-flare` 生成 2K 图片，明确要求高清、精修或重要成品时使用 `gpt-image-2.6-sunburst`；安装器会写入 `$CODEX_HOME/tools/myautoapi-imagines-tool/`、`$CODEX_HOME/skills/myautoapi-image-generation/` 和 `$CODEX_HOME/AGENTS.md`，用户不需要手动修改这些文件。
 
 ## 1. 创建专门画图分组的 API Key
 
@@ -95,7 +95,7 @@ curl -fsSL https://docs.myautoapi.com/install/myautoapi-imagines-tool/install.sh
 对比模型：
 
 ```text
-用同一个要求分别调用 gpt-image-2.5-flare 和 nano-banana-pro，各生成一张并显示出来。
+用同一个要求分别调用 gpt-image-2.6-flare 和 nano-banana-pro，各生成一张并显示出来。
 ```
 
 </details>
@@ -105,8 +105,9 @@ curl -fsSL https://docs.myautoapi.com/install/myautoapi-imagines-tool/install.sh
 
 | 模型 | 使用场景 | 默认规格 | 专属限制 |
 | --- | --- | --- | --- |
-| `gpt-image-2.5-flare` | 普通生图、快速生成和批量任务 | `2048x2048`、`high` | 支持 `xhigh`、`max` |
-| `gpt-image-2.5-sunburst` | 高清、精修和重要成品 | `2048x2048`、`high` | 支持 `xhigh`、`max` |
+| `gpt-image-2.6-flare` | 普通生图、快速生成和批量任务 | `2048x2048`、`high` | 支持 `xhigh`、`max` |
+| `gpt-image-2.6-sunburst` | 高清、精修和重要成品 | `2048x2048`、`high` | 支持 `xhigh`、`max` |
+| `gpt-image-2.5-flare`、`gpt-image-2.5-sunburst` | 明确指定的 2.5 兼容任务 | `2048x2048`、`high` | 支持 `xhigh`、`max` |
 | `gpt-image-2` | 用户明确指定的旧版兼容任务 | `1024x1024`、`high` | 质量最高到 `high` |
 | `gpt-image-1k-th` | 固定 1K 方图 | `1024x1024`、`high` | 只使用 `low` 或 `high` |
 | `gpt-image-2-adobe` | Adobe 竖图 | `1024x1536`、`low` | 只支持生图和多图 |
@@ -121,7 +122,7 @@ Codex 会按照用户明确提出的模型、数量、尺寸和画面要求调�
 <details>
 <summary>查看更新、安装位置和卸载方式</summary>
 
-当前版本为 **V0.8.2**。本次修复 Windows 提示词中的中文与引号传递、多图保存失败处理和 Windows 卸载，并隐藏下载报错中的签名地址。Linux 和 Mac 的画图 Key 文件使用仅当前用户可读写的权限。
+当前版本为 **V0.8.3**。本次加入 GPT Image 2.6 Flare / Sunburst，并将默认模型切换到 2.6 Flare；高清、精修或重要成品使用 2.6 Sunburst，2.5 模型保留显式调用。静态图价格为 1K ¥0.04、2K ¥0.05、4K ¥0.08；GIF 暂未纳入本版。保留 Windows 中文提示词、多图保存和卸载修复；Linux 和 Mac 的画图 Key 文件仅当前用户可读写。
 
 需要更新时，直接对 Codex 说：
 
@@ -176,7 +177,7 @@ https://docs.myautoapi.com/image-video-group-image.html
 4. 为 MyAutoAPI API Key 保留一个明显的配置项，创建完成后只让我填写这个值。
 5. 脚本是给 Codex 调用的，不要让我手工修改图片描述、模型或运行命令。
 6. 脚本必须接收 Codex 每次传入的完整图片描述、模型、数量、规格和可选原图文件，不能把图片描述写死在脚本里。
-7. 模型选择顺序固定为：用户明确指定模型时使用该模型；未指定模型且明确要求高清、高质量、精细细节、精修、严格保留原图或重要成品时使用 gpt-image-2.5-sunburst；其余未指定模型的任务默认使用 gpt-image-2.5-flare。
+7. 模型选择顺序固定为：用户明确指定模型时使用该模型；未指定模型且明确要求高清、高质量、精细细节、精修、严格保留原图或重要成品时使用 gpt-image-2.6-sunburst；其余未指定模型的任务默认使用 gpt-image-2.6-flare。
 8. 每个模型请求只发送一次，禁止自动重试或静默更换模型。
 9. 成功后只保存最终图片，并立即使用 view_image 打开每张图片，确认图片能够正常显示。
 10. view_image 成功后，最终回复仍必须用绝对路径 Markdown 图片语法再次嵌入每张图片，例如：`![生成结果](/absolute/path/image.png)`。不得只依赖中间工具输出，也不得只回复普通文件路径或普通 Markdown 文件链接。失败时显示脱敏错误，不创建空图片或运行记录。
@@ -186,12 +187,12 @@ https://docs.myautoapi.com/image-video-group-image.html
 
 </details>
 
-<span id="gpt-image-2-5"></span>
+<span id="gpt-image-2-6"></span>
 
 <details>
-<summary>GPT Image 2.5：当前主模型、尺寸、质量和比例</summary>
+<summary>GPT Image 2.6：当前主模型、尺寸、质量和比例</summary>
 
-模型选择顺序固定为：用户明确指定模型时使用该模型；未指定模型且明确要求高清、高质量、精细细节、精修、严格保留原图或重要成品时使用 `gpt-image-2.5-sunburst`；其余未指定模型的任务默认使用 `gpt-image-2.5-flare`。
+模型选择顺序固定为：用户明确指定模型时使用该模型；未指定模型且明确要求高清、高质量、精细细节、精修、严格保留原图或重要成品时使用 `gpt-image-2.6-sunburst`；其余未指定模型的任务默认使用 `gpt-image-2.6-flare`。
 
 快速生成、普通生图、普通参考图、普通修图和批量生成都属于 Flare 的默认范围；“批量生成”不会覆盖同一句要求中的高清、精修或重要成品条件。
 
@@ -199,7 +200,7 @@ https://docs.myautoapi.com/image-video-group-image.html
 
 | 参数 | 写法 |
 | --- | --- |
-| `model` | `gpt-image-2.5-flare` 或 `gpt-image-2.5-sunburst` |
+| `model` | `gpt-image-2.6-flare` 或 `gpt-image-2.6-sunburst` |
 | `prompt` | 必填，写完整图片描述或修改指令 |
 | `size` | `auto` 或 `WIDTHxHEIGHT`；宽高为 16 的倍数，单边不超过 3840，长短边比例不超过 3:1，总像素为 655360 至 8294400；本站工具默认 `2048x2048` |
 | `quality` | `low`、`medium`、`high`、`xhigh`、`max`、`auto`；默认 `high` |
@@ -209,7 +210,7 @@ https://docs.myautoapi.com/image-video-group-image.html
 
 本站工具主动传入 `2048x2048` 和 `high`；直接调用官方接口并省略 `size` 或 `quality` 时，这两个字段默认使用 `auto`。使用 `size=auto` 时，模型会根据提示词选择尺寸。
 
-`xhigh` 和 `max` 只适用于两个 GPT Image 2.5 模型。工具默认保持 `high`，只有用户明确指定对应质量档位时才传入 `xhigh` 或 `max`。
+`xhigh` 和 `max` 只适用于两个 GPT Image 2.6 模型。工具默认保持 `high`，只有用户明确指定对应质量档位时才传入 `xhigh` 或 `max`。
 
 ### 按 1K、2K、4K 选择尺寸
 
@@ -255,6 +256,15 @@ https://docs.myautoapi.com/image-video-group-image.html
 </details>
 
 <span id="gpt-image-2"></span>
+
+<span id="gpt-image-2-5"></span>
+
+<details>
+<summary>GPT Image 2.5：兼容模型</summary>
+
+`gpt-image-2.5-flare` 和 `gpt-image-2.5-sunburst` 继续支持；仅在明确指定时调用。静态图的尺寸、质量和参考图参数与本页 2.6 说明一致，价格为 1K ¥0.04、2K ¥0.05、4K ¥0.08。
+
+</details>
 
 <details>
 <summary>GPT Image 2：旧版兼容差异</summary>
@@ -515,8 +525,9 @@ Nano Banana 2 不接受任意 `--size` 像素尺寸。`--size 2048x2048` 会在�
 
 | 模型 | 生成接口 | 参考图和修图 |
 | --- | --- | --- |
-| `gpt-image-2.5-flare` | `/v1/images/generations` | `/v1/images/edits` |
-| `gpt-image-2.5-sunburst` | `/v1/images/generations` | `/v1/images/edits` |
+| `gpt-image-2.6-flare` | `/v1/images/generations` | `/v1/images/edits` |
+| `gpt-image-2.6-sunburst` | `/v1/images/generations` | `/v1/images/edits` |
+| `gpt-image-2.5-flare`、`gpt-image-2.5-sunburst` | `/v1/images/generations` | `/v1/images/edits` |
 | `gpt-image-2` | `/v1/images/generations` | `/v1/images/edits` |
 | `gpt-image-1k-th` | `/v1/images/generations` | `/v1/images/edits` |
 | `gpt-image-2-adobe` | `/v1/images/generations` | 不开放 |

@@ -100,7 +100,7 @@ function run(argv) {
     };
     try {
         if (action === 'uninstall') { return DomesticModels.uninstallMessage(DomesticModels.uninstallModels(io, home)); }
-        var count = DomesticModels.importModels(io, home, executable, DOMESTIC_CATALOG);
+        var count = DomesticModels.importModels(io, home, executable, DOMESTIC_CATALOG, BUNDLED_OFFICIAL_CATALOG);
         return '已导入 ' + count + ' 个国产模型，原 GPT 和其他模型已保留。';
     } catch (error) {
         /* Never echo external process stderr, original TOML, or JSON (may contain credentials). */

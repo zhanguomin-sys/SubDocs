@@ -124,9 +124,9 @@ export const TEXT_GROUPS = [
   },
   {
     id: 'anthropic-cc-test-0.7',
-    name: 'CC TEST 满分99缓（临时渠道，会下线）',
+    name: 'CC TEST 临时渠道（会下线）',
     multiplier: 0.7,
-    description: '不保证长久，缓存 96–99%，其余与 CC TEST 0.4 倍分组一致',
+    description: '临时渠道，缓存效果取决于实际请求，其余与 CC TEST 0.4 倍分组一致',
     modelIds: CC_TEST_07_MODEL_IDS,
   },
   {
@@ -638,8 +638,8 @@ export const IMAGE_GROUP = {
 
 export const IMAGE_MODELS = [
   {
-    id: 'gpt-image-2.5-flare',
-    name: 'GPT Image 2.5 Flare',
+    id: 'gpt-image-2.6-flare',
+    name: 'GPT Image 2.6 Flare',
     description: '最新推荐模型，适合快速生成、普通生图和批量任务',
     route: '/v1/images/generations',
     spec: '1K / 2K / 4K',
@@ -652,8 +652,8 @@ export const IMAGE_MODELS = [
     recommended: true,
   },
   {
-    id: 'gpt-image-2.5-sunburst',
-    name: 'GPT Image 2.5 Sunburst',
+    id: 'gpt-image-2.6-sunburst',
+    name: 'GPT Image 2.6 Sunburst',
     description: '最新推荐模型，适合高清、精修和重要成品',
     route: '/v1/images/generations',
     spec: '1K / 2K / 4K',
@@ -664,6 +664,32 @@ export const IMAGE_MODELS = [
       { size: '4K', cnyPerImage: 0.08 },
     ],
     recommended: true,
+  },
+  {
+    id: 'gpt-image-2.5-flare',
+    name: 'GPT Image 2.5 Flare',
+    description: '兼容模型，适合快速生成、普通生图和批量任务',
+    route: '/v1/images/generations',
+    spec: '1K / 2K / 4K',
+    groupCnyPerImage: 0.05,
+    sizePricesCny: [
+      { size: '1K', cnyPerImage: 0.04 },
+      { size: '2K', cnyPerImage: 0.05 },
+      { size: '4K', cnyPerImage: 0.08 },
+    ],
+  },
+  {
+    id: 'gpt-image-2.5-sunburst',
+    name: 'GPT Image 2.5 Sunburst',
+    description: '兼容模型，适合高清、精修和重要成品',
+    route: '/v1/images/generations',
+    spec: '1K / 2K / 4K',
+    groupCnyPerImage: 0.05,
+    sizePricesCny: [
+      { size: '1K', cnyPerImage: 0.04 },
+      { size: '2K', cnyPerImage: 0.05 },
+      { size: '4K', cnyPerImage: 0.08 },
+    ],
   },
   {
     id: 'gpt-image-1k-th',

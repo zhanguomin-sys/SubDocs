@@ -5,66 +5,69 @@ sidebarTitle: 导入国产模型
 
 # 给 Codex 导入国产模型
 
-这个脚本把 11 个国产模型加入 Codex 的模型列表，适合已经接入 MyAutoAPI、希望在 GPT 和国产模型之间选择的用户。脚本自动更新用户目录中的 `.codex/config.toml` 和本地模型目录，保留原有 GPT、默认模型、接口和 Key；当前 API Key 使用 **国产模型大全 0.45x** 分组即可调用这些模型。
+这个脚本把 10 个国产模型加入 Codex 的模型选择器，适合已经接入 MyAutoAPI、想在 GPT 和国产模型之间切换的用户。脚本往本机 `.codex/config.toml` 和模型列表里添加国产模型，原有 GPT 模型、接口和 Key 保留。
 
-## 一键导入
+## 1. 一键导入
 
-**Linux / macOS：打开终端，复制运行。**
+导入成功后会自动关闭 ChatGPT 和 Codex，运行前先结束正在进行的任务。
 
-```sh
-curl -fsSL https://docs.myautoapi.com/install/codex-models.sh | sh
-```
+Windows 按 `Win + X`，点击 **终端** 或 **Windows PowerShell**；Mac 和 Linux 打开 **终端**。粘贴对应命令运行：
 
-Linux 需要本机已有 Node.js 16 或以上版本。Linux / macOS 导入成功后会自动关闭 ChatGPT/Codex，正在运行的任务会中断。
+::: code-group
 
-**Windows：按 `Win + X`，打开终端或 Windows PowerShell，复制运行。**
-
-```powershell
+```powershell [Windows]
 irm https://docs.myautoapi.com/install/codex-models.ps1 | iex
 ```
 
-Windows 脚本只读写 `CODEX_HOME` 中的配置与模型文件；未设置时使用 `C:\Users\你的用户名\.codex`。导入成功后会自动关闭 ChatGPT/Codex，正在运行的任务会中断。
+```sh [Mac / Linux]
+curl -fsSL https://docs.myautoapi.com/install/codex-models.sh | sh
+```
 
-## 重新打开 App 选择模型
+:::
 
-登录 MyAutoAPI 后台，进入 **API 密钥**，把当前 Key 的分组切换为 **国产模型大全 0.45x**。模型 ID 和价格见[模型价格](/models)。
-
-重新打开 App，**新建任务**，在模型选择器中选择要用的国产模型，发送 `测试`。
+Linux 需要已安装 Node.js 16 以上。
 
 <details>
-<summary>查看本次导入的 11 个模型</summary>
+<summary>不想用 PowerShell？</summary>
 
-| 厂商 | 模型 ID（按导入顺序） |
-| --- | --- |
-| DeepSeek | `deepseek-flash`、`deepseek-v4.1-flash-1017` |
-| GLM | `glm-5.3`、`glm-5.3-flash` |
-| Qwen 千问 | `qwen3.8-max`、`qwen3.8-flash` |
-| Kimi | `kimi-k3` |
-| MiniMax | `minimax-m3` |
-| 腾讯混元 | `hy4-preview` |
-| 小米 MiMo | `mimo-v2.6-pro`、`mimo-v2.6-flash` |
+加入 <span style="color: #d93025;"><strong>QQ 群：685861462</strong></span>，在群文件下载 `中转站快速导入工具.zip`，解压后双击 `3.Codex国产模型导入`（Windows 在 `Windows-x64` 文件夹，Mac 在 `Mac-Apple芯片` 文件夹）。
 
 </details>
+
+## 2. 切换分组并选择模型
+
+在管理后台 **API 密钥** 页面，点击 Codex 所用 Key 旁的 **选择分组**，按下表切到要用的分组。价格看 [模型价格](/models)。
+
+| 分组 | 模型 ID |
+| --- | --- |
+| DeepSeek 分组 | `deepseek-flash`（DeepSeek V4.1 Flash） |
+| 国产之光 | `glm-5.3`、`glm-5.3-flash` |
+| Qwen 千问分组 | `qwen3.8-max`、`qwen3.8-flash` |
+| Kimi 分组 | `kimi-k3` |
+| MiniMax 分组 | `minimax-m3` |
+| 腾讯混元分组 | `hy4-preview` |
+| 小米 MiMo 分组 | `mimo-v2.6-pro`、`mimo-v2.6-flash` |
+
+切到国产分组后，这个 Key 暂时不能用 GPT 模型；要用 GPT 时把分组切回来。想同时用多个国产分组、不来回切，用 [Qwen Code](/domestic/qwen-code)。
+
+重新打开 Codex，新建任务，在模型选择器里选同一分组的模型，发送 `测试`。能正常回复就导入完成。
 
 ## 更新或卸载
 
-**再次运行上面的导入命令，就是更新模型列表。**
+更新模型列表：重新运行第 1 步的命令。双击版从群文件下载最新安装包重新运行。
 
-<details>
-<summary>卸载导入的国产模型</summary>
+本次已加入 `gpt-6.1-terra`。模型列表保存在本机；后续官方新增 GPT 时，使用更新后的脚本或最新双击版重新导入。
 
-Linux / macOS 打开终端运行：
+卸载只移除本工具导入的国产模型，GPT 和其它配置保留。卸载后会自动关闭 ChatGPT 和 Codex，重新打开、新建任务即可。
 
-```sh
-curl -fsSL https://docs.myautoapi.com/install/codex-models.sh | sh -s -- --uninstall
-```
+::: code-group
 
-Windows 打开 PowerShell 运行：
-
-```powershell
+```powershell [Windows]
 & ([scriptblock]::Create((irm https://docs.myautoapi.com/install/codex-models.ps1))) -Uninstall
 ```
 
-卸载只移除本工具导入的国产模型，保留 GPT、其他自定义模型、接口和 Key；本地模型目录继续保留其余模型。完成后按脚本提示重新打开 App，新建任务继续使用。
+```sh [Mac / Linux]
+curl -fsSL https://docs.myautoapi.com/install/codex-models.sh | sh -s -- --uninstall
+```
 
-</details>
+:::

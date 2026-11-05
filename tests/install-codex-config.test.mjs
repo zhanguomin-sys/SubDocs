@@ -6,12 +6,12 @@ const installers = [
   [
     'Shell',
     new URL('../docs/public/install/myautoapi-codex-installer/install.sh', import.meta.url),
-    new URL('../myautoapi-codex-installer/install/install.sh', import.meta.url),
+    new URL('../myautoapi-codex-installer/install/codex.sh', import.meta.url),
   ],
   [
     'PowerShell',
     new URL('../docs/public/install/myautoapi-codex-installer/install.ps1', import.meta.url),
-    new URL('../myautoapi-codex-installer/install/install.ps1', import.meta.url),
+    new URL('../myautoapi-codex-installer/install/codex.ps1', import.meta.url),
   ],
 ]
 
@@ -27,6 +27,15 @@ for (const [name, path, sourcePath] of installers) {
     const installer = await readFile(path, 'utf8')
     const source = await readFile(sourcePath, 'utf8')
 
-    assert.equal(installer, source)
+    assert.equal(installer, source.replace(/^\uFEFF/, ''))
+  })
+}
+
+for (const name of ['restore.sh', 'restore.ps1']) {
+  test(`published ${name} matches the installer source`, async () => {
+    const installer = await readFile(new URL(`../docs/public/install/myautoapi-codex-installer/${name}`, import.meta.url), 'utf8')
+    const source = await readFile(new URL(`../myautoapi-codex-installer/install/codex-${name}`, import.meta.url), 'utf8')
+
+    assert.equal(installer, source.replace(/^\uFEFF/, ''))
   })
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the self-contained V0.8.2 release artifacts."""
+"""Build the self-contained V0.8.3 release artifacts."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-RELEASE_REVISION = "v0.8.2"
+RELEASE_REVISION = "v0.8.3"
 ARTIFACT_PREFIX = f"myautoapi-imagines-tool-{RELEASE_REVISION}"
 TARGETS = (
     ("windows", "amd64"),
@@ -61,8 +61,8 @@ def update_release_script_hashes(hashes: dict[str, str]) -> None:
 
 
 def main() -> int:
-    if (PROJECT_ROOT / "VERSION").read_text(encoding="utf-8").strip() != "0.8.2":
-        raise SystemExit("发布失败：V0.8.2 必须使用安装状态版本 0.8.2。")
+    if (PROJECT_ROOT / "VERSION").read_text(encoding="utf-8").strip() != "0.8.3":
+        raise SystemExit("发布失败：V0.8.3 必须使用安装状态版本 0.8.3。")
 
     subprocess.run(["go", "test", "./..."], cwd=PROJECT_ROOT, check=True)
     output_dir = PROJECT_ROOT / "dist" / RELEASE_REVISION

@@ -49,7 +49,7 @@ function createLinuxIO(home, core) {
     return io;
 }
 
-function runLinuxInstaller(argv, core, domestic) {
+function runLinuxInstaller(argv, core, domestic, official) {
     'use strict';
     var action = argv[2] || 'import';
     try {
@@ -60,7 +60,7 @@ function runLinuxInstaller(argv, core, domestic) {
             process.stdout.write(core.uninstallMessage(core.uninstallModels(createLinuxIO(home, core), home)) + '\n');
             return;
         }
-        var count = core.importModels(createLinuxIO(home, core), home, backend, domestic);
+        var count = core.importModels(createLinuxIO(home, core), home, backend, domestic, official);
         process.stdout.write('已导入 ' + count + ' 个国产模型，原 GPT 和其他模型已保留。\n');
     } catch (error) {
         process.stderr.write(core.formatError(error, action) + '\n软件未关闭。\n');
@@ -70,5 +70,5 @@ function runLinuxInstaller(argv, core, domestic) {
 
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {createLinuxIO: createLinuxIO, runLinuxInstaller: runLinuxInstaller};
-    if (typeof DOMESTIC_CATALOG !== 'undefined') { runLinuxInstaller(process.argv.slice(2), DomesticModels, DOMESTIC_CATALOG); }
+    if (typeof DOMESTIC_CATALOG !== 'undefined') { runLinuxInstaller(process.argv.slice(2), DomesticModels, DOMESTIC_CATALOG, BUNDLED_OFFICIAL_CATALOG); }
 }

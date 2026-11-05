@@ -4,12 +4,6 @@
 /install/myautoapi-codex-installer/install.sh
   Content-Type: text/plain; charset=utf-8
 
-/install/myautoapi-codex-installer/restore.ps1
-  Content-Type: text/plain; charset=utf-8
-
-/install/myautoapi-codex-installer/restore.sh
-  Content-Type: text/plain; charset=utf-8
-
 /install/codex-models.ps1
   Content-Type: text/plain; charset=utf-8
   Cache-Control: public, max-age=0, must-revalidate
@@ -17,6 +11,12 @@
 /install/codex-models.sh
   Content-Type: text/plain; charset=utf-8
   Cache-Control: public, max-age=0, must-revalidate
+
+/install/myautoapi-codex-installer/restore.ps1
+  Content-Type: text/plain; charset=utf-8
+
+/install/myautoapi-codex-installer/restore.sh
+  Content-Type: text/plain; charset=utf-8
 
 /install/myautoapi-imagines-tool/install.ps1
   Content-Type: text/plain; charset=utf-8
@@ -26,14 +26,6 @@
   Content-Type: text/plain; charset=utf-8
   Cache-Control: public, max-age=0, must-revalidate
 
-/install/myautoapi-imagines-tool/releases/v0.8.1/myautoapi-imagines-tool-*
-  Content-Type: application/octet-stream
-  Cache-Control: public, max-age=31536000, immutable
-
-/install/myautoapi-imagines-tool/releases/v0.8.1/SHA256SUMS
-  Content-Type: text/plain; charset=utf-8
-  Cache-Control: public, max-age=31536000, immutable
-
 /install/myautoapi-imagines-tool/releases/v0.8.2/myautoapi-imagines-tool-*
   Content-Type: application/octet-stream
   Cache-Control: public, max-age=31536000, immutable
@@ -41,3 +33,25 @@
 /install/myautoapi-imagines-tool/releases/v0.8.2/SHA256SUMS
   Content-Type: text/plain; charset=utf-8
   Cache-Control: public, max-age=31536000, immutable
+
+/install/myautoapi-imagines-tool/releases/v0.8.3/myautoapi-imagines-tool-*
+  Content-Type: application/octet-stream
+  Cache-Control: public, max-age=31536000, immutable
+
+/install/myautoapi-imagines-tool/releases/v0.8.3/SHA256SUMS
+  Content-Type: text/plain; charset=utf-8
+  Cache-Control: public, max-age=31536000, immutable
+
+/download/*
+  Cache-Control: public, max-age=0, must-revalidate
+  X-Content-Type-Options: nosniff
+
+/download/myautoapi-quick-connect-windows-x64.exe
+  Content-Disposition: attachment; filename="MyAutoAPI-Quick-Connect.exe"; filename*=UTF-8''MyAutoAPI%E4%B8%AD%E8%BD%AC%E5%BF%AB%E9%80%9F%E6%8E%A5%E5%85%A5%E5%8A%A9%E6%89%8B.exe
+
+/download/myautoapi-quick-connect-mac-arm64.zip
+  Content-Disposition: attachment; filename="MyAutoAPI-Quick-Connect.zip"; filename*=UTF-8''MyAutoAPI%E4%B8%AD%E8%BD%AC%E5%BF%AB%E9%80%9F%E6%8E%A5%E5%85%A5%E5%8A%A9%E6%89%8B.zip
+
+/download/myautoapi-tools.zip
+  Content-Type: application/zip
+  Content-Disposition: attachment; filename="MyAutoAPI-Tools.zip"; filename*=UTF-8''%E4%B8%AD%E8%BD%AC%E7%AB%99%E5%BF%AB%E9%80%9F%E5%AF%BC%E5%85%A5%E5%B7%A5%E5%85%B7_20261105-2011.zip

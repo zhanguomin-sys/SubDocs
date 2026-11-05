@@ -2,8 +2,8 @@
 set -u
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SHELL_SCRIPT="$ROOT_DIR/install/install.sh"
-POWERSHELL_SCRIPT="$ROOT_DIR/install/install.ps1"
+SHELL_SCRIPT="$ROOT_DIR/install/codex.sh"
+POWERSHELL_SCRIPT="$ROOT_DIR/install/codex.ps1"
 README_FILE="$ROOT_DIR/README.md"
 REFERENCE_SHELL_SCRIPT="$ROOT_DIR/reference/original/codex.sh"
 REFERENCE_POWERSHELL_SCRIPT="$ROOT_DIR/reference/original/codex.ps1"
@@ -14,7 +14,24 @@ export MYAUTOAPI_TEST_REAL_PS
 PASS_COUNT=0
 FAIL_COUNT=0
 TEST_ROOT="$(mktemp -d)"
-trap 'rm -rf "$TEST_ROOT"' EXIT
+USAGE_SERVER_PID=""
+trap '[ -n "$USAGE_SERVER_PID" ] && kill "$USAGE_SERVER_PID" 2>/dev/null; rm -rf "$TEST_ROOT"' EXIT
+
+# 检查密钥的请求全部转到本地假服务器，测试不访问真实接口，也不用真实密钥。
+USAGE_LOG="$TEST_ROOT/usage.log"
+: > "$USAGE_LOG"
+python3 "$ROOT_DIR/tests/fake_usage_server.py" "$USAGE_LOG" > "$TEST_ROOT/usage.port" &
+USAGE_SERVER_PID=$!
+for _ in $(seq 1 50); do
+  [ -s "$TEST_ROOT/usage.port" ] && break
+  sleep 0.1
+done
+MYAUTOAPI_TEST_SERVER="http://127.0.0.1:$(head -n 1 "$TEST_ROOT/usage.port")"
+MYAUTOAPI_TEST_REAL_CURL="$(command -v curl)"
+MYAUTOAPI_TEST_CURL_LOG="$TEST_ROOT/curl.log"
+MYAUTOAPI_TEST_PBPASTE_LOG="$TEST_ROOT/pbpaste.log"
+export MYAUTOAPI_TEST_SERVER MYAUTOAPI_TEST_REAL_CURL MYAUTOAPI_TEST_CURL_LOG MYAUTOAPI_TEST_PBPASTE_LOG
+unset MYAUTOAPI_KEY MYAUTOAPI_TEST_CLIPBOARD
 
 pass() {
   PASS_COUNT=$((PASS_COUNT + 1))
@@ -110,7 +127,11 @@ EOF
   chmod +x "$bin_dir/ps"
   cat > "$bin_dir/date" <<'EOF'
 #!/usr/bin/env bash
-printf '20260722123456\n'
+# 固定时间 2026-07-22 12:34:56 UTC：备份名用年月日时分秒，检查过期时间用秒数。
+case "$*" in
+  *+%s*) printf '1784723696\n' ;;
+  *) printf '20260722123456\n' ;;
+esac
 EOF
   chmod +x "$bin_dir/date"
   cat > "$bin_dir/sleep" <<'EOF'
@@ -118,6 +139,37 @@ EOF
 exit 0
 EOF
   chmod +x "$bin_dir/sleep"
+  cat > "$bin_dir/curl" <<'EOF'
+#!/usr/bin/env bash
+# 记录参数，并把检查密钥的地址换成本地假服务器；没有假服务器时按网络不通处理。
+printf '%s\n' "$*" >> "$MYAUTOAPI_TEST_CURL_LOG"
+if [ -z "${MYAUTOAPI_TEST_SERVER:-}" ]; then
+  exit 7
+fi
+args=()
+previous=""
+for argument in "$@"; do
+  # MYAUTOAPI_TEST_SHORT_TIMEOUT 把 10 秒超时缩成 1 秒，测试超时不用真等 10 秒。
+  if [ "$previous" = "--max-time" ] && [ -n "${MYAUTOAPI_TEST_SHORT_TIMEOUT:-}" ]; then
+    argument=1
+  fi
+  args+=("${argument//https:\/\/api.myautoapi.com/$MYAUTOAPI_TEST_SERVER}")
+  previous="$argument"
+done
+case " ${args[*]} " in
+  *api.myautoapi.com*)
+    exit 7
+    ;;
+esac
+exec "$MYAUTOAPI_TEST_REAL_CURL" "${args[@]}"
+EOF
+  chmod +x "$bin_dir/curl"
+  cat > "$bin_dir/pbpaste" <<'EOF'
+#!/usr/bin/env bash
+printf 'called\n' >> "$MYAUTOAPI_TEST_PBPASTE_LOG"
+printf '%b' "${MYAUTOAPI_TEST_CLIPBOARD:-}"
+EOF
+  chmod +x "$bin_dir/pbpaste"
 }
 
 run_shell_script() {
@@ -144,7 +196,7 @@ run_shell_script() {
       done
     }
     export -f kill
-    printf '%b' "$input" | env HOME="$home_dir" PATH="$bin_dir:$PATH" MYAUTOAPI_TEST_KILL_LOG="$home_dir/kill.log" bash "$SHELL_SCRIPT" > "$output_file" 2>&1
+    printf '%b' "$input" | env HOME="$home_dir" PATH="$bin_dir:$PATH" MYAUTOAPI_TEST_KILL_LOG="$home_dir/kill.log" bash "$SHELL_SCRIPT" "${@:4}" > "$output_file" 2>&1
   )
 }
 
@@ -177,11 +229,11 @@ powershell_write_line="$(grep -n -F -- 'Write-CodexFiles -ApiKey $ApiKey' "$POWE
 powershell_stop_line="$(grep -n -F -- '$StopResult = Stop-RunningClients' "$POWERSHELL_SCRIPT" | cut -d: -f1)"
 powershell_finish_line="$(grep -n -F -- 'Say "配置已经完成，可以关闭 PowerShell 了。"' "$POWERSHELL_SCRIPT" | cut -d: -f1)"
 if [ -n "$powershell_write_line" ] && [ -n "$powershell_stop_line" ] && [ -n "$powershell_finish_line" ] &&
-   [ "$powershell_write_line" -lt "$powershell_stop_line" ] &&
-   [ "$powershell_stop_line" -lt "$powershell_finish_line" ]; then
-  pass "PowerShell 先写入配置，再关闭进程，最后显示完成提示"
+   [ "$powershell_stop_line" -lt "$powershell_write_line" ] &&
+   [ "$powershell_write_line" -lt "$powershell_finish_line" ]; then
+  pass "PowerShell 先关闭进程，再写入配置，最后显示完成提示"
 else
-  fail "PowerShell 先写入配置，再关闭进程，最后显示完成提示"
+  fail "PowerShell 先关闭进程，再写入配置，最后显示完成提示"
 fi
 assert_not_contains "$POWERSHELL_SCRIPT" '-AsSecureString' "PowerShell API Key 使用明文输入"
 assert_contains "$POWERSHELL_SCRIPT" 'while (Test-Path -LiteralPath $backup)' "PowerShell 不覆盖同名历史备份"
@@ -189,22 +241,22 @@ assert_not_contains "$SHELL_SCRIPT" 'confirm_existing_files' "Shell 不再要求
 assert_not_contains "$POWERSHELL_SCRIPT" 'Confirm-ExistingFiles' "PowerShell 不再要求二次确认"
 assert_not_contains "$SHELL_SCRIPT" 'read_input ignored' "Shell 不因运行中客户端等待"
 assert_not_contains "$POWERSHELL_SCRIPT" 'Read-Host "关闭后按 Enter 继续"' "PowerShell 不因运行中客户端等待"
-assert_contains "$SHELL_SCRIPT" 'report_running_clients' "Shell 写入后检查客户端运行状态"
-assert_contains "$POWERSHELL_SCRIPT" 'Report-RunningClients' "PowerShell 写入后检查客户端运行状态"
+assert_contains "$SHELL_SCRIPT" 'report_running_clients' "Shell 报告客户端关闭结果"
+assert_contains "$POWERSHELL_SCRIPT" 'Report-RunningClients' "PowerShell 报告客户端关闭结果"
 assert_contains "$SHELL_SCRIPT" 'sleep 0.5' "Shell 每条非空提示间隔 0.5 秒"
 assert_contains "$POWERSHELL_SCRIPT" 'Start-Sleep -Milliseconds 500' "PowerShell 每条非空提示间隔 0.5 秒"
 assert_contains "$SHELL_SCRIPT" '欢迎使用 MyAutoAPI 中转站 Codex 一键配置脚本。' "Shell 使用指定欢迎语"
 assert_contains "$POWERSHELL_SCRIPT" '欢迎使用 MyAutoAPI 中转站 Codex 一键配置脚本。' "PowerShell 使用指定欢迎语"
-assert_contains "$SHELL_SCRIPT" '本脚本不会安装、修改任何软件，只会配置用户目录下 .codex 文件夹中的 config.toml 和 auth.json 文件。' "Shell 使用指定脚本说明"
-assert_contains "$POWERSHELL_SCRIPT" '本脚本不会安装、修改任何软件，只会配置用户目录下 .codex 文件夹中的 config.toml 和 auth.json 文件。' "PowerShell 使用指定脚本说明"
+assert_contains "$SHELL_SCRIPT" '本脚本不会安装、修改任何软件，只会配置用户目录下 .codex 文件夹中的 config.toml、auth.json 和 Codex App 权限设置。' "Shell 使用指定脚本说明"
+assert_contains "$POWERSHELL_SCRIPT" '本脚本不会安装、修改任何软件，只会配置用户目录下 .codex 文件夹中的 config.toml、auth.json 和 Codex App 权限设置。' "PowerShell 使用指定脚本说明"
 assert_contains "$SHELL_SCRIPT" '请粘贴从 MyAutoAPI 中转站复制过来的 API Key，然后回车确认' "Shell 使用指定 API Key 提示"
 assert_contains "$POWERSHELL_SCRIPT" '请粘贴从 MyAutoAPI 中转站复制过来的 API Key，然后回车确认' "PowerShell 使用指定 API Key 提示"
 assert_contains "$SHELL_SCRIPT" '配置已经完成，可以关闭终端了。' "Shell 使用指定完成提示"
 assert_contains "$POWERSHELL_SCRIPT" '配置已经完成，可以关闭 PowerShell 了。' "PowerShell 使用指定完成提示"
 assert_contains "$SHELL_SCRIPT" '感谢您对 MyAutoAPI 中转站的支持，使用过程中如有问题请联系网站客服。' "Shell 显示感谢与客服提示"
 assert_contains "$POWERSHELL_SCRIPT" '感谢您对 MyAutoAPI 中转站的支持，使用过程中如有问题请联系网站客服。' "PowerShell 显示感谢与客服提示"
-assert_contains "$SHELL_SCRIPT" '配置完成后会自动关闭 ChatGPT 软件和 Codex，正在运行的任务会中断。' "Shell 开场告知会自动关闭客户端"
-assert_contains "$POWERSHELL_SCRIPT" '配置完成后会自动关闭 ChatGPT 软件和 Codex，正在运行的任务会中断。' "PowerShell 开场告知会自动关闭客户端"
+assert_contains "$SHELL_SCRIPT" '写入配置前会自动关闭 ChatGPT 软件和 Codex，正在运行的任务会中断。' "Shell 开场告知会自动关闭客户端"
+assert_contains "$POWERSHELL_SCRIPT" '写入配置前会自动关闭 ChatGPT 软件和 Codex，正在运行的任务会中断。' "PowerShell 开场告知会自动关闭客户端"
 assert_contains "$SHELL_SCRIPT" '已自动关闭 ${clients}，请重新打开并新建对话测试，如有问题请联系网站客服。' "Shell 报告已自动关闭客户端"
 assert_contains "$POWERSHELL_SCRIPT" '已自动关闭 ${clients}，请重新打开并新建对话测试，如有问题请联系网站客服。' "PowerShell 报告已自动关闭客户端"
 assert_contains "$SHELL_SCRIPT" '未能自动关闭 ${clients}，请重启电脑后，重新打开并新建对话测试，如有问题请联系网站客服。' "Shell 关闭失败时提示重启电脑"
@@ -218,22 +270,27 @@ assert_not_contains "$POWERSHELL_SCRIPT" '默认模型：' "PowerShell 不再显
 assert_contains "$README_FILE" 'irm https://docs.myautoapi.com/install/myautoapi-codex-installer/install.ps1 | iex' "README 写明 Windows 完整命令"
 assert_contains "$README_FILE" 'curl -fsSL https://docs.myautoapi.com/install/myautoapi-codex-installer/install.sh | bash' "README 写明 macOS/Linux 完整命令"
 
-if [ "$(sha256sum "$REFERENCE_POWERSHELL_SCRIPT" | awk '{print $1}')" = "1dd391654588bba861cb908486af94d2e2f03bd6b9ace8b586c1f924781a5f4c" ]; then
-  pass "PowerShell 原始参考文件保持不变"
+# reference/ 是不进 Git 的本机对照材料；其它机器上没有时跳过这两项。
+if [ -f "$REFERENCE_POWERSHELL_SCRIPT" ] || [ -f "$REFERENCE_SHELL_SCRIPT" ]; then
+  if [ "$(sha256sum "$REFERENCE_POWERSHELL_SCRIPT" | awk '{print $1}')" = "1dd391654588bba861cb908486af94d2e2f03bd6b9ace8b586c1f924781a5f4c" ]; then
+    pass "PowerShell 原始参考文件保持不变"
+  else
+    fail "PowerShell 原始参考文件保持不变"
+  fi
+  if [ "$(sha256sum "$REFERENCE_SHELL_SCRIPT" | awk '{print $1}')" = "fa787f8dd096673a6698701342a1f006dc31aed751f6801423f9ca8418f8aedd" ]; then
+    pass "Shell 原始参考文件保持不变"
+  else
+    fail "Shell 原始参考文件保持不变"
+  fi
 else
-  fail "PowerShell 原始参考文件保持不变"
-fi
-if [ "$(sha256sum "$REFERENCE_SHELL_SCRIPT" | awk '{print $1}')" = "fa787f8dd096673a6698701342a1f006dc31aed751f6801423f9ca8418f8aedd" ]; then
-  pass "Shell 原始参考文件保持不变"
-else
-  fail "Shell 原始参考文件保持不变"
+  printf 'SKIP: 本机没有 reference/original，跳过原始参考文件检查\n'
 fi
 
 new_home="$TEST_ROOT/new-home"
 mkdir -p "$new_home"
 if run_shell_script "$new_home" 'sk-new-test\n' "$new_home/output.txt"; then
   new_output="$(<"$new_home/output.txt")"
-  new_intro_block=$'欢迎使用 MyAutoAPI 中转站 Codex 一键配置脚本。\n\n本脚本不会安装、修改任何软件，只会配置用户目录下 .codex 文件夹中的 config.toml 和 auth.json 文件。\n\n配置完成后会自动关闭 ChatGPT 软件和 Codex，正在运行的任务会中断。'
+  new_intro_block=$'欢迎使用 MyAutoAPI 中转站 Codex 一键配置脚本。\n\n本脚本不会安装、修改任何软件，只会配置用户目录下 .codex 文件夹中的 config.toml、auth.json 和 Codex App 权限设置。\n\n写入配置前会自动关闭 ChatGPT 软件和 Codex，正在运行的任务会中断。'
   new_finish_block=$'配置已经完成，可以关闭终端了。\n\n当前未检测到 ChatGPT/Codex CLI 运行，请启动软件后进行测试。\n\n感谢您对 MyAutoAPI 中转站的支持，使用过程中如有问题请联系网站客服。'
   if [ -f "$new_home/.codex/config.toml" ] &&
      [ -f "$new_home/.codex/auth.json" ] &&
@@ -249,8 +306,8 @@ else
 fi
 
 if [ -f "$new_home/.codex/config.toml" ]; then
-  assert_contains "$new_home/.codex/config.toml" 'model = "gpt-5.6-sol"' "默认模型为 gpt-5.6-sol"
-  assert_contains "$new_home/.codex/config.toml" 'review_model = "gpt-5.6-sol"' "review_model 保持完整"
+  assert_contains "$new_home/.codex/config.toml" 'model = "gpt-6.1-sol"' "默认模型为 gpt-6.1-sol"
+  assert_contains "$new_home/.codex/config.toml" 'review_model = "gpt-6.1-sol"' "review_model 保持完整"
   assert_contains "$new_home/.codex/config.toml" 'model_reasoning_effort = "high"' "默认推理强度为 high"
   assert_contains "$new_home/.codex/config.toml" 'network_access = "enabled"' "保留用户指定的网络配置"
   assert_contains "$new_home/.codex/config.toml" '[model_providers.OpenAI]' "生成配置保留完整自定义 provider 段"
@@ -259,8 +316,8 @@ if [ -f "$new_home/.codex/config.toml" ]; then
   assert_contains "$new_home/.codex/config.toml" 'goals = true' "生成配置开启 goals"
   assert_contains "$new_home/.codex/config.toml" 'image_generation = true' "生成配置开启图片生成"
   assert_not_contains "$new_home/.codex/config.toml" 'web_search' "不额外写入 web_search"
-  assert_not_contains "$new_home/.codex/config.toml" 'sandbox_mode' "不写入 sandbox_mode"
-  assert_not_contains "$new_home/.codex/config.toml" 'approval_policy' "不写入 approval_policy"
+  assert_contains "$new_home/.codex/config.toml" 'sandbox_mode = "danger-full-access"' "config.toml 写入完全访问沙箱"
+  assert_contains "$new_home/.codex/config.toml" 'approval_policy = "never"' "config.toml 写入不再询问审批"
 
   if command -v codex >/dev/null 2>&1; then
     if env HOME="$new_home" codex features list > "$new_home/codex-parse.txt" 2>&1; then
@@ -278,7 +335,7 @@ printf 'old config\n' > "$accept_home/.codex/config.toml"
 printf 'old auth\n' > "$accept_home/.codex/auth.json"
 if run_shell_script "$accept_home" 'sk-accept-test\n' "$accept_home/output.txt"; then
   accept_output="$(<"$accept_home/output.txt")"
-  existing_block=$'本脚本不会安装、修改任何软件，只会配置用户目录下 .codex 文件夹中的 config.toml 和 auth.json 文件。\n\n检测到已有旧配置，将会在备份后再覆盖。\n\n配置完成后会自动关闭 ChatGPT 软件和 Codex，正在运行的任务会中断。'
+  existing_block=$'本脚本不会安装、修改任何软件，只会配置用户目录下 .codex 文件夹中的 config.toml、auth.json 和 Codex App 权限设置。\n\n检测到已有旧配置，将会在备份后再覆盖。\n\n写入配置前会自动关闭 ChatGPT 软件和 Codex，正在运行的任务会中断。'
   config_backups="$(find "$accept_home/.codex" -name 'config.toml.bak.*' | wc -l)"
   auth_backups="$(find "$accept_home/.codex" -name 'auth.json.bak.*' | wc -l)"
   if [ "$config_backups" -eq 1 ] && [ "$auth_backups" -eq 1 ] &&
@@ -331,10 +388,10 @@ if MYAUTOAPI_TEST_PS_OUTPUT='99999901 1 1000 S /Applications/ChatGPT.app/Content
   if [[ "$(<"$running_home/output.txt")" == *"$running_finish_block"* ]] &&
      ! grep -Fq '当前未检测到 ChatGPT/Codex CLI 运行' "$running_home/output.txt" &&
      ! grep -Fq '按 Enter 继续' "$running_home/output.txt" &&
-     [ "$(sort "$running_home/kill.log")" = $'-TERM 99999901 written\n-TERM 99999903 written' ]; then
-    pass "写入配置后只结束名称为 chatgpt/codex 的进程并报告已关闭"
+     [ "$(sort "$running_home/kill.log")" = $'-TERM 99999901 missing\n-TERM 99999903 missing' ]; then
+    pass "写入配置前只结束名称为 chatgpt/codex 的进程并报告已关闭"
   else
-    fail "写入配置后只结束名称为 chatgpt/codex 的进程并报告已关闭"
+    fail "写入配置前只结束名称为 chatgpt/codex 的进程并报告已关闭"
   fi
 else
   fail "关闭运行中客户端后脚本仍正常结束"
@@ -364,7 +421,7 @@ stubborn_home="$TEST_ROOT/stubborn-home"
 mkdir -p "$stubborn_home"
 if MYAUTOAPI_TEST_PS_OUTPUT='99999931 1 1000 S /usr/local/bin/codex\n' MYAUTOAPI_TEST_PS_ALIVE=always \
    run_shell_script "$stubborn_home" 'sk-stubborn-test\n' "$stubborn_home/output.txt" &&
-   [ "$(<"$stubborn_home/kill.log")" = $'-TERM 99999931 written\n-KILL 99999931 written' ] &&
+   [ "$(<"$stubborn_home/kill.log")" = $'-TERM 99999931 missing\n-KILL 99999931 missing' ] &&
    grep -Fq '未能自动关闭 Codex，请重启电脑后，重新打开并新建对话测试，如有问题请联系网站客服。' "$stubborn_home/output.txt" &&
    grep -Fq '配置已经完成，可以关闭终端了。' "$stubborn_home/output.txt"; then
   pass "进程未退出时先 TERM 再 KILL，仍未退出则提示重启电脑"
@@ -376,7 +433,7 @@ late_home="$TEST_ROOT/late-home"
 mkdir -p "$late_home"
 if MYAUTOAPI_TEST_PS_OUTPUT='99999961 1 1000 S /usr/local/bin/codex\n' MYAUTOAPI_TEST_PS_ALIVE=10 \
    run_shell_script "$late_home" 'sk-late-test\n' "$late_home/output.txt" &&
-   [ "$(<"$late_home/kill.log")" = '-TERM 99999961 written' ] &&
+   [ "$(<"$late_home/kill.log")" = '-TERM 99999961 missing' ] &&
    grep -Fq '已自动关闭 Codex，请重新打开并新建对话测试，如有问题请联系网站客服。' "$late_home/output.txt"; then
   pass "进程在最后一次等待期间退出时不再 KILL，也不误报失败"
 else
@@ -398,7 +455,7 @@ ancestor_home="$TEST_ROOT/ancestor-home"
 mkdir -p "$ancestor_home"
 if MYAUTOAPI_TEST_PS_OUTPUT='99999951 1 1000 S /usr/local/bin/codex\n' MYAUTOAPI_TEST_PS_ANCESTOR="$$" \
    run_shell_script "$ancestor_home" 'sk-ancestor-test\n' "$ancestor_home/output.txt" &&
-   [ "$(<"$ancestor_home/kill.log")" = '-TERM 99999951 written' ] &&
+   [ "$(<"$ancestor_home/kill.log")" = '-TERM 99999951 missing' ] &&
    grep -Fq '未能自动关闭 Codex，请重启电脑后，重新打开并新建对话测试，如有问题请联系网站客服。' "$ancestor_home/output.txt"; then
   pass "脚本运行在 Codex 内时跳过自己所在的进程并提示重启电脑"
 else
@@ -423,6 +480,254 @@ else
   kill "$real_pid" 2>/dev/null
   fail "结束真实进程后脚本仍正常结束"
 fi
+
+# ---- 检查密钥、MYAUTOAPI_KEY 和 Mac 剪贴板（本地假服务器，合成密钥） ----
+
+POWERSHELL_BIN=""
+for candidate in "${PWSH:-}" "$ROOT_DIR/codex-domestic-models/.dev-tools/pwsh/pwsh" "$(command -v pwsh || true)"; do
+  if [ -n "$candidate" ] && [ -x "$candidate" ]; then
+    POWERSHELL_BIN="$candidate"
+    break
+  fi
+done
+
+# PowerShell 版同样只把检查密钥的地址换成本地假服务器；Get-Process 返回空，不碰真实进程。
+POWERSHELL_PRELUDE='function Start-Sleep { }
+function Get-Process { }
+function Stop-Process { }
+function Invoke-WebRequest {
+  [CmdletBinding()] param([string]$Uri, [hashtable]$Headers, [int]$TimeoutSec, [switch]$UseBasicParsing)
+  $Uri = $Uri.Replace("https://api.myautoapi.com", $env:MYAUTOAPI_TEST_SERVER)
+  if (-not $env:MYAUTOAPI_TEST_SERVER -or $Uri.Contains("api.myautoapi.com")) { throw "network down" }
+  if ($env:MYAUTOAPI_TEST_SHORT_TIMEOUT) { $TimeoutSec = 1 }
+  Microsoft.PowerShell.Utility\Invoke-WebRequest -Uri $Uri -Headers $Headers -TimeoutSec $TimeoutSec -UseBasicParsing
+}
+. $env:MYAUTOAPI_TEST_SCRIPT'
+
+run_powershell_script() {
+  local home_dir="$1"
+  local input="$2"
+  local output_file="$3"
+  printf '%b' "$input" | env HOME="$home_dir" USERPROFILE="$home_dir" XDG_CACHE_HOME="$home_dir/.cache" \
+    XDG_DATA_HOME="$home_dir/.local/share" XDG_CONFIG_HOME="$home_dir/.config" \
+    POWERSHELL_TELEMETRY_OPTOUT=1 POWERSHELL_UPDATECHECK=Off MYAUTOAPI_TEST_SCRIPT="$POWERSHELL_SCRIPT" \
+    "$POWERSHELL_BIN" -NoLogo -NoProfile -Command "$POWERSHELL_PRELUDE" > "$output_file" 2>&1
+}
+
+KEY_CASE=0
+check_key_case() {
+  local runner="$1"
+  local label="$2"
+  local env_key="$3"
+  local input="$4"
+  local expected="$5"
+  local written_key="$6"
+  local server="${7:-$MYAUTOAPI_TEST_SERVER}"
+  local home
+  KEY_CASE=$((KEY_CASE + 1))
+  home="$TEST_ROOT/key-case-$KEY_CASE"
+  mkdir -p "$home"
+  if MYAUTOAPI_KEY="$env_key" MYAUTOAPI_TEST_SERVER="$server" "$runner" "$home" "$input" "$home/output.txt" &&
+     grep -Fq -- "$expected" "$home/output.txt" &&
+     grep -Fq -- "\"OPENAI_API_KEY\": \"$written_key\"" "$home/.codex/auth.json" &&
+     [ "$(find "$home/.codex" -name '*.bak.*' | wc -l)" -eq 0 ]; then
+    pass "$label"
+  else
+    fail "$label"
+    sed -n '1,40p' "$home/output.txt"
+  fi
+}
+
+: > "$MYAUTOAPI_TEST_CURL_LOG"
+for runner in run_shell_script run_powershell_script; do
+  if [ "$runner" = run_shell_script ]; then
+    name="Shell"
+  elif [ -n "$POWERSHELL_BIN" ]; then
+    name="PowerShell"
+  else
+    printf 'SKIP: 本机没有 PowerShell，跳过 codex.ps1 的密钥检查流程\n'
+    continue
+  fi
+  check_key_case "$runner" "$name 读取 MYAUTOAPI_KEY，检查通过后直接写入" 'sk-env-usable-0123456789abcdef' '' '密钥检查通过，余额 $12.35。' 'sk-env-usable-0123456789abcdef'
+  check_key_case "$runner" "$name MYAUTOAPI_KEY 格式错误时提示并回到输入" 'not-a-key' 'sk-typed-usable-key\n' 'MYAUTOAPI_KEY 格式错误，必须以 sk- 开头，请手动输入。' 'sk-typed-usable-key'
+  check_key_case "$runner" "$name 401 时提示密钥无效并重新输入，期间不写入" 'sk-env-rejected-key' 'sk-typed-usable-key\n' '密钥无效，请回网站重新复制完整的密钥。' 'sk-typed-usable-key'
+  check_key_case "$runner" "$name 403 按密钥无效处理" '' 'sk-forbidden-key\nsk-typed-usable-key\n' '密钥无效，请回网站重新复制完整的密钥。' 'sk-typed-usable-key'
+  check_key_case "$runner" "$name isValid 为 false 时提示换密钥并重新输入" '' 'sk-disabled-key\nsk-typed-usable-key\n' '这个密钥已停用、过期或额度用完，请在网站换一个可用的密钥。' 'sk-typed-usable-key'
+  check_key_case "$runner" "$name status 为 expired 时按停用处理并重新输入" '' 'sk-statusexpired-key\nsk-typed-usable-key\n' '这个密钥已停用、过期或额度用完，请在网站换一个可用的密钥。' 'sk-typed-usable-key'
+  check_key_case "$runner" "$name status 为 quota_exhausted 时按停用处理，不当作余额为 0" '' 'sk-exhausted-key\nsk-typed-usable-key\n' '这个密钥已停用、过期或额度用完，请在网站换一个可用的密钥。' 'sk-typed-usable-key'
+  check_key_case "$runner" "$name 过期时间已过（status 仍为 active）时按停用处理" '' 'sk-pastdate-key\nsk-typed-usable-key\n' '这个密钥已停用、过期或额度用完，请在网站换一个可用的密钥。' 'sk-typed-usable-key'
+  check_key_case "$runner" "$name 过期时间未到时正常通过" '' 'sk-futuredate-key\n' '密钥检查通过，余额 $4.00。' 'sk-futuredate-key'
+  check_key_case "$runner" "$name 余额为 0 时提示并继续写入" '' 'sk-zero-key\n' '密钥可用，但余额为 $0。充值后即可使用；新人进群领 2 元。' 'sk-zero-key'
+  check_key_case "$runner" "$name 没有 remaining 字段时按成功处理" '' 'sk-noremaining-key\n' '密钥检查通过。' 'sk-noremaining-key'
+  check_key_case "$runner" "$name 服务器 5xx 时提示服务器出错和状态码并继续写入" '' 'sk-broken-key\n' 'MyAutoAPI 服务器暂时出错（HTTP 500），暂时无法检查密钥，继续写入。' 'sk-broken-key'
+  check_key_case "$runner" "$name 服务器返回的不是 JSON 时提示返回内容异常并继续写入" '' 'sk-notjson-key\n' 'MyAutoAPI 服务器暂时出错（返回内容异常），暂时无法检查密钥，继续写入。' 'sk-notjson-key'
+  check_key_case "$runner" "$name 连接被拒时提示连不上并继续写入" '' 'sk-network-key\n' '连不上 MyAutoAPI 服务器（网络不通，或被代理、防火墙拦截），暂时无法检查密钥，继续写入。' 'sk-network-key' 'http://127.0.0.1:9'
+  MYAUTOAPI_TEST_SHORT_TIMEOUT=1 check_key_case "$runner" "$name 服务器超时没有回应时提示网络超时并继续写入" '' 'sk-slow-key\n' '网络超时：MyAutoAPI 服务器 10 秒内没有回应，暂时无法检查密钥，继续写入。' 'sk-slow-key'
+  check_key_case "$runner" "$name 原有输入流程：空值继续提示" '' '\nnot-a-key\nsk-typed-usable-key\n' 'API Key 不能为空，请重新输入。' 'sk-typed-usable-key'
+  check_key_case "$runner" "$name 原有输入流程：格式错误继续提示" '' '\nnot-a-key\nsk-typed-usable-key\n' 'API Key 格式错误，必须以 sk- 开头，请重新输入。' 'sk-typed-usable-key'
+done
+
+# 密钥里混入制表符、引号、反斜杠时，auth.json 仍是合法 JSON，读回的值不变。
+odd_key=$'sk-escape-usable\tkey"quote\\slash'
+for runner in run_shell_script run_powershell_script; do
+  if [ "$runner" = run_shell_script ]; then
+    name="Shell"
+  elif [ -n "$POWERSHELL_BIN" ]; then
+    name="PowerShell"
+  else
+    continue
+  fi
+  home="$TEST_ROOT/escape-$name"
+  mkdir -p "$home"
+  if MYAUTOAPI_KEY="$odd_key" "$runner" "$home" '' "$home/output.txt" &&
+     python3 -c 'import json, sys; sys.exit(json.load(open(sys.argv[1], encoding="utf-8"))["OPENAI_API_KEY"] != sys.argv[2])' "$home/.codex/auth.json" "$odd_key"; then
+    pass "$name 写入 auth.json 时按 JSON 规则转义控制字符、引号和反斜杠"
+  else
+    fail "$name 写入 auth.json 时按 JSON 规则转义控制字符、引号和反斜杠"
+    sed -n '1,40p' "$home/output.txt"
+  fi
+done
+
+if grep -Fq '/v1/usage Bearer sk-env-usable-0123456789abcdef' "$USAGE_LOG"; then
+  pass "检查密钥请求 GET /v1/usage，并带 Authorization: Bearer 请求头"
+else
+  fail "检查密钥请求 GET /v1/usage，并带 Authorization: Bearer 请求头"
+fi
+if [ -s "$MYAUTOAPI_TEST_CURL_LOG" ] && ! grep -Fq 'sk-' "$MYAUTOAPI_TEST_CURL_LOG" &&
+   grep -Fq -- '--max-time 10' "$MYAUTOAPI_TEST_CURL_LOG"; then
+  pass "Shell 密钥不出现在 curl 参数里，超时 10 秒"
+else
+  fail "Shell 密钥不出现在 curl 参数里，超时 10 秒"
+fi
+if ! grep -Fq 'api.myautoapi.com' "$USAGE_LOG"; then
+  pass "测试只请求本地假服务器"
+else
+  fail "测试只请求本地假服务器"
+fi
+
+clipboard_case() {
+  local label="$1"
+  local clipboard="$2"
+  local input="$3"
+  local written_key="$4"
+  local prompts="$5"
+  shift 5
+  local home
+  KEY_CASE=$((KEY_CASE + 1))
+  home="$TEST_ROOT/clipboard-case-$KEY_CASE"
+  mkdir -p "$home"
+  : > "$MYAUTOAPI_TEST_PBPASTE_LOG"
+  if MYAUTOAPI_TEST_CLIPBOARD="$clipboard" run_shell_script "$home" "$input" "$home/output.txt" "$@" &&
+     grep -Fq -- "\"OPENAI_API_KEY\": \"$written_key\"" "$home/.codex/auth.json" &&
+     [ "$(grep -o '检测到剪贴板里的密钥' "$home/output.txt" | wc -l)" -eq "$prompts" ]; then
+    pass "$label"
+  else
+    fail "$label"
+    sed -n '1,40p' "$home/output.txt"
+  fi
+}
+
+clipboard_case "Mac .app 读到剪贴板密钥，直接回车使用" '  sk-clipboard-key-0123456789-usable\n' '\n' 'sk-clipboard-key-0123456789-usable' 1 --from-app
+if grep -Fq '检测到剪贴板里的密钥：sk-clipboard****9-usable，直接回车使用；要换别的就粘贴后回车：' "$TEST_ROOT/clipboard-case-$KEY_CASE/output.txt" &&
+   ! grep -Fq 'sk-clipboard-key-0123456789-usable' "$TEST_ROOT/clipboard-case-$KEY_CASE/output.txt"; then
+  pass "剪贴板密钥按前 12 位、****、后 8 位显示"
+else
+  fail "剪贴板密钥按前 12 位、****、后 8 位显示"
+fi
+clipboard_case "Mac .app 粘贴别的密钥时使用新输入的密钥" 'sk-clipboard-key-0123456789-usable' 'sk-typed-usable-key\n' 'sk-typed-usable-key' 1 --from-app
+clipboard_case "剪贴板密钥无效时只提示一次，再走原来的输入" 'sk-clipboard-rejected-0123456789' '\nsk-typed-usable-key\n' 'sk-typed-usable-key' 1 --from-app
+clipboard_case "剪贴板不是整段 sk- 密钥时走原来的输入" 'hello sk-abc\nsk-second-line' 'sk-typed-usable-key\n' 'sk-typed-usable-key' 0 --from-app
+clipboard_case "在线命令不读剪贴板" 'sk-clipboard-key-0123456789-usable' 'sk-typed-usable-key\n' 'sk-typed-usable-key' 0
+if [ ! -s "$MYAUTOAPI_TEST_PBPASTE_LOG" ]; then
+  pass "没有 --from-app 时不调用 pbpaste"
+else
+  fail "没有 --from-app 时不调用 pbpaste"
+fi
+
+# ---- Codex App 权限：先关闭 Codex，再把 .codex-global-state.json 改成完全访问 ----
+
+if awk '/^main\(\) \{/ { inside = 1 } inside && /stop_running_clients/ { stop = NR } inside && /write_codex_files "\$api_key"/ { write = NR } inside && /grant_app_full_access/ { grant = NR } END { exit !(stop && write && grant && stop < write && write < grant) }' "$SHELL_SCRIPT"; then
+  pass "Shell 先关闭 Codex，再写配置和 App 权限"
+else
+  fail "Shell 先关闭 Codex，再写配置和 App 权限"
+fi
+if awk '/^\$StopResult = Stop-RunningClients/ { stop = NR } /^Write-CodexFiles -ApiKey/ { write = NR } /^Grant-AppFullAccess/ { grant = NR } END { exit !(stop && write && grant && stop < write && write < grant) }' "$POWERSHELL_SCRIPT"; then
+  pass "PowerShell 先关闭 Codex，再写配置和 App 权限"
+else
+  fail "PowerShell 先关闭 Codex，再写配置和 App 权限"
+fi
+
+# 检查 App 状态文件：完全访问三项已写入，其它内容（中文、大整数、别的主机）原样保留。
+check_app_state() {
+  python3 -I - "$1" "$2" <<'EOF'
+import json, sys
+path, expect_other = sys.argv[1], sys.argv[2] == "other"
+raw = open(path, encoding="utf-8").read()
+state = json.loads(raw)
+atoms = state["electron-persisted-atom-state"]
+ok = (atoms["agent-mode-by-host-id"]["local"] == "full-access"
+      and atoms["permission-selection-by-host-id:local"] == {"kind": "agent-mode", "agentMode": "full-access"}
+      and isinstance(atoms["full-access-warning-dismissed-at-v2"], int)
+      and atoms["full-access-warning-dismissed-at-v2"] > 1700000000000)
+if expect_other:
+    ok = ok and state["prompt"] == "中文<提示>" and state["count"] == 1234567890123 \
+        and atoms["agent-mode-by-host-id"]["remote"] == "auto" and atoms["keep"] == [1, 2.5, None]
+else:
+    ok = ok and list(state) == ["electron-persisted-atom-state"] and len(atoms) == 3
+sys.exit(0 if ok else 1)
+EOF
+}
+
+for runner in run_shell_script run_powershell_script; do
+  if [ "$runner" = run_shell_script ]; then
+    name="Shell"
+  elif [ -n "$POWERSHELL_BIN" ]; then
+    name="PowerShell"
+  else
+    printf 'SKIP: 本机没有 PowerShell，跳过 codex.ps1 的 App 权限检查\n'
+    continue
+  fi
+
+  home="$TEST_ROOT/app-new-$name"
+  mkdir -p "$home"
+  if MYAUTOAPI_KEY='sk-env-usable-0123456789abcdef' "$runner" "$home" '' "$home/output.txt" &&
+     check_app_state "$home/.codex/.codex-global-state.json" new &&
+     [ "$(find "$home/.codex" -name '.codex-global-state.json*' | wc -l)" -eq 1 ]; then
+    pass "$name 没有 App 状态文件时新建，只含完全访问三项"
+  else
+    fail "$name 没有 App 状态文件时新建，只含完全访问三项"
+    sed -n '1,40p' "$home/output.txt"
+  fi
+
+  home="$TEST_ROOT/app-old-$name"
+  mkdir -p "$home/.codex"
+  printf '%s' '{"prompt":"中文<提示>","count":1234567890123,"electron-persisted-atom-state":{"agent-mode-by-host-id":{"local":"auto","remote":"auto"},"permission-selection-by-host-id:local":{"kind":"agent-mode","agentMode":"auto"},"keep":[1,2.5,null]}}' > "$home/.codex/.codex-global-state.json"
+  if MYAUTOAPI_KEY='sk-env-usable-0123456789abcdef' "$runner" "$home" '' "$home/output.txt" &&
+     check_app_state "$home/.codex/.codex-global-state.json" other &&
+     [ "$(find "$home/.codex" -name '.codex-global-state.json*' | wc -l)" -eq 1 ]; then
+    pass "$name 已有 App 状态文件时改成完全访问，其它内容保留"
+  else
+    fail "$name 已有 App 状态文件时改成完全访问，其它内容保留"
+    sed -n '1,40p' "$home/output.txt"
+  fi
+
+  for broken in '{broken' '[]' '{"electron-persisted-atom-state":[]}'; do
+    home="$TEST_ROOT/app-broken-$name-$KEY_CASE"
+    KEY_CASE=$((KEY_CASE + 1))
+    mkdir -p "$home/.codex"
+    printf '%s' "$broken" > "$home/.codex/.codex-global-state.json"
+    if MYAUTOAPI_KEY='sk-env-usable-0123456789abcdef' "$runner" "$home" '' "$home/output.txt" &&
+       [ "$(cat "$home/.codex/.codex-global-state.json")" = "$broken" ] &&
+       grep -Fq '配置已经完成' "$home/output.txt" &&
+       grep -Fq 'sandbox_mode = "danger-full-access"' "$home/.codex/config.toml" &&
+       [ "$(find "$home/.codex" -name '.codex-global-state.json*' | wc -l)" -eq 1 ]; then
+      pass "$name App 状态文件无法识别（$broken）时不动它，配置照常完成"
+    else
+      fail "$name App 状态文件无法识别（$broken）时不动它，配置照常完成"
+      sed -n '1,40p' "$home/output.txt"
+    fi
+  done
+done
 
 printf '\n%d passed, %d failed\n' "$PASS_COUNT" "$FAIL_COUNT"
 if [ "$FAIL_COUNT" -ne 0 ]; then

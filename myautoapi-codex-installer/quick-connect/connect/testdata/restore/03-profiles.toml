@@ -1,0 +1,15 @@
+model_provider = "relay"
+model = "relay-model"
+review_model = "relay-review"
+
+[profiles.official]
+model_provider = "openai"
+model = "official-model"
+review_model = "official-review"
+
+[model_providers.relay]
+name = "Relay"
+base_url = "https://relay.example.com"
+
+[projects."/workspace/demo"]
+trust_level = "trusted"

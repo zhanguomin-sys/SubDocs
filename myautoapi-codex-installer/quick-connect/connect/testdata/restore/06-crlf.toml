@@ -1,0 +1,9 @@
+model_provider = "edge"
+model = "edge-model"
+review_model = "edge-review"
+
+[model_providers.edge]
+base_url = "https://edge.example.com"
+
+[mcp_servers.edge]
+command = "edge-mcp"

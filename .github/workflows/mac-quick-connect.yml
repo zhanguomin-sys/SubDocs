@@ -1,0 +1,58 @@
+# Mac 版 MyAutoAPI中转快速接入助手：在 GitHub 的 Apple 芯片 macOS 机器上测试并打包。
+# 接收 myautoapi:// 导入链接要用 Apple 的系统接口（Cocoa），Linux 上编译不了。
+# 只能手动触发；不使用任何密钥或 Secrets，测试只用临时生成的假密钥，不打印。
+name: Mac 快速接入助手打包
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: myautoapi-codex-installer
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: myautoapi-codex-installer/quick-connect/go.mod
+          cache: false
+
+      - name: 确认是 Apple 芯片
+        run: |
+          uname -m
+          test "$(uname -m)" = arm64
+
+      - name: 测试链接解析和密钥传入
+        working-directory: myautoapi-codex-installer/quick-connect
+        run: go test -count=1 -v ./connect/ ./macapp/
+
+      - name: 打包
+        run: python3 desktop/build.py --mac-only
+
+      - name: 检查成品
+        env:
+          MYAUTOAPI_MAC_ONLY: "1"
+        working-directory: myautoapi-codex-installer/desktop
+        run: python3 test_packaging.py -v -k test_assistant_mac_artifacts -k test_only_the_assistant_runner -k test_zip_application
+
+      - name: 在本机打开导入链接
+        run: |
+          mkdir -p "$RUNNER_TEMP/smoke"
+          ditto -x -k dist/desktop/download/myautoapi-quick-connect-mac-arm64.zip "$RUNNER_TEMP/smoke"
+          bash quick-connect/macapp/smoke_test.sh "$RUNNER_TEMP/smoke/MyAutoAPI中转快速接入助手.app"
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: myautoapi-quick-connect-mac-arm64
+          path: myautoapi-codex-installer/dist/desktop/download/myautoapi-quick-connect-mac-arm64.zip
+          if-no-files-found: error
+          retention-days: 30

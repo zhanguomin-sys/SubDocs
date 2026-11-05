@@ -91,8 +91,8 @@ const textRows = computed(() =>
 
 const pricingRuleExample = computed(() => {
   if (isImageCategory.value) {
-    const imageModel = IMAGE_MODELS.find((model) => model.id === 'gpt-image-2.5-flare')
-    return `示例：GPT Image 2.5 Flare 当前分组价 ${formatCny(calculateImagePriceCny(imageModel.groupCnyPerImage))} / 张`
+    const imageModel = IMAGE_MODELS.find((model) => model.id === 'gpt-image-2.6-flare')
+    return `示例：GPT Image 2.6 Flare 当前分组价 ${formatCny(calculateImagePriceCny(imageModel.groupCnyPerImage))} / 张`
   }
 
   const exampleModel = activeTextModels.value[0]
