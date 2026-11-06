@@ -5,47 +5,11 @@ import vue from '@vitejs/plugin-vue'
 import { createSSRApp } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
-test('renders GPT Image 2.6 first with unchanged prices and keeps 2.5 as compatibility models', async () => {
-  const server = await createServer({
-    configFile: false,
-    plugins: [vue()],
-    server: { middlewareMode: true, watch: null, hmr: false },
-    appType: 'custom',
-  })
-  try {
-    const { default: pricing } = await server.ssrLoadModule('/docs/.vitepress/theme/components/ModelPricing.vue')
-    const component = {
-      ...pricing,
-      setup(props, context) {
-        const state = pricing.setup(props, context)
-        state.activeCategory.value = 'image'
-        return state
-      },
-    }
-    const html = await renderToString(createSSRApp(component))
-    const rows = [...html.matchAll(/<tr\b[^>]*>[\s\S]*?<\/tr>/g)]
-      .map(([row]) => row)
-      .filter((row) => row.includes('class="model-id-cell"'))
-    assert.equal(rows.length, 10)
-    assert.deepEqual(rows.slice(0, 4).map((row) => row.match(/aria-label="复制 ([^"]+)"/)[1]), [
-      'gpt-image-2.6-flare', 'gpt-image-2.6-sunburst',
-      'gpt-image-2.5-flare', 'gpt-image-2.5-sunburst',
-    ])
-    for (const [index, row] of rows.slice(0, 4).entries()) {
-      const amounts = [...row.matchAll(/<strong class="group-price">([^<]+)</g)].map((match) => match[1])
-      assert.deepEqual(amounts, ['¥0.04', '¥0.05', '¥0.08'])
-      assert.equal(row.includes('image-model-id--recommended'), index < 2)
-    }
-  } finally {
-    await server.close()
-  }
-})
-
 test('renders Argon in its own 0.5 group and keeps Barium in the 0.35 Gemini group', async () => {
   const server = await createServer({
     configFile: false,
     plugins: [vue()],
-    server: { middlewareMode: true, watch: null, hmr: false },
+    server: { middlewareMode: true },
     appType: 'custom',
   })
 
@@ -117,7 +81,7 @@ test('renders verified Qwen and MiMo IDs with RMB prices in their 0.45 groups', 
   const server = await createServer({
     configFile: false,
     plugins: [vue()],
-    server: { middlewareMode: true, watch: null, hmr: false },
+    server: { middlewareMode: true },
     appType: 'custom',
   })
 
@@ -184,7 +148,7 @@ test('renders only supported models and their exact copy IDs in the 0.7 CC TEST 
   const server = await createServer({
     configFile: false,
     plugins: [vue()],
-    server: { middlewareMode: true, watch: null, hmr: false },
+    server: { middlewareMode: true },
     appType: 'custom',
   })
 
@@ -220,9 +184,7 @@ test('renders only supported models and their exact copy IDs in the 0.7 CC TEST 
         assert.equal([...row.matchAll(new RegExp(`class="${priceClass}"`, 'g'))].length, 4)
       }
       if (priceMode === 'group') {
-        assert.match(html, /CC TEST 临时渠道（会下线）/)
-        assert.match(html, /缓存效果取决于实际请求/)
-        assert.doesNotMatch(html, /96[–-]99%/)
+        assert.match(html, /不保证长久，缓存 96–99%/)
         assert.match(html, /0\.7 倍率/)
       }
     }
@@ -235,7 +197,7 @@ test('renders Haiku 5.5 once with both context prices in the same row', async ()
   const server = await createServer({
     configFile: false,
     plugins: [vue()],
-    server: { middlewareMode: true, watch: null, hmr: false },
+    server: { middlewareMode: true },
     appType: 'custom',
   })
 

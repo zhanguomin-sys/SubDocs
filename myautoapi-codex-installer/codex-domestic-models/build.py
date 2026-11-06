@@ -5,11 +5,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 # Codex version whose bundled catalog is saved in src/gpt-catalog.json; update both together.
-OFFICIAL_SNAPSHOT_VERSION = '0.165.0'
+OFFICIAL_SNAPSHOT_VERSION = '0.162.1'
 
 
 def catalog():
-    definition = json.loads((ROOT / 'src/models.json').read_text())
+    definition = json.loads((ROOT / 'src/models.json').read_text(encoding='utf-8'))
     models = []
     descriptions = {'none': '关闭推理', 'minimal': '最少推理', 'low': '轻度推理', 'medium': '中度推理', 'high': '增强推理', 'xhigh': '深度推理', 'ultra': '超高推理', 'max': '最大推理'}
     for index, item in enumerate(definition['models']):
@@ -38,28 +38,26 @@ def catalog():
 
 def parent_shell_process_functions():
     # Reuse the actual existing installers, rather than maintaining a second implementation.
-    shell = (ROOT.parent / 'install/codex.sh').read_text()
+    shell = (ROOT.parent / 'install/install.sh').read_text(encoding='utf-8')
     return shell[shell.index('list_running_clients() {'):shell.index('backup_if_exists() {')].rstrip()
 
 
 def parent_powershell_process_functions():
-    powershell = (ROOT.parent / 'install/codex.ps1').read_text(encoding='utf-8-sig')
+    powershell = (ROOT.parent / 'install/install.ps1').read_text(encoding='utf-8-sig')
     return powershell[powershell.index('function Get-RunningCodexClients {'):powershell.index('function Show-WritePlan {')].rstrip()
 
 
 def build():
     data = catalog()
-    official = json.loads((ROOT / 'src/gpt-catalog.json').read_text())
     shell_processes = parent_shell_process_functions()
-    shell = (ROOT / 'src/installer.sh.in').read_text()
+    shell = (ROOT / 'src/installer.sh.in').read_text(encoding='utf-8')
     for marker, content in {
         '@MODEL_COUNT@': str(len(data['models'])),
         '# @PARENT_PROCESS_FUNCTIONS@': shell_processes,
         '// @DOMESTIC_CATALOG@': 'var DOMESTIC_CATALOG = ' + json.dumps(data, ensure_ascii=False, separators=(',', ':')) + ';',
-        '// @OFFICIAL_CATALOG@': 'var BUNDLED_OFFICIAL_CATALOG = ' + json.dumps(official, ensure_ascii=False, separators=(',', ':')) + ';',
-        '// @CORE@': (ROOT / 'src/core.js').read_text(),
-        '// @MACOS_HOST@': (ROOT / 'src/macos-host.js').read_text(),
-        '// @LINUX_HOST@': (ROOT / 'src/linux-host.js').read_text(),
+        '// @CORE@': (ROOT / 'src/core.js').read_text(encoding='utf-8'),
+        '// @MACOS_HOST@': (ROOT / 'src/macos-host.js').read_text(encoding='utf-8'),
+        '// @LINUX_HOST@': (ROOT / 'src/linux-host.js').read_text(encoding='utf-8'),
     }.items():
         assert shell.count(marker) == 1
         shell = shell.replace(marker, content)
@@ -69,9 +67,10 @@ $ErrorActionPreference = 'Stop'
 function Say([string]$Message) { Write-Host $Message }
 '''
     ps += '$DomesticCatalog = ConvertFrom-Json -InputObject @\'\n' + json.dumps(data, ensure_ascii=False) + "\n'@\n"
+    official = json.loads((ROOT / 'src/gpt-catalog.json').read_text(encoding='utf-8'))
     ps += "$BundledOfficialVersion = '" + OFFICIAL_SNAPSHOT_VERSION + "'\n"
     ps += '$BundledOfficialCatalog = ConvertFrom-Json -InputObject @\'\n' + json.dumps(official, ensure_ascii=False) + "\n'@\n"
-    ps += parent_powershell_process_functions() + '\n' + (ROOT / 'src/core.ps1').read_text() + '\n' + (ROOT / 'src/windows-host.ps1').read_text()
+    ps += parent_powershell_process_functions() + '\n' + (ROOT / 'src/core.ps1').read_text(encoding='utf-8') + '\n' + (ROOT / 'src/windows-host.ps1').read_text(encoding='utf-8')
     ps += '''
 try { Start-ModelInstaller $CodexHomePath $CodexPath -Uninstall:$Uninstall }
 catch {
@@ -82,8 +81,8 @@ catch {
 '''
     target = ROOT / 'install'
     target.mkdir(exist_ok=True)
-    (target / 'codex-models.sh').write_text(shell)
-    (target / 'codex-models.ps1').write_text(ps, encoding='utf-8-sig')
+    (target / 'codex-models.sh').write_text(shell, encoding='utf-8', newline='\n')
+    (target / 'codex-models.ps1').write_text(ps, encoding='utf-8-sig', newline='\n')
     return data
 
 

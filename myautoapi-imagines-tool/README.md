@@ -1,12 +1,12 @@
 # myautoapi-imagines-tool
 
-这是一个给 Codex 使用的本地图片生成工具。它适合需要直接用自然语言生图、又希望请求统一经过 MyAutoAPI 中转站的用户；安装后，普通任务默认调用 `gpt-image-2.6-flare` 生成 2K 图片，明确要求高清、精修或重要成品时调用 `gpt-image-2.6-sunburst`，成功后把本地图片显示在当前对话中。
+这是一个给 Codex 使用的本地图片生成工具。它适合需要直接用自然语言生图、又希望请求统一经过 MyAutoAPI 中转站的用户；安装后，普通任务默认调用 `gpt-image-2.5-flare` 生成 2K 图片，明确要求高清、精修或重要成品时调用 `gpt-image-2.5-sunburst`，成功后把本地图片显示在当前对话中。
 
-当前源码版本是 `V0.8.3`。本版加入 GPT Image 2.6 Flare / Sunburst，默认使用 2.6 Flare，高清与精修使用 2.6 Sunburst；2.5 两个模型继续支持显式调用。每次执行安装或更新命令都要求粘贴专门画图分组 Key，并覆盖工具目录中的旧 Key；同版本只跳过下载，仍继续配置。GIF 未纳入本版。
+当前源码版本是 `V0.8.2`。每次执行安装或更新命令都要求粘贴专门画图分组 Key，并覆盖工具目录中的旧 Key；同版本只跳过下载，仍继续配置。图片模型沿用 V0.8.0 的能力。
 
-`V0.8.3` 发布包已放入文档站的 `docs/public/install/myautoapi-imagines-tool/`，随文档站部署上线。这里的更新是用户明确对 Codex 说“更新生图工具”后，由 Codex 在当前任务中完成检查、下载、安装和验证；修复问题时先捕捉本机真实原因，不把更新当成修复。
+`V0.8.2` 发布包已放入文档站的 `docs/public/install/myautoapi-imagines-tool/`，随文档站部署上线。这里的更新是用户明确对 Codex 说“更新生图工具”后，由 Codex 在当前任务中完成检查、下载、安装和验证；修复问题时先捕捉本机真实原因，不把更新当成修复。
 
-V0.8.3 保留 V0.8.2 的多图保存、UTF-8 提示词文件、Windows 卸载和下载报错脱敏修复，继续使用 MyAutoAPI 固定接口。两个 2.6 模型默认 `2048x2048`、`high`、`png`，尺寸价格为 1K ¥0.04、2K ¥0.05、4K ¥0.08。
+V0.8.2 移植上游发布说明中的五项修复：多图中某张保存失败后继续保存其余图片并返回脱敏原因；Windows 使用 UTF-8 提示词文件保留中文与引号；Windows 卸载时将运行中的程序移到临时目录；下载报错隐藏签名地址；Linux/macOS 的专门 Key 使用 `0600` 权限。模型、默认参数和 MyAutoAPI 接口保持不变。
 
 ## 一键安装
 
@@ -24,13 +24,13 @@ Windows PowerShell：
 irm https://docs.myautoapi.com/install/myautoapi-imagines-tool/install.ps1 | iex
 ```
 
-V0.8.3 发布资产支持 64 位 x64 Windows、64 位 x64 Linux、Apple Silicon 64 位 Mac 和 Intel 64 位 Mac。公开入口仍只有 Windows `install.ps1` 和 Linux/macOS `install.sh` 两个；Shell 入口自动判断当前系统和架构，只下载对应的一个 `V0.8.3` 原生程序，核对内置 SHA-256 和 ELF 或 Mach-O 架构后运行。Apple Silicon 在 Rosetta 下运行时优先使用 arm64 程序。客户端不需要 Python、Node、Git、SDK 或管理员权限；安装器不继续下载代码，只会写入以下用户目录：
+V0.8.2 发布资产支持 64 位 x64 Windows、64 位 x64 Linux、Apple Silicon 64 位 Mac 和 Intel 64 位 Mac。公开入口仍只有 Windows `install.ps1` 和 Linux/macOS `install.sh` 两个；Shell 入口自动判断当前系统和架构，只下载对应的一个 `V0.8.2` 原生程序，核对内置 SHA-256 和 ELF 或 Mach-O 架构后运行。Apple Silicon 在 Rosetta 下运行时优先使用 arm64 程序。客户端不需要 Python、Node、Git、SDK 或管理员权限；安装器不继续下载代码，只会写入以下用户目录：
 
 - 工具：`$CODEX_HOME/tools/myautoapi-imagines-tool/`；其中 `api-key` 保存“专门画图分组”的 Key，`key-source` 保存当前 Key 来源；未设置 `CODEX_HOME` 时使用 `~/.codex/tools/myautoapi-imagines-tool/`。
 - Skill：`$CODEX_HOME/skills/myautoapi-image-generation/`；未设置时使用 `~/.codex/skills/myautoapi-image-generation/`。
 - 全局默认规则：`$CODEX_HOME/AGENTS.md`；未设置时使用 `~/.codex/AGENTS.md`。
 
-安装器不会修改当前项目的 `AGENTS.md`，不会写入或修改 `$CODEX_HOME/auth.json`，也不会写入 `.agents/skills/` 或 `skill-packs/`。已有 V0.8.3 且架构、SHA-256 匹配时直接复用程序，继续输入并覆盖画图 Key。V0.2 至 V0.8.1 原生安装可以升级到 V0.8.3；架构或 SHA-256 不匹配时重新下载正式程序。损坏的托管文件会修复。目标目录无法确认归属、版本不受支持、规则标记破损或存在非空 `AGENTS.override.md` 时会停止，不覆盖用户文件。
+安装器不会修改当前项目的 `AGENTS.md`，不会写入或修改 `$CODEX_HOME/auth.json`，也不会写入 `.agents/skills/` 或 `skill-packs/`。已有 V0.8.2 且架构、SHA-256 匹配时直接复用程序，继续输入并覆盖画图 Key。V0.2 至 V0.8.1 原生安装可以升级到 V0.8.2；架构或 SHA-256 不匹配时重新下载正式程序。损坏的托管文件会修复。目标目录无法确认归属、版本不受支持、规则标记破损或存在非空 `AGENTS.override.md` 时会停止，不覆盖用户文件。
 
 ## 第一次使用
 
@@ -40,7 +40,7 @@ V0.8.3 发布资产支持 64 位 x64 Windows、64 位 x64 Linux、Apple Silicon 
 画一张白底红苹果
 ```
 
-不需要安装或手工运行 Python，不需要在提示词里写 MyAutoAPI。普通任务默认使用 `gpt-image-2.6-flare`，明确要求高清、高质量、精细细节、精修、严格保留原图或重要成品时使用 `gpt-image-2.6-sunburst`；也可以明确指定原有六个模型。图片生成完全失败时，Codex 会提醒客户到后台查看是否有生成记录，或让 AI 修复生图工具；不自动重试或更换模型。
+不需要安装或手工运行 Python，不需要在提示词里写 MyAutoAPI。普通任务默认使用 `gpt-image-2.5-flare`，明确要求高清、高质量、精细细节、精修、严格保留原图或重要成品时使用 `gpt-image-2.5-sunburst`；也可以明确指定原有六个模型。图片生成完全失败时，Codex 会提醒客户到后台查看是否有生成记录，或让 AI 修复生图工具；不自动重试或更换模型。
 
 Linux 或 macOS Code Mode 会每 5 秒收取同一个前台会话；进程退出时立即取得结果，不等待用户再次发消息。生成超过 30 秒时，Codex 先报告仍在生成，再继续等待同一个调用。
 
@@ -69,9 +69,9 @@ Codex 给出当前系统的一键安装命令，用户在终端执行并粘贴�
 ## 工具边界
 
 - 固定接口：Images 模型使用 `https://api.myautoapi.com/v1/images/generations` 和 `/v1/images/edits`；Nano Banana 使用 `https://api.myautoapi.com/v1/responses`
-- 支持模型：`gpt-image-2.6-flare`、`gpt-image-2.6-sunburst`、`gpt-image-2.5-flare`、`gpt-image-2.5-sunburst`、`gpt-image-2`、`gpt-image-1k-th`、`gpt-image-2-adobe`、`grok-imagine-image`、`nano-banana-2`、`nano-banana-pro`
-- `gpt-image-2.6-flare` 支持文生图、参考图、修图和多图；普通任务默认使用，默认 `2048x2048`、`high`
-- `gpt-image-2.6-sunburst` 支持文生图、参考图、修图和多图；明确的高质量与精细编辑任务使用，默认 `2048x2048`、`high`
+- 支持模型：`gpt-image-2.5-flare`、`gpt-image-2.5-sunburst`、`gpt-image-2`、`gpt-image-1k-th`、`gpt-image-2-adobe`、`grok-imagine-image`、`nano-banana-2`、`nano-banana-pro`
+- `gpt-image-2.5-flare` 支持文生图、参考图、修图和多图；普通任务默认使用，默认 `2048x2048`、`high`
+- `gpt-image-2.5-sunburst` 支持文生图、参考图、修图和多图；明确的高质量与精细编辑任务使用，默认 `2048x2048`、`high`
 - `gpt-image-2` 支持文生图、参考图、修图和多图；默认 `1024x1024`、`high`
 - `gpt-image-1k-th` 支持文生图、参考图、修图和多图；固定 `1024x1024`，已验证 `low` 和 `high`，多图固定拆成单张请求
 - `gpt-image-2-adobe` 开放已验证的 `1024x1536`、`1536x2304`、`2304x3456`、`low` 文生图；多图由工具内部拆成多次单张请求
@@ -81,8 +81,8 @@ Codex 给出当前系统的一键安装命令，用户在终端执行并粘贴�
 - `nano-banana-pro` 支持文生图、参考图、修图和多图；本地参数使用 `1k`、`2k` 或 `4k`，本轮不把 Nano Banana 2 的远端验证结果套用到 Pro
 - Nano Banana 参考图的本地校验上限仍为 14 个 `--image`；14 张远端请求返回 HTTP 502，尚未形成远端支持结论
 - 默认每次请求：`n=1`；同一画面要求通用支持 `n=1` 到 `n=10`，Grok Imagine 支持 `n=1` 到 `n=9`
-- 默认参数：`gpt-image-2.6-flare`、`2048x2048`、`high`、`png`
-- 质量支持：通用为 `low`、`medium`、`high`、`auto`；2.6 和 2.5 的 Flare / Sunburst 另外支持 `xhigh` 和 `max`
+- 默认参数：`gpt-image-2.5-flare`、`2048x2048`、`high`、`png`
+- 质量支持：通用为 `low`、`medium`、`high`、`auto`；两个 2.5 模型另外支持 `xhigh` 和 `max`
 - 常用尺寸建议：`1024x1024`、`1536x1024`、`1024x1536`、`2048x2048`、`2048x1152`、`1152x2048`、`3840x2160`、`2160x3840`、`auto`
 - 精确尺寸支持 `WIDTHxHEIGHT`：宽高为 16 的倍数，单边不超过 3840，长短边比例不超过 3:1，总像素为 655360 至 8294400
 - 支持接口返回的 `b64_json`，也支持 HTTPS 图片 URL 回退；每次 URL 只下载一次
@@ -98,7 +98,7 @@ Codex 给出当前系统的一键安装命令，用户在终端执行并粘贴�
 
 ## 验证状态
 
-V0.8.3 依据[上游发布记录 fb13477](https://github.com/youdaowudao/subdocs/commit/fb134772b387e9465aea2c0d2bf63d60f0e21192)列出的修复范围，在 MyAutoAPI 源码上完成移植，并使用 Go 1.27.3 重新构建四个平台制品。Go 测试与 74 项 Python 测试通过；Windows 已在隔离的 `CODEX_HOME` 中实测 V0.8.1 升级、取消输入保留旧 Key、同版本换 Key及运行中卸载。Linux 安装、缓存复用、损坏修复和终端输入由发布测试覆盖。没有调用真实付费生图接口；Apple Silicon 与 Intel Mac 已交叉编译，尚未进行 Mac 实机验证。
+V0.8.2 依据[上游发布记录 fb13477](https://github.com/youdaowudao/subdocs/commit/fb134772b387e9465aea2c0d2bf63d60f0e21192)列出的修复范围，在 MyAutoAPI 源码上完成移植，并使用 Go 1.27.3 重新构建四个平台制品。Go 测试与 74 项 Python 测试通过；Windows 已在隔离的 `CODEX_HOME` 中实测 V0.8.1 升级、取消输入保留旧 Key、同版本换 Key及运行中卸载。Linux 安装、缓存复用、损坏修复和终端输入由发布测试覆盖。没有调用真实付费生图接口；Apple Silicon 与 Intel Mac 已交叉编译，尚未进行 Mac 实机验证。
 
 V0.8.1 的 Go 测试和 74 项 Python 测试通过，独立审查未发现阻塞问题。Linux x64 使用真实 `curl | bash`、本地 HTTPS 和控制伪终端验证了 12 个场景，包括重复换 Key、取消输入、缓存损坏、下载失败、V0.8.0 升级和卸载后重装；独立审查再次运行全部 12 项，结果通过。本轮尚未在 Windows、Apple Silicon Mac 和 Intel Mac 实机运行。
 

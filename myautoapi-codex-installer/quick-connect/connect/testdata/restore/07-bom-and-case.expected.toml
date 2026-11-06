@@ -1,4 +1,0 @@
-model_reasoning_effort = "high"
-
-[features]
-goals = true

@@ -22,7 +22,6 @@ irm $SourceUrl | iex
 if (@($Error | Where-Object {$_.Exception -is [System.Management.Automation.CommandNotFoundException] -or $_.CategoryInfo.Category -eq 'ParserError'}).Count) { throw 'HTTP pipeline produced PowerShell parsing errors' }
 $catalog=ConvertFrom-Json -InputObject ([IO.File]::ReadAllText((Join-Path $target 'myautoapi-models.json')))
 if (@($catalog.models | Where-Object {$_.slug -ceq 'minimax-m3'}).Count -ne 1) { throw 'Expected exactly one MiniMax M3' }
-if (@($catalog.models | Where-Object {$_.slug -ceq 'gpt-6.1-terra'}).Count -ne 1) { throw 'Expected exactly one GPT-6.1 Terra' }
 if (@($catalog.models | Where-Object {$_.slug -cmatch '^gpt-'}).Count -eq 0) { throw 'GPT catalog missing' }
 $written=[IO.File]::ReadAllText((Join-Path $target 'config.toml'))
 if (-not $written.StartsWith("model=`"gpt-existing`"`r`n") -or -not $written.Contains("[features]`r`ngoals=true`r`n")) { throw 'Default model or other settings changed' }
@@ -36,5 +35,4 @@ if ([IO.File]::ReadAllText((Join-Path $target 'config.toml')) -cne $before) { th
 Start-ModelInstaller '' '' -Uninstall
 $remaining=ConvertFrom-Json -InputObject ([IO.File]::ReadAllText((Join-Path $target 'myautoapi-models.json')))
 if (@($remaining.models | Where-Object {$_.slug -ceq 'minimax-m3'}).Count) { throw 'Uninstall did not remove managed model' }
-if (@($remaining.models | Where-Object {$_.slug -ceq 'gpt-6.1-terra'}).Count -ne 1) { throw 'Uninstall removed GPT-6.1 Terra' }
 Write-Output 'PowerShell HTTP irm | iex import/update/uninstall passed with and without a CLI; no executable/backend or process control needed'

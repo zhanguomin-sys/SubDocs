@@ -5,33 +5,29 @@ const config = defineConfig({
   lang: 'zh-CN',
   title: 'MyAutoAPI 中转站教程',
   description: 'MyAutoAPI 中转站接入、客户端配置与生图工具教程',
-  sitemap: { hostname: 'https://docs.myautoapi.com' },
+  sitemap: {
+    hostname: 'https://docs.myautoapi.com'
+  },
+  rewrites: {
+    'clients/codex-cc-switch.md': 'codex-cc-switch.md',
+    'chatgpt-login-myautoapi.md': 'clients/chatgpt-login-myautoapi.md',
+    'clients/infinite-canvas.md': 'images/infinite-canvas.md',
+    'external/image-generation.md': 'images/image-generation.md',
+    'images/codex-image-misunderstanding.md': 'images/codex-image-direct.md'
+  },
+
   themeConfig: {
     nav: [
         { text: '快速开始', link: '/quick-start' },
-        { text: 'Codex', link: '/codex/' },
-        { text: 'Claude', link: '/claude/' },
-        { text: '国产工具', link: '/domestic/' },
-        { text: '其他工具', link: '/clients/' },
+        { text: 'CC Switch', link: '/codex-cc-switch' },
+        { text: '客户端', link: '/clients/' },
         { text: '生图', link: '/images/' },
         { text: '遇到问题', link: '/errors/' },
         { text: '联系客服', link: '/contact' }
     ],
 
      search: {
-        provider: 'local',
-        options: {
-          miniSearch: {
-            options: {
-              // 默认分词只按空格和标点切开，中文整句会变成一个词；改按中文词语切分。
-              tokenize: (text) => {
-                if (typeof Intl === 'undefined' || !Intl.Segmenter) return text.split(/[\s\p{P}]+/u).filter(Boolean)
-                const segmenter = new Intl.Segmenter('zh-CN', { granularity: 'word' })
-                return Array.from(segmenter.segment(text)).filter((part) => part.isWordLike).map((part) => part.segment)
-              }
-            }
-          }
-        }
+        provider: 'local'
     }
 }
 
@@ -54,42 +50,38 @@ export default withSidebar(config, {
     'image-video-group-image.md',
     'codex-models.md',
     'models.md',
-    'codex',
-    'manual-config.md',
-    'chatgpt-login.md',
-    'commands.md',
-    'advanced.md',
-    'skills.md',
-    'superpowers.md',
-    'tools.md',
-    'git.md',
-    'log-sqlite.md',
-    'claude',
-    'claude-code.md',
-    'desktop.md',
-    'domestic',
+    'clients',
     'kimi-code.md',
-    'qwen-code.md',
-    'workbuddy.md',
+    'hy4.md',
+    'codex.md',
+    'chatgpt-login-myautoapi.md',
+    'codex-manual-config.md',
+    'vscode.md',
+    'claude-code-desktop.md',
+    'cc-switch.md',
+    'jetbrains.md',
     'trae.md',
     'cherry-studio.md',
-    'clients',
-    'vscode.md',
-    'jetbrains.md',
-    'gemini-cli.md',
     'open-webui.md',
-    'librechat.md',
     'openclaw.md',
     'hermes.md',
+    'librechat.md',
     'images',
     'infinite-canvas.md',
     'image-generation.md',
+    'codex-image-direct.md',
     'codex-image.md',
-    'params.md',
     'external',
     'base-url.md',
     'compatibility.md',
     'user-agent.md',
+    'git-practical.md',
+    'codex-cli-internal-commands.md',
+    'codex-skills.md',
+    'codex-superpowers.md',
+    'codex-advanced.md',
+    'codex-log-sqlite.md',
+    'codex-tools.md',
     'index.md',
     'errors',
     'contact.md'

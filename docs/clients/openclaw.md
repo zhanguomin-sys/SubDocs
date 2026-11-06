@@ -1,45 +1,65 @@
----
-sidebarTitle: OpenClaw
----
-
 # OpenClaw 接入
 
-OpenClaw 是自托管的 AI Agent Gateway（官方页面的龙虾形象叫 Molty），一个 Gateway 同时接 Telegram、WhatsApp、Discord、Slack、iMessage、WebChat 和移动节点。在 `~/.openclaw/openclaw.json` 里添加 MyAutoAPI provider 后，这些入口统一通过 MyAutoAPI 使用模型。
+OpenClaw 官方页面里的“龙虾”指 Molty，是 OpenClaw 的产品形象；看到龙虾或 Molty，说的就是 OpenClaw。
 
-## 1. 安装 OpenClaw
+OpenClaw 是自托管 AI Agent Gateway，一个 Gateway 可以同时接 Telegram、WhatsApp、Discord、Slack、iMessage、WebChat 和移动节点。添加 MyAutoAPI model provider 后，这些入口会统一通过 MyAutoAPI 使用模型。
 
-::: code-group
+## 安装 OpenClaw
 
-```powershell [Windows]
-iwr -useb https://openclaw.ai/install.ps1 | iex
-```
+macOS / Linux：
 
-```bash [Mac / Linux]
+```bash
 curl -fsSL https://openclaw.ai/install.sh | bash
 ```
 
-:::
+Windows PowerShell：
 
-自己管理 Node 时改用 `npm install -g openclaw@latest`，Node 推荐 24，22.19+ 也支持。
+```powershell
+iwr -useb https://openclaw.ai/install.ps1 | iex
+```
 
-## 2. 启动 Gateway
+已经自己管理 Node 时，用 npm 安装：
+
+```bash
+npm install -g openclaw@latest
+```
+
+OpenClaw 推荐 Node 24，Node 22.19+ 也支持。
+
+## 启动 Gateway
+
+运行初始向导：
 
 ```bash
 openclaw onboard --install-daemon
 ```
 
-向导按默认或 QuickStart 走完，模型和渠道先跳过。
+第一次使用按默认或 QuickStart 路径完成向导。模型和渠道可以先跳过，后面用浏览器 Control UI 验证。
 
-## 3. 添加 MyAutoAPI provider
+打开控制台：
 
-打开 `~/.openclaw/openclaw.json`，把下面这段合并进去，保留已有的 channel、gateway、agent 等配置：
+```bash
+openclaw dashboard
+```
+
+能打开页面，说明 OpenClaw Gateway 已经跑起来。
+
+## 添加 MyAutoAPI provider
+
+打开配置文件：
+
+```text
+~/.openclaw/openclaw.json
+```
+
+把下面这段合并进去。不要覆盖你已有的 channel、gateway、agent 等配置。
 
 ```json
 {
   "agents": {
     "defaults": {
       "model": {
-        "primary": "myautoapi/claude-fable-5-1"
+        "primary": "myautoapi/claude-fable-5"
       }
     }
   },
@@ -52,8 +72,8 @@ openclaw onboard --install-daemon
         "api": "openai-completions",
         "models": [
           {
-            "id": "claude-fable-5-1",
-            "name": "claude-fable-5-1",
+            "id": "claude-fable-5",
+            "name": "claude-fable-5",
             "reasoning": true,
             "input": ["text"],
             "contextWindow": 200000,
@@ -72,52 +92,80 @@ openclaw onboard --install-daemon
 }
 ```
 
-| 要改的字段 | 改成 |
+必须改的字段：
+
+| 字段 | 怎么改 |
 | --- | --- |
-| `apiKey` | MyAutoAPI API Key |
-| `agents.defaults.model.primary` | `myautoapi/` + 当前 Key 分组可用的模型名 |
-| `models.providers.myautoapi.models[0].id` | 同一个模型名 |
-| `models.providers.myautoapi.models[0].name` | 和 `id` 一致 |
+| `apiKey` | 换成 MyAutoAPI API Key |
+| `agents.defaults.model.primary` | `myautoapi/` 后面的模型名换成当前 Key 分组可用模型 |
+| `models.providers.myautoapi.models[0].id` | 换成同一个模型名 |
+| `models.providers.myautoapi.models[0].name` | 和 `id` 保持一致 |
 
-`baseUrl` 保持 `https://api.myautoapi.com/v1`（只到 `/v1`），`api` 保持 `openai-completions`。示例里的 `claude-fable-5-1` 要用 **CC MAX 外接分组** 的 Key。
+保留 `baseUrl: "https://api.myautoapi.com/v1"` 和 `api: "openai-completions"`。Base URL 只填到 `/v1`，不要追加其它路径。
 
-## 4. 重启并测试
+## 重启并测试
+
+保存配置后重启 Gateway：
 
 ```bash
 openclaw gateway restart
+```
+
+查看 OpenClaw 是否读到新 provider：
+
+```bash
 openclaw models list --provider myautoapi
+```
+
+打开 Control UI：
+
+```bash
 openclaw dashboard
 ```
 
-列表里出现 `myautoapi` 的模型后，在 Control UI 里新建对话，发送 `测试`。能正常回复，就说明当前对话用的是 `myautoapi/模型名`。
+发送：
 
-## 进阶：Key 不写进配置文件
-
-把 `apiKey` 改成 `"${MYAUTOAPI_API_KEY}"`，在启动 OpenClaw 的环境里设置变量，再重启 Gateway：
-
-::: code-group
-
-```powershell [Windows]
-$env:MYAUTOAPI_API_KEY="sk-你的MyAutoAPI_API_Key"
+```text
+测试
 ```
 
-```bash [Mac / Linux]
+能正常回复，说明当前对话已使用 `myautoapi/模型名`。
+
+## 进阶配置
+
+不想把 Key 明文写进配置文件时，把 `apiKey` 改成环境变量引用：
+
+```json
+{
+  "apiKey": "${MYAUTOAPI_API_KEY}"
+}
+```
+
+然后在启动 OpenClaw 的环境里设置变量，并重启 Gateway。
+
+macOS / Linux：
+
+```bash
 export MYAUTOAPI_API_KEY="sk-你的MyAutoAPI_API_Key"
 ```
 
-:::
+Windows PowerShell：
 
-OpenClaw 支持多个 API adapter。普通接入保持 `openai-completions`；确实要换 adapter 时，只改同一个 provider 里的 `api` 字段，Base URL、模型路径和 provider 名不动。
+```powershell
+$env:MYAUTOAPI_API_KEY="sk-你的MyAutoAPI_API_Key"
+```
+
+OpenClaw 支持多个 API adapter。普通 MyAutoAPI 接入保持 `openai-completions`；只有明确要切换 adapter 时，才改同一个 provider 里的 `api` 字段，不要同时改 Base URL、模型路径和 provider 名。
 
 ## 排查
 
 | 现象 | 处理 |
 | --- | --- |
 | 看不到 `myautoapi` provider | 检查 `openclaw.json` 是否合并成功，再运行 `openclaw models list --provider myautoapi` |
-| 模型不可用 | 把 `claude-fable-5-1` 换成当前 Key 分组里的完整模型 ID |
-| `401 Unauthorized` | 重新复制 API Key；用环境变量时设置后重启 Gateway |
+| 模型不可用 | 把 `claude-fable-5` 换成当前 Key 分组里的完整模型 ID |
+| `401 Unauthorized` | 重新复制 API Key；使用环境变量时，重启 Gateway |
 | Base URL 路径错误 | `baseUrl` 改回 `https://api.myautoapi.com/v1` |
-| 配置没有生效 | 运行 `openclaw gateway restart`，确认当前对话选的是 `myautoapi/模型名` |
-| `403 Forbidden` / `block` | 核对 Key、模型、Base URL；仍失败看 [User-Agent 说明](/external/user-agent) |
+| 配置没有生效 | 运行 `openclaw gateway restart`，确认当前对话选择的是 `myautoapi/模型名` |
+| `403 Forbidden` / `block` | 先确认 Key、模型、Base URL；仍失败时看 [外接调用 User-Agent 说明](/external/user-agent) |
 
-排查 Header 时，给 provider 加一个稳定的客户端标识即可，不要伪装成 Codex、Claude CLI 或浏览器。
+需要排查 Header 时，再给 provider 添加稳定的客户端标识。普通接入不要伪装成 Codex、Claude CLI 或浏览器。

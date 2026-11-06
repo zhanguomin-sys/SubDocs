@@ -1,45 +1,69 @@
----
-sidebarTitle: Hermes
----
-
 # Hermes Agent 接入
 
-Hermes Agent 是能在终端和聊天软件里处理项目任务的 AI Agent，适合长期管理文件、执行工具和跑自动化任务。在 `hermes model` 向导里添加 MyAutoAPI 的 `Custom endpoint` 后，Hermes 通过 `https://api.myautoapi.com/v1` 使用模型。
+Hermes Agent 是可以在终端和聊天软件里处理项目任务的 AI Agent，适合长期管理文件、执行工具和处理自动化任务。
 
-## 1. 安装 Hermes
+通过 Hermes 的 `Custom endpoint` 添加 MyAutoAPI 后，Hermes 会通过 `https://api.myautoapi.com/v1` 使用模型。配置入口是 `hermes model`。
 
-::: code-group
+## 安装 Hermes
 
-```powershell [Windows]
-iex (irm https://hermes-agent.nousresearch.com/install.ps1)
-```
+Linux、macOS、WSL2 终端运行：
 
-```bash [Mac / Linux / WSL2]
+```bash
 curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
 ```
 
-:::
+重新打开终端，确认 Hermes 可用：
 
-关闭并重新打开 PowerShell 或终端，运行 `hermes --version`，能看到版本号就装好了。
+```bash
+hermes --version
+```
 
-## 2. 填写 MyAutoAPI
+看不到版本号时，先重新打开终端；Windows 原生命令行遇到路径或依赖问题，改用 WSL2 终端安装。
 
-运行 `hermes model`，Provider 选择 `Custom endpoint`，按提示填写：
+## 填写 MyAutoAPI
+
+打开模型向导：
+
+```bash
+hermes model
+```
+
+Provider 选择 `Custom endpoint`，然后按提示填写：
 
 | Hermes 提示 | 填写 |
 | --- | --- |
-| API Base URL / Base URL | `https://api.myautoapi.com/v1`，只填到 `/v1` |
+| API Base URL / Base URL | `https://api.myautoapi.com/v1` |
 | API Key | MyAutoAPI API Key |
-| Model name | 当前 Key 分组可用模型，例如 `claude-fable-5-1`、`gemini-3.8-flash`、`grok-4.7`；Claude 模型要用 **CC MAX 外接分组** 的 Key |
-| Context window | 能跳过就跳过；必须填时按模型上下文填写 |
+| Model name | 当前 Key 分组可用模型，例如 `claude-fable-5`、`gemini-3.6-flash` 或 `grok-4.5` |
+| Context window | 不强制；必须填写时按模型上下文填写 |
 
-## 3. 启动并测试
+Base URL 只填到 `/v1`，不要追加其它路径。
 
-运行 `hermes`（新开会话，不用 `--continue`），发送 `测试`。能正常回复就接入完成。
+## 启动并测试
+
+配置完成后运行：
+
+```bash
+hermes
+```
+
+进入 Hermes 后发送：
+
+```text
+测试
+```
+
+能正常回复，说明 Hermes 已经通过 MyAutoAPI 发起请求。
 
 ## 排查
 
-先运行 `hermes config` 看 Hermes 当前读取的配置：
+先查看 Hermes 当前读取的配置：
+
+```bash
+hermes config
+```
+
+重点看三项：
 
 | 字段 | 应该看到 |
 | --- | --- |
@@ -53,18 +77,21 @@ curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
 | 模型不存在 | 换成当前 Key 分组里的完整模型名 |
 | 路径错误 | Base URL 改回 `https://api.myautoapi.com/v1` |
 | Hermes 仍用旧模型 | 退出 Hermes，重新运行 `hermes model` |
-| `403 block` / `403 Forbidden` | 核对 Key 分组；仍失败看 [User-Agent 说明](/external/user-agent) |
-| 安装出错或依赖缺失 | 运行 `hermes doctor` 诊断安装、依赖和环境 |
+| `403 block` / `403 Forbidden` | 先确认 Key 分组；仍失败时看 [外接调用 User-Agent 说明](/external/user-agent) |
 
 ## 进阶命令
 
-| 命令 | 什么时候用 |
+能正常使用后再看这些命令：
+
+| 命令 | 用途 |
 | --- | --- |
-| `hermes model` | 换模型或换接口 |
-| `hermes --continue` | 继续最近一次会话，例如误关终端后接着做 |
-| `hermes sessions list` | 找以前的会话 |
-| `hermes dashboard` | 在网页控制台里管理会话、配置和任务 |
-| `hermes --tui` | 想用终端图形界面操作 |
-| `hermes config set terminal.backend docker` | 让 Hermes 执行的终端命令跑在 Docker 隔离环境里，避免改到本机 |
-| `hermes gateway status` | 接了聊天软件后，查看消息网关是否在运行 |
+| `hermes config` | 查看当前配置 |
+| `hermes config set terminal.backend docker` | 让终端工具在 Docker 隔离环境里运行 |
+| `hermes dashboard` | 打开网页控制台，管理会话、配置和任务 |
+| `hermes --tui` | 使用终端图形界面 |
+| `hermes doctor` | 诊断安装、依赖和环境问题 |
+| `hermes model` | 重新选择模型和接口 |
+| `hermes sessions list` | 查看历史会话 |
+| `hermes --continue` | 继续最近一次会话 |
+| `hermes gateway status` | 查看消息网关状态 |
 | `hermes update` | 更新 Hermes |

@@ -4,16 +4,22 @@ title: 快速开始
 
 # 快速开始
 
-先装好 Codex App（[安装方法](/codex/)），再按下面 4 步接入。
+第一次使用 Windows 版 Codex App 时，按下面步骤配置。配置完成后，Codex 会通过 MyAutoAPI 使用 AI 模型。
 
-<a id="_1-创建-api-key"></a>
+开始前确认：
 
-## 1. 创建密钥
+- 已安装 ChatGPT / Codex App；还没安装先看 [Codex 接入](/clients/codex)。
+- 已打开 MyAutoAPI 管理后台，方便下一步创建 API 密钥。
+- 账号有余额。
 
-后台 **API 密钥** → **创建密钥**。名称随意填，比如「测试」；分组选 GPT 开头的。
+## 1. 创建本中转站的 API 密钥
+
+进入管理后台 **API 密钥**，点击 **创建密钥**。名称写用途，分组选择当前要用的模型档位，创建后复制 API Key。
+
+API Key 用来让 Codex 识别你的账户并记录用量，后面脚本会要求你粘贴这个 Key。
 
 <details>
-<summary>截图</summary>
+<summary>查看创建和复制截图</summary>
 
 <a class="doc-image-link" href="/images/quick-start/create-api-key-1.jpg" target="_blank" rel="noopener">
   <img src="/images/quick-start/create-api-key-1.jpg" alt="进入 API 密钥页面并点击创建密钥">
@@ -29,110 +35,100 @@ title: 快速开始
 
 </details>
 
-## 2. 充值
+## 2. 打开 PowerShell 运行脚本
 
-后台首页点 **去充值**。新人加 <span style="color: #d93025;"><strong>QQ 群：685861462</strong></span> 领 2 元。
+Windows 按 `Win + X`，点击 **终端** 或 **Windows PowerShell**。
 
-<a id="quick-connect-helper"></a>
+在打开的窗口里粘贴运行：
 
-## 3. 连接 Codex
-
-1. [下载 Windows 接入助手](/download/myautoapi-quick-connect-windows-x64.exe)，双击打开一次。Mac 用 [Mac 版](/download/myautoapi-quick-connect-mac-arm64.zip)（Apple 芯片）。
-2. 回后台 **API 密钥** 页，复制第 1 步创建的完整密钥。
-3. Windows 将密钥粘贴到助手，点击 **一键连接 Codex**；Mac 双击助手，按终端提示使用剪贴板密钥或粘贴密钥。
-
-导入时会先自动关闭 Codex，先保存正在进行的任务。权限默认设为 **完全访问**。
-
-打不开助手时：Windows 点 **更多信息** → **仍要运行**；Mac 到 **系统设置 → 隐私与安全性** 点 **仍要打开**，问到控制“终端”时点 **允许**。
-
-不用网页也行：复制密钥后打开助手，Windows 点 **一键连接 Codex**，Mac 会直接读取剪贴板。
-
-<a id="_3-重新打开-codex-测试"></a>
-
-## 4. 发送第一条消息
-
-重新打开 Codex，新建任务，发送 `测试`。能回复就接入完成了。
-
-<a id="_2-运行接入命令"></a>
-<a id="command-line"></a>
-
-## 没反应？用 PowerShell 命令行
-
-按 `Win + X`，打开 **终端**，粘贴命令回车（Mac 打开 **终端**，用 Mac 那行）：
-
-::: code-group
-
-```powershell [Windows]
+```powershell
 irm https://docs.myautoapi.com/install/myautoapi-codex-installer/install.ps1 | iex
 ```
 
-```bash [Mac]
+看到输入 API Key 的提示时，粘贴第 1 步复制的 Key，然后按回车。
+
+脚本写入配置后会自动关闭正在运行的 ChatGPT 软件和 Codex，正在运行的任务会中断。
+
+<details>
+<summary>Mac 用户看这里</summary>
+
+打开终端运行：
+
+```bash
 curl -fsSL https://docs.myautoapi.com/install/myautoapi-codex-installer/install.sh | bash
 ```
 
-:::
+看到输入 API Key 的提示时，粘贴第 1 步复制的 Key，然后按回车。
 
-提示输入 API Key 时，粘贴第 1 步的密钥，回车。完成后做第 4 步。
+</details>
 
-<a id="运行脚本遇到问题"></a>
+## 3. 重新打开 Codex
 
-## 遇到问题
+脚本已经自动关闭 Codex App。重新打开并新建任务。
 
-| 提示或现象 | 怎么办 |
-| --- | --- |
-| 打不开助手 | 重新下载并解压；还不行用 [命令行](#command-line) |
-| 要安装 WebView2 运行库 | 点 **确定** 下载安装，或改用 [命令行](#command-line) |
-| 密钥格式不对 | 回后台重新复制完整密钥（带 `****` 的是遮挡过的，不能用） |
-| 密钥无效、已停用、过期或额度用完 | 换一把可用的密钥 |
-| 网络超时、连不上服务器、服务器出错 | 检查网络或代理后重试。命令行这时仍会写入，可以直接做第 4 步试试 |
-| 命令提示无法下载脚本 | 检查网络后重试，或改用 [CC Switch](/codex-cc-switch) |
-| Mac：另一个窗口正在配置 Codex | 先把那个终端窗口走完或关掉 |
-| 没能自动关闭 Codex | 手动退出 Codex 再打开，不行就重启电脑 |
-| Codex 报 `INSUFFICIENT_BALANCE` 或 `Insufficient account balance` | 充值后重试 |
-| 其他报错 | 看 [报错与踩坑](/errors/) |
+发送 `测试`。
+
+能正常回复，就接入完成。还是不能回复，先看下面的脚本排查。
+
+## 4. 查看模型价格
+
+接入完成后，看 [模型价格](/models) 了解价格和分组。实际扣费以后台使用记录为准。
+
+## 运行脚本时遇到问题
+
+| 遇到的问题 | 先做这个 | 还是不行 |
+| --- | --- | --- |
+| PowerShell 提示无法下载脚本 | 检查网络后重新运行第 2 步命令 | 仍然失败时，改用下面的 CC Switch 接入 |
+| 脚本提示未检测到 Codex App | 先安装 Codex App，再回到本页重新运行脚本 | 看 [Codex 接入](/clients/codex) |
+| Codex 提示 `INSUFFICIENT_BALANCE` 或 `Insufficient account balance` | 登录后台充值，充值后重新测试 | 仍然提示余额不足时，确认 Codex 使用的是当前账号的 API Key |
+| 脚本提示未能自动关闭，或脚本完成后 Codex 还是不能回复 | 重启电脑，再重新打开 Codex 并新建任务 | 看 [报错与踩坑](/errors/) |
+
+脚本已经完成，但 Codex 返回具体错误时，直接看 [报错与踩坑](/errors/)。
 
 <details>
-<summary>改了哪些文件</summary>
+<summary>脚本安全吗？</summary>
 
-只改 `C:\Users\你的用户名\.codex\`（Mac 为 `~/.codex/`）里的三个文件：
+脚本开源，完全公开，绝对无任何问题。
 
-- `config.toml`：接口地址、模型和完全访问权限；Windows 原有的沙箱设置（`[windows]` 段）保留
-- `auth.json`：密钥
-- `.codex-global-state.json`：Codex App 输入框下方的权限选择，改成完全访问
+这个脚本只做两件事：写入 Codex 配置；写入后关闭正在运行的 ChatGPT 软件和 Codex，让新配置生效。不会修改系统设置，也不会安装或改动其他软件。不放心就用下面的 CC Switch 或手动配置。
 
-旧文件备份在同目录，文件名带 `.bak.时间戳`。原来配过 MCP 的，从备份里复制回 `config.toml`。
+| 文件 | 作用 |
+| --- | --- |
+| `C:\Users\你的用户名\.codex\config.toml` | 写入 MyAutoAPI 接口地址、模型和 Responses 配置 |
+| `C:\Users\你的用户名\.codex\auth.json` | 写入 MyAutoAPI API Key |
+
+写入前会自动备份旧文件。
+
+Mac 用户对应路径是 `~/.codex/config.toml` 和 `~/.codex/auth.json`。
 
 </details>
 
 <details>
-<summary>改回官方账号登录</summary>
+<summary>移除中转配置，恢复官方账号登录</summary>
 
-Windows 助手点右下角 **恢复官方登录**；或者运行：
+Windows 打开 PowerShell，运行：
 
-::: code-group
-
-```powershell [Windows]
+```powershell
 irm https://docs.myautoapi.com/install/myautoapi-codex-installer/restore.ps1 | iex
 ```
 
-```bash [Mac]
+macOS / Linux 打开终端，运行：
+
+```bash
 curl -fsSL https://docs.myautoapi.com/install/myautoapi-codex-installer/restore.sh | bash
 ```
 
-:::
-
-会清空登录凭据和中转站的接口配置，MCP 等其它配置不动。之后重新打开 Codex，用官方账号登录。
+脚本会清空登录凭据，并删除 `config.toml` 中的模型端点配置；MCP 和其它配置保持不变。完成后彻底退出 Codex，重新打开并使用官方账号登录。
 
 </details>
 
-## 其他方式
+## 不用脚本的方式
 
-- 工具合集：[下载 ZIP](/download/myautoapi-tools.zip)，解压后打开 `1.MyAutoAPI中转快速接入助手`。
-- 要在官方账号和中转站之间来回切：[CC Switch 接入](/codex-cc-switch)。
-- 接入 Claude 桌面版（Windows 助手也能一键连接）：[Claude Desktop 接入](/claude/desktop)。
-- 自己改配置文件：[手动配置](/codex/manual-config)。
+| 顺序 | 方式 | 入口 |
+| --- | --- | --- |
+| 第二种 | CC Switch 接入 | [Codex CC Switch 接入](/codex-cc-switch) |
+| 第三种 | 手动配置 | [Codex 手动接入](/clients/codex-manual-config) |
 
-## 接下来
+## 安装生图工具
 
-- [模型价格](/models)
-- 在 Codex 里生图：另建一把 **专门画图分组** 的密钥，按 [安装生图工具](/image-video-group-image) 安装。
+Codex 已经可以正常对话后，再为图片模型额外创建一个 **专门画图分组** 的 API Key。按照[安装生图工具](/image-video-group-image)运行一键安装命令，之后可以直接在 Codex 对话中生成、修改并显示图片。

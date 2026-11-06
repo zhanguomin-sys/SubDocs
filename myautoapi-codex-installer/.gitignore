@@ -6,10 +6,3 @@ reference/
 
 # Metadata of the former standalone repository, kept as a local backup only.
 .git-backup/
-
-# Native desktop artifacts and isolated build/test files.
-dist/
-desktop/.work/
-desktop/__pycache__/
-quick-connect/.work/
-quick-connect/rsrc_windows_amd64.syso

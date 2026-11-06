@@ -1,9 +1,0 @@
-﻿Model_Provider = "OpenAI"
-MODEL = "x"
-model_reasoning_effort = "high"
-
-[Model_Providers.OpenAI]
-base_url = "https://api.myautoapi.com"
-
-[features]
-goals = true

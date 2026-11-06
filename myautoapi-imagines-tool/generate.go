@@ -27,10 +27,8 @@ const (
 	apiEditURL                 = "https://api.myautoapi.com/v1/images/edits"
 	apiResponsesURL            = "https://api.myautoapi.com/v1/responses"
 	modelName                  = "gpt-image-2"
-	flareModelName             = "gpt-image-2.6-flare"
-	sunburstModelName          = "gpt-image-2.6-sunburst"
-	legacyFlareModelName       = "gpt-image-2.5-flare"
-	legacySunburstModelName    = "gpt-image-2.5-sunburst"
+	flareModelName             = "gpt-image-2.5-flare"
+	sunburstModelName          = "gpt-image-2.5-sunburst"
 	defaultModelName           = flareModelName
 	thModelName                = "gpt-image-1k-th"
 	adobeModelName             = "gpt-image-2-adobe"
@@ -90,7 +88,7 @@ type imageModelSpec struct {
 	maxOutputs          int
 }
 
-var supportedImageModels = []string{flareModelName, sunburstModelName, legacyFlareModelName, legacySunburstModelName, modelName, thModelName, adobeModelName, grokModelName, banana2ModelName, bananaProModelName}
+var supportedImageModels = []string{flareModelName, sunburstModelName, modelName, thModelName, adobeModelName, grokModelName, banana2ModelName, bananaProModelName}
 
 var bananaAspectRatios = []string{"1:1", "3:2", "2:3", "3:4", "1:4", "4:1", "4:3", "4:5", "5:4", "1:8", "8:1", "9:16", "16:9", "21:9", "9:21"}
 
@@ -108,18 +106,6 @@ var imageModelSpecs = map[string]imageModelSpec{
 		supportsEdit:     true,
 	},
 	sunburstModelName: {
-		defaultSize:      gptImage25DefaultSize,
-		defaultQuality:   defaultQuality,
-		supportedQuality: []string{"low", "medium", "high", "xhigh", "max", "auto"},
-		supportsEdit:     true,
-	},
-	legacyFlareModelName: {
-		defaultSize:      gptImage25DefaultSize,
-		defaultQuality:   defaultQuality,
-		supportedQuality: []string{"low", "medium", "high", "xhigh", "max", "auto"},
-		supportsEdit:     true,
-	},
-	legacySunburstModelName: {
 		defaultSize:      gptImage25DefaultSize,
 		defaultQuality:   defaultQuality,
 		supportedQuality: []string{"low", "medium", "high", "xhigh", "max", "auto"},
@@ -283,7 +269,7 @@ func parseImageOptions(command string, arguments []string, requireImages bool) (
 	options.outputName = strings.TrimSpace(options.outputName)
 	modelSpec, ok := imageModelSpecs[options.model]
 	if !ok {
-		return options, fmt.Errorf("V%s 支持的模型只有：%s", version(), strings.Join(supportedImageModels, "、"))
+		return options, fmt.Errorf("V0.8.2 支持的模型只有：%s", strings.Join(supportedImageModels, "、"))
 	}
 	provided := map[string]bool{}
 	flags.Visit(func(visited *flag.Flag) { provided[visited.Name] = true })
