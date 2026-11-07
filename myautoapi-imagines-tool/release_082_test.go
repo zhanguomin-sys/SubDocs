@@ -124,7 +124,7 @@ func TestV081UpgradeAndDedicatedKeyPermissions(t *testing.T) {
 	}
 	layout := buildInstallLayout(root)
 	state := mustReadFile(t, layout.statePath)
-	state = bytes.ReplaceAll(state, []byte(`"version": "0.9.1"`), []byte(`"version": "0.8.1"`))
+	state = bytes.ReplaceAll(state, []byte(`"version": "0.8.2"`), []byte(`"version": "0.8.1"`))
 	if err := os.WriteFile(layout.statePath, state, 0o666); err != nil {
 		t.Fatal(err)
 	}

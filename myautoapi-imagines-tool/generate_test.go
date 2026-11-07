@@ -977,12 +977,12 @@ func TestNativeCLIDefaultsToFlareAt2KHigh(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if options.model != "gpt-image-2.6-flare" || options.size != "2048x2048" || options.quality != "high" || options.outputFormat != "png" {
+	if options.model != "gpt-image-2.5-flare" || options.size != "2048x2048" || options.quality != "high" || options.outputFormat != "png" {
 		t.Fatalf("unexpected default options: %+v", options)
 	}
 
 	payload := generationPayload(options)
-	if payload["model"] != "gpt-image-2.6-flare" || payload["size"] != "2048x2048" || payload["quality"] != "high" || payload["output_format"] != "png" {
+	if payload["model"] != "gpt-image-2.5-flare" || payload["size"] != "2048x2048" || payload["quality"] != "high" || payload["output_format"] != "png" {
 		t.Fatalf("unexpected default payload: %v", payload)
 	}
 }

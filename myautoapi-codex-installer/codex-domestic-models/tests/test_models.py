@@ -41,7 +41,6 @@ def model(slug, **updates):
 
 GPT = model('gpt-original', supported_reasoning_levels=[{'effort': x, 'description': x} for x in ['low', 'medium', 'high', 'xhigh', 'ultra']])
 APP = {'models': [GPT, model('gpt-new')], 'version': 12}
-RETIRED = ['deepseek-v4.1-flash-1017']
 
 
 def case(config='model = "gpt-original"\nreview_model = "gpt-original"\n', **updates):
@@ -60,12 +59,11 @@ add('empty_config', case(''))
 add('only_comment', case('# existing comment'))
 add('preserve_full_objects', case(existing={'models': [model('gpt-original', custom={'nested': ['keep', {'a': True}]}), model('user-custom'), model('Custom'), model('custom')], 'unknown': {'keep': True}}))
 add('update_replace_owned', case(existing={'models': [GPT, model('qwen3.8-max', cancelled_field=True), model('removed-domestic'), model('user-custom')]}, managed=['qwen3.8-max', 'removed-domestic']))
-legacy_models = [m for m in reversed(DOMESTIC['models']) if not m['slug'].startswith('mimo-')]
+legacy_models = [m for m in reversed(DOMESTIC['models']) if not m['slug'].startswith('mimo-') and m['slug'] != 'deepseek-v4.1-flash-1017']
 add('upgrade_existing_catalog_order', case(existing={'models': [GPT] + legacy_models}, managed=[m['slug'] for m in legacy_models]))
-previous_eleven_models = DOMESTIC['models'][:1] + [model('deepseek-v4.1-flash-1017')] + DOMESTIC['models'][1:]
-add('upgrade_previous_eleven_drops_deepseek_1017', case(existing={'models': [GPT] + previous_eleven_models}, managed=[m['slug'] for m in previous_eleven_models]))
-add('unmanaged_deepseek_1017_dropped', case(existing={'models': [GPT, model('deepseek-v4.1-flash-1017')]}))
-add('backend_deepseek_1017_dropped', case(app={'models': [GPT, model('gpt-new'), model('deepseek-v4.1-flash-1017')]}))
+previous_ten_models = [m for m in DOMESTIC['models'] if m['slug'] != 'deepseek-v4.1-flash-1017']
+add('upgrade_previous_ten_models', case(existing={'models': [GPT] + previous_ten_models}, managed=[m['slug'] for m in previous_ten_models]))
+add('existing_deepseek_snapshot_not_duplicated', case(existing={'models': [GPT, next(m for m in DOMESTIC['models'] if m['slug'] == 'deepseek-v4.1-flash-1017')]}))
 add('existing_mimo_ids_not_duplicated', case(existing={'models': [GPT] + DOMESTIC['models'][-2:]}))
 add('existing_desktop', case('model="gpt-original"\n[desktop]\nenabled-reasoning-efforts = ["ultra", # keep\n "high",]\ntheme="dark"\n[features]\nx=true\n'))
 add('quoted_keys', case('"model_catalog_json" = \'old.json\' # old path\n"model"="gpt-original"\n["desktop"]\n"enabled-reasoning-efforts" = [\'ultra\',\'high\']\n'))
@@ -136,7 +134,6 @@ class ModelTests(unittest.TestCase):
                     self.assertEqual(len(output['managed']), len(DOMESTIC['models']))
                     ids = [x['slug'] for x in output['catalog']['models']]
                     self.assertEqual(len(ids), len(set(ids)))
-                    self.assertFalse(set(ids) & set(RETIRED))
                     self.assertEqual([slug for slug in ids if slug in output['managed']], [m['slug'] for m in DOMESTIC['models']])
                     self.assertIn('gpt-original', ids)
                     original = tomllib.loads(value['config'].lstrip('\ufeff'))
@@ -155,16 +152,17 @@ class ModelTests(unittest.TestCase):
                     prior = {x['slug']: x for x in (value['existing'] or {'models': []})['models']}
                     result = {x['slug']: x for x in output['catalog']['models']}
                     for slug, item in prior.items():
-                        if slug not in value['managed'] and slug not in output['managed'] and slug not in RETIRED:
+                        if slug not in value['managed'] and slug not in output['managed']:
                             self.assertEqual(result[slug], item)
                     for item in DOMESTIC['models']:
                         self.assertEqual(result[item['slug']], item)
 
     def test_exact_ids(self):
-        self.assertEqual([m['slug'] for m in DOMESTIC['models']], ['deepseek-flash','glm-5.3','glm-5.3-flash','qwen3.8-max','qwen3.8-flash','kimi-k3','minimax-m3','hy4-preview','mimo-v2.6-pro','mimo-v2.6-flash'])
+        self.assertEqual([m['slug'] for m in DOMESTIC['models']], ['deepseek-flash','deepseek-v4.1-flash-1017','glm-5.3','glm-5.3-flash','qwen3.8-max','qwen3.8-flash','kimi-k3','minimax-m3','hy4-preview','mimo-v2.6-pro','mimo-v2.6-flash'])
 
     def test_deepseek_official_codex_capabilities(self):
-        for item in DOMESTIC['models'][:1]:
+        snapshot_id = 'deepseek-v4.1-flash-1017'
+        for item in DOMESTIC['models'][:2]:
             with self.subTest(model=item['slug']):
                 self.assertEqual(item['context_window'], 1048576)
                 self.assertEqual(item['max_context_window'], 1048576)
@@ -177,6 +175,8 @@ class ModelTests(unittest.TestCase):
                 self.assertTrue(item['support_verbosity'])
                 self.assertEqual(item['default_verbosity'], 'low')
                 self.assertFalse(item['use_responses_lite'])
+                if item['slug'] == snapshot_id:
+                    self.assertEqual(item['display_name'], snapshot_id)
 
     def test_mimo_official_codex_capabilities(self):
         mimo_ids = {'mimo-v2.6-pro', 'mimo-v2.6-flash'}
@@ -937,20 +937,14 @@ class WindowsImportTests(unittest.TestCase):
         cls.cases['cache_older'] = {'config': b'model = "x"\n', 'cache': windows_cache('0.100.0', [older, only_old])}
         cls.cases['cache_corrupt'] = {'config': b'model = "x"\n', 'cache': '{not json'}
         cls.cases['cache_wrong_shape'] = {'config': b'model = "x"\n', 'cache': '{"models": "nope"}'}
-        retired = model('deepseek-v4.1-flash-1017')
-        cls.cases['upgrade_previous_eleven'] = {
-            'config': b'model_catalog_json = "' + str(cls.root / 'upgrade_previous_eleven' / 'myautoapi-models.json').encode() + b'"\n',
-            'catalog': json.dumps({'models': [astra] + previous_eleven_models}),
-            'managed': json.dumps([m['slug'] for m in previous_eleven_models]),
-        }
         custom = copy.deepcopy(astra); custom.update(slug='user-custom', display_name='user-custom', custom_field={'keep': [1]})
         gone = copy.deepcopy(astra); gone.update(slug='gpt-removed-upstream', display_name='gone')
         stale = copy.deepcopy(astra); stale['display_name'] = 'STALE'
         cls.cases['existing_catalog_refresh'] = {
             'config': b'model_catalog_json = "' + str(cls.root / 'existing_catalog_refresh' / 'myautoapi-models.json').encode() + b'"\n',
-            'catalog': json.dumps({'models': [stale, custom, gone, retired], 'top': {'keep': True}}),
+            'catalog': json.dumps({'models': [stale, custom, gone], 'top': {'keep': True}}),
             'managed': json.dumps(['renamed-domestic']),
-            'cache': windows_cache('0.170.0', [newer, future, retired]),
+            'cache': windows_cache('0.170.0', [newer, future]),
         }
         for name, case in cls.cases.items():
             directory = cls.root / name
@@ -1041,23 +1035,14 @@ class WindowsImportTests(unittest.TestCase):
         self.assertEqual(by_id['gpt-6-astra']['display_name'], 'FROM-CACHE')
         self.assertEqual(by_id['user-custom']['custom_field'], {'keep': [1]})
         self.assertIn('gpt-removed-upstream', by_id)
-        self.assertNotIn('deepseek-v4.1-flash-1017', by_id)
         self.assertIn('gpt-future', by_id)
         self.assertIn('codex-auto-review', by_id)
         ids = [m['slug'] for m in catalog['models']]
         self.assertEqual(ids[-len(DOMESTIC['models']):], [m['slug'] for m in DOMESTIC['models']])
 
-    def test_previous_eleven_models_are_reduced_to_ten(self):
-        name = 'upgrade_previous_eleven'
-        self.assertTrue(self.results[name]['ok'], self.results[name])
-        ids = [m['slug'] for m in self.read_catalog(name)['models']]
-        self.assertNotIn('deepseek-v4.1-flash-1017', ids)
-        self.assertIn('gpt-6-astra', ids)
-        self.assertEqual(json.loads((self.root / name / 'myautoapi-models.managed.json').read_text()), [m['slug'] for m in DOMESTIC['models']])
-
     def test_second_import_changes_nothing(self):
         # The first run already rewrote these directories; a second run must be a no-op.
-        for name in list(WIN_CONFIGS) + ['cache_newer', 'existing_catalog_refresh', 'upgrade_previous_eleven']:
+        for name in list(WIN_CONFIGS) + ['cache_newer', 'existing_catalog_refresh']:
             with self.subTest(name=name):
                 self.assertTrue(self.second[name]['ok'], self.second[name])
                 self.assertEqual(self.snapshot_bytes()[name], self.first_bytes[name])

@@ -15,7 +15,7 @@ func main() {
 
 func run(arguments []string, stdout, stderr io.Writer) int {
 	if len(arguments) == 0 {
-		writeResult(stderr, map[string]any{"ok": false, "error": "缺少命令：install、uninstall、generate、edit、models、paths、doctor、recover 或 version。"})
+		writeResult(stderr, map[string]any{"ok": false, "error": "缺少命令：install、uninstall、generate、edit 或 version。"})
 		return 2
 	}
 
@@ -41,14 +41,6 @@ func run(arguments []string, stdout, stderr io.Writer) int {
 		err = generate(arguments[1:], stdout)
 	case "edit":
 		err = edit(arguments[1:], stdout)
-	case "models":
-		err = models(arguments[1:], stdout)
-	case "paths":
-		err = paths(arguments[1:], stdout)
-	case "doctor":
-		err = doctor(arguments[1:], stdout)
-	case "recover":
-		err = recoverOutputs(arguments[1:], stdout)
 	case "version":
 		_, err = fmt.Fprintln(stdout, version())
 	default:

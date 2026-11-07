@@ -53,8 +53,6 @@ type installLayout struct {
 	releasePath string
 	skillPath   string
 	agentPath   string
-	rulesDir    string
-	rulesPath   string
 }
 
 type desiredFile struct {
@@ -103,8 +101,6 @@ func buildInstallLayout(root string) installLayout {
 		releasePath: filepath.Join(toolDir, "RELEASE"),
 		skillPath:   filepath.Join(skillDir, "SKILL.md"),
 		agentPath:   filepath.Join(skillDir, "agents", "openai.yaml"),
-		rulesDir:    filepath.Join(root, "rules"),
-		rulesPath:   filepath.Join(root, "rules", "myautoapi-imagines-tool.rules"),
 	}
 }
 
@@ -130,9 +126,6 @@ func installWithOptions(stdout io.Writer, input io.Reader, options installOption
 	}
 	previousState, err := readInstallState(layout)
 	if err != nil {
-		return err
-	}
-	if err := checkExecPolicyTarget(layout, previousState); err != nil {
 		return err
 	}
 	agentsContent, err := readAgents(layout, true)
@@ -289,9 +282,7 @@ func installWithOptions(stdout io.Writer, input io.Reader, options installOption
 	fmt.Fprintf(stdout, "工具：%s\n", layout.toolDir)
 	fmt.Fprintf(stdout, "Skill：%s\n", layout.skillDir)
 	fmt.Fprintf(stdout, "全局规则：%s\n", layout.agentsPath)
-	fmt.Fprintf(stdout, "放行规则：%s\n", layout.rulesPath)
-	fmt.Fprintln(stdout, "请完全退出 Codex 再重新打开，并开始新任务；放行规则在 Codex 启动时加载。")
-	fmt.Fprintln(stdout, "重新打开后直接说：画一张白底红苹果。")
+	fmt.Fprintln(stdout, "请重新打开 Codex 或开始一个新任务，然后直接说：画一张白底红苹果。")
 	return nil
 }
 
@@ -432,8 +423,6 @@ func desiredInstallFiles(layout installLayout) ([]desiredFile, *installState, er
 	if err != nil {
 		return nil, nil, fmt.Errorf("无法读取安装程序：%w", err)
 	}
-	skill := []byte(renderInstalledSkill(layout))
-	execPolicy := []byte(renderExecPolicyRules(layout))
 	state := &installState{
 		SchemaVersion: 1,
 		ManagedBy:     managedBy,
@@ -445,9 +434,8 @@ func desiredInstallFiles(layout installLayout) ([]desiredFile, *installState, er
 			"VERSION":                       sha256Hex([]byte(embeddedVersion)),
 			"RELEASE":                       sha256Hex([]byte(releaseRevision)),
 			"tool/" + keySourceFileName:     sha256Hex([]byte(keySourceDedicated)),
-			"skill-template/" + skillName + "/SKILL.md":           sha256Hex(skill),
+			"skill-template/" + skillName + "/SKILL.md":           sha256Hex([]byte(embeddedSkill)),
 			"skill-template/" + skillName + "/agents/openai.yaml": sha256Hex([]byte(embeddedAgentConfig)),
-			"rules/myautoapi-imagines-tool.rules":                 sha256Hex(execPolicy),
 		},
 	}
 	stateBytes, err := json.MarshalIndent(state, "", "  ")
@@ -460,9 +448,8 @@ func desiredInstallFiles(layout installLayout) ([]desiredFile, *installState, er
 		{layout.versionPath, []byte(embeddedVersion), 0o666},
 		{layout.releasePath, []byte(releaseRevision), 0o666},
 		{layout.statePath, stateBytes, 0o666},
-		{layout.skillPath, skill, 0o666},
+		{layout.skillPath, []byte(embeddedSkill), 0o666},
 		{layout.agentPath, []byte(embeddedAgentConfig), 0o666},
-		{layout.rulesPath, execPolicy, 0o666},
 		{filepath.Join(layout.toolDir, keySourceFileName), []byte(keySourceDedicated), 0o666},
 	}
 	return desired, state, nil
@@ -484,7 +471,7 @@ func readInstallState(layout installLayout) (*installState, error) {
 		if json.Unmarshal(content, state) != nil || state.SchemaVersion != 1 || state.ManagedBy != managedBy {
 			return nil, fmt.Errorf("目标目录无法确认由本工具管理：%s", layout.toolDir)
 		}
-		if state.Version != version() && state.Version != "0.2.0" && state.Version != "0.3.0" && state.Version != "0.4.0" && state.Version != "0.4.1" && state.Version != "0.5.0" && state.Version != "0.6.0" && state.Version != "0.7.0" && state.Version != "0.7.1" && state.Version != "0.7.2" && state.Version != "0.7.3" && state.Version != "0.7.4" && state.Version != "0.7.5" && state.Version != "0.7.6" && state.Version != "0.8.0" && state.Version != "0.8.1" && state.Version != "0.8.2" && state.Version != "0.8.3" && state.Version != "0.9.0" {
+		if state.Version != version() && state.Version != "0.2.0" && state.Version != "0.3.0" && state.Version != "0.4.0" && state.Version != "0.4.1" && state.Version != "0.5.0" && state.Version != "0.6.0" && state.Version != "0.7.0" && state.Version != "0.7.1" && state.Version != "0.7.2" && state.Version != "0.7.3" && state.Version != "0.7.4" && state.Version != "0.7.5" && state.Version != "0.7.6" && state.Version != "0.8.0" && state.Version != "0.8.1" {
 			return nil, fmt.Errorf("已安装版本为 %s，当前安装包为 %s；不支持直接升级。", state.Version, version())
 		}
 		return state, nil
@@ -524,8 +511,6 @@ func checkManagedPaths(layout installLayout) error {
 		{filepath.Join(layout.skillDir, "agents"), "Skill 子目录"},
 		{layout.agentsPath, "AGENTS.md"},
 		{layout.override, "AGENTS.override.md"},
-		{layout.rulesDir, "Codex 放行规则目录"},
-		{layout.rulesPath, "Codex 放行规则"},
 	} {
 		if err := rejectSymlinkComponents(layout.codexHome, item.path, item.label); err != nil {
 			return err
@@ -722,7 +707,6 @@ func managedPathsFromState(layout installLayout, state *installState) (map[strin
 		"tool/" + keySourceFileName:                           filepath.Join(layout.toolDir, keySourceFileName),
 		"skill-template/" + skillName + "/SKILL.md":           layout.skillPath,
 		"skill-template/" + skillName + "/agents/openai.yaml": layout.agentPath,
-		"rules/myautoapi-imagines-tool.rules":                 layout.rulesPath,
 	}
 	managed := make(map[string]string, len(state.Files))
 	hashes := make(map[string]string, len(state.Files))
@@ -923,7 +907,6 @@ func cleanupEmptyDirectories(layout installLayout) {
 		filepath.Join(layout.codexHome, "skills"),
 		layout.toolDir,
 		filepath.Join(layout.codexHome, "tools"),
-		layout.rulesDir,
 	} {
 		_ = os.Remove(path)
 	}

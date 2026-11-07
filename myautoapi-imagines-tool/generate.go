@@ -27,10 +27,8 @@ const (
 	apiEditURL                 = "https://api.myautoapi.com/v1/images/edits"
 	apiResponsesURL            = "https://api.myautoapi.com/v1/responses"
 	modelName                  = "gpt-image-2"
-	flareModelName             = "gpt-image-2.6-flare"
-	sunburstModelName          = "gpt-image-2.6-sunburst"
-	legacyFlareModelName       = "gpt-image-2.5-flare"
-	legacySunburstModelName    = "gpt-image-2.5-sunburst"
+	flareModelName             = "gpt-image-2.5-flare"
+	sunburstModelName          = "gpt-image-2.5-sunburst"
 	defaultModelName           = flareModelName
 	thModelName                = "gpt-image-1k-th"
 	adobeModelName             = "gpt-image-2-adobe"
@@ -59,8 +57,6 @@ const (
 	maxBananaInputImages       = 14
 	maxBananaInputBytes        = 7 * 1024 * 1024
 	maxConcurrentImageRequests = 3
-	defaultGIFFrameCount       = 9
-	defaultGIFFrameDurationMS  = 200
 )
 
 type httpDoer interface {
@@ -68,19 +64,17 @@ type httpDoer interface {
 }
 
 type generationOptions struct {
-	prompt          string
-	model           string
-	n               int
-	size            string
-	quality         string
-	aspectRatio     string
-	resolution      string
-	outputFormat    string
-	frameCount      int
-	frameDurationMS int
-	outputDir       string
-	outputName      string
-	images          []string
+	prompt       string
+	model        string
+	n            int
+	size         string
+	quality      string
+	aspectRatio  string
+	resolution   string
+	outputFormat string
+	outputDir    string
+	outputName   string
+	images       []string
 }
 
 type imageModelSpec struct {
@@ -94,7 +88,7 @@ type imageModelSpec struct {
 	maxOutputs          int
 }
 
-var supportedImageModels = []string{flareModelName, sunburstModelName, legacyFlareModelName, legacySunburstModelName, modelName, thModelName, adobeModelName, grokModelName, banana2ModelName, bananaProModelName}
+var supportedImageModels = []string{flareModelName, sunburstModelName, modelName, thModelName, adobeModelName, grokModelName, banana2ModelName, bananaProModelName}
 
 var bananaAspectRatios = []string{"1:1", "3:2", "2:3", "3:4", "1:4", "4:1", "4:3", "4:5", "5:4", "1:8", "8:1", "9:16", "16:9", "21:9", "9:21"}
 
@@ -112,18 +106,6 @@ var imageModelSpecs = map[string]imageModelSpec{
 		supportsEdit:     true,
 	},
 	sunburstModelName: {
-		defaultSize:      gptImage25DefaultSize,
-		defaultQuality:   defaultQuality,
-		supportedQuality: []string{"low", "medium", "high", "xhigh", "max", "auto"},
-		supportsEdit:     true,
-	},
-	legacyFlareModelName: {
-		defaultSize:      gptImage25DefaultSize,
-		defaultQuality:   defaultQuality,
-		supportedQuality: []string{"low", "medium", "high", "xhigh", "max", "auto"},
-		supportsEdit:     true,
-	},
-	legacySunburstModelName: {
 		defaultSize:      gptImage25DefaultSize,
 		defaultQuality:   defaultQuality,
 		supportedQuality: []string{"low", "medium", "high", "xhigh", "max", "auto"},
@@ -251,8 +233,6 @@ func parseImageOptions(command string, arguments []string, requireImages bool) (
 	flags.StringVar(&options.aspectRatio, "aspect-ratio", "", "图片比例")
 	flags.StringVar(&options.resolution, "resolution", "", "图片分辨率档位")
 	flags.StringVar(&options.outputFormat, "output-format", defaultOutputFormat, "输出格式")
-	flags.IntVar(&options.frameCount, "frame-count", defaultGIFFrameCount, "GIF 请求帧数")
-	flags.IntVar(&options.frameDurationMS, "frame-duration-ms", defaultGIFFrameDurationMS, "GIF 请求每帧毫秒数")
 	flags.StringVar(&options.outputDir, "output-dir", "", "输出目录")
 	flags.StringVar(&options.outputName, "output-name", "", "输出文件名")
 	flags.Var((*stringList)(&options.images), "image", "输入图片路径，可重复")
@@ -289,32 +269,10 @@ func parseImageOptions(command string, arguments []string, requireImages bool) (
 	options.outputName = strings.TrimSpace(options.outputName)
 	modelSpec, ok := imageModelSpecs[options.model]
 	if !ok {
-		return options, fmt.Errorf("V%s 支持的模型只有：%s", version(), strings.Join(supportedImageModels, "、"))
+		return options, fmt.Errorf("V0.8.2 支持的模型只有：%s", strings.Join(supportedImageModels, "、"))
 	}
 	provided := map[string]bool{}
 	flags.Visit(func(visited *flag.Flag) { provided[visited.Name] = true })
-	if options.outputFormat == "gif" {
-		if requireImages || len(options.images) > 0 {
-			return options, errors.New("GIF 只支持文字生成，不支持参考图或修图。")
-		}
-		if options.model != flareModelName && options.model != sunburstModelName {
-			return options, errors.New("GIF 只支持 gpt-image-2.6-flare 和 gpt-image-2.6-sunburst。")
-		}
-		if options.frameCount < 2 || options.frameCount > 16 {
-			return options, errors.New("GIF 帧数必须在 2 到 16 之间。")
-		}
-		if options.frameDurationMS < 20 || options.frameDurationMS > 2000 {
-			return options, errors.New("GIF 每帧时长必须在 20 到 2000 毫秒之间。")
-		}
-		if !provided["size"] {
-			options.size = "auto"
-		}
-		if !provided["quality"] {
-			options.quality = "low"
-		}
-	} else if provided["frame-count"] || provided["frame-duration-ms"] {
-		return options, errors.New("帧数和每帧时长参数只用于 GIF。")
-	}
 	if options.model == grokModelName || isBananaModel(options.model) {
 		if provided["size"] {
 			return options, fmt.Errorf("模型 %s 使用 --aspect-ratio 和 --resolution 设置画面规格。", options.model)
@@ -396,8 +354,8 @@ func parseImageOptions(command string, arguments []string, requireImages bool) (
 	if options.quality != "" && len(modelSpec.supportedQuality) > 0 && !containsString(modelSpec.supportedQuality, options.quality) {
 		return options, fmt.Errorf("模型 %s 当前已验证质量只有：%s", options.model, strings.Join(modelSpec.supportedQuality, "、"))
 	}
-	if options.outputFormat != defaultOutputFormat && options.outputFormat != "gif" {
-		return options, errors.New("静态输出格式只支持 png；GPT Image 2.6 文字生成还支持 gif。")
+	if options.outputFormat != defaultOutputFormat {
+		return options, errors.New("当前稳定输出格式只支持 png。")
 	}
 	return options, nil
 }
@@ -485,7 +443,6 @@ func runGeneration(options generationOptions, stdout io.Writer, client httpDoer,
 		return fmt.Errorf("无法保存图片：%w", saveErr)
 	}
 	summary := outputSummary(outputFiles, options.n)
-	addGIFSummary(summary, outputFiles, options)
 	if saveErr != nil {
 		summary["warning"] = "部分图片保存失败，已保留其余成功图片。"
 		summary["diagnostic"] = redactError(saveErr.Error(), apiKey)
@@ -540,10 +497,6 @@ func generationPayload(options generationOptions) map[string]any {
 	payload["size"] = options.size
 	payload["quality"] = options.quality
 	payload["output_format"] = options.outputFormat
-	if options.outputFormat == "gif" {
-		payload["frame_count"] = options.frameCount
-		payload["frame_duration_ms"] = options.frameDurationMS
-	}
 	return payload
 }
 
