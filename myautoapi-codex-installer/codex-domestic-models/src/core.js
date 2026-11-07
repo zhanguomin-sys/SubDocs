@@ -2,6 +2,8 @@
 var DomesticModels = (function () {
     'use strict';
     var effortOrder = ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'ultra', 'max'];
+    // Remove this importer's unsupported ID even when an old catalog has no managed record.
+    var retiredModels = ['deepseek-flash'];
     function fail(message) { var error = new Error(message); error.safeMessage = message; throw error; }
     function atStep(name, target, action) {
         try { return action(); }
@@ -257,7 +259,7 @@ var DomesticModels = (function () {
         if (!Array.isArray(managed) || managed.some(function (x) { return typeof x !== 'string' || !x; })) { fail('已管理模型记录格式无效。'); }
         if (managed.some(function (x) { return /^gpt-/i.test(x); })) { fail('管理记录包含 GPT，停止导入以保留 GPT。'); }
         var byId = dict(), order = [], owned = dict(), result, levels = [], gotGPT = false;
-        managed.concat(domestic.models.map(function (x) { return x.slug; })).forEach(function (id) { owned[id] = true; });
+        managed.concat(domestic.models.map(function (x) { return x.slug; }), retiredModels).forEach(function (id) { owned[id] = true; });
         function add(models) { models.forEach(function (model) { if (!own(byId, model.slug) && !own(owned, model.slug)) { byId[model.slug] = model; order.push(model.slug); } }); }
         add(existing ? existing.models : []); add(app.models);
         domestic.models.forEach(function (model) { byId[model.slug] = model; order.push(model.slug); });

@@ -1,4 +1,7 @@
 # Windows PowerShell 5.1 compatible. Keep behavior in sync with core.js via parity tests.
+# Remove this importer's unsupported ID even when an old catalog has no managed record.
+$RetiredModels = @('deepseek-flash')
+
 function New-ModelImportError([string]$Message) {
   $problem=New-Object System.Exception -ArgumentList $Message
   $problem.Data['ModelImportSafe']=$true
@@ -362,6 +365,7 @@ function Merge-ModelCatalog($Existing, $Official, $Domestic, $Managed, $Info) {
   $owned = New-OrdinalMap
   foreach ($id in @($Managed)) { if ($id -is [string] -and $id -and -not $Official.Entries.ContainsKey($id) -and $id -notmatch '^gpt-') { $owned[$id] = $true } }
   foreach ($model in $Domestic.models) { $owned[$model.slug] = $true }
+  foreach ($id in $RetiredModels) { $owned[$id] = $true }
   $byId = New-OrdinalMap; $order = New-Object 'System.Collections.Generic.List[string]'
   if ($null -ne $Existing) {
     foreach ($model in $Existing.models) {

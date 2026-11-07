@@ -1,6 +1,6 @@
 # 给 Codex 导入国产模型
 
-这个脚本给已安装 Codex 的用户导入 11 个国产模型，让 GPT 与国产模型并列可选。官方账号、任意中转站和自定义接口均可导入；它只修改用户配置目录的 `config.toml` 中两项设置，并生成完整的本地模型目录，保留默认模型、服务名称、接口、Key 和其他配置。
+这个脚本给已安装 Codex 的用户导入 10 个国产模型，让 GPT 与国产模型并列可选。官方账号、任意中转站和自定义接口均可导入；它只修改用户配置目录的 `config.toml` 中两项设置，并生成完整的本地模型目录，保留默认模型、服务名称、接口、Key 和其他配置。
 
 Windows 只读写 `CODEX_HOME` 内的配置和模型文件，不查找、启动或复制任何可执行文件；本机是否安装 CLI 不影响导入。导入成功后沿用一键安装脚本 `install/install.ps1` 的进程关闭代码（构建时原样取出）关闭当前用户会话里的 ChatGPT 和 Codex，因为 Codex 启动时才读取 `config.toml` 和模型目录。macOS 优先定位 App，再查找现有 Codex CLI。Linux 使用已有的 Codex 后端和 Node.js 16+；仅安装原生 Codex 二进制并不代表本机有 Node，脚本缺少运行环境时会在写入前退出。
 
@@ -9,6 +9,8 @@ Windows 只读写 `CODEX_HOME` 内的配置和模型文件，不查找、启动�
 ## 运行脚本
 
 成功导入后，Windows 和 Linux/macOS 都会自动关闭 ChatGPT/Codex，正在运行的任务会中断，之后重新打开即可。重新运行同一入口就是更新模型。
+
+2026-11-08 按用户在 MyAutoAPI/Codex 下的实测修正 DeepSeek 名单：移除持续失败的 `deepseek-flash`，保留已通过 Responses 对话和工具调用的 `deepseek-v4.1-flash-1017`。升级会按精确 ID 清理旧目录中的 `deepseek-flash`，其余模型和配置保留。默认模型字段不会自动改写；之前选中被移除条目的用户，重新打开 App 后需新建任务并选择 `deepseek-v4.1-flash-1017`。
 
 Windows 在 PowerShell 中执行：
 
