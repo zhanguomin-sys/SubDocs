@@ -5,14 +5,14 @@ import test from 'node:test'
 
 const publicRoot = new URL('../docs/public/', import.meta.url)
 const releaseRoot = new URL(
-  'install/myautoapi-imagines-tool/releases/v0.8.2/',
+  'install/myautoapi-imagines-tool/releases/v0.9.1/',
   publicRoot,
 )
 const artifactNames = [
-  'myautoapi-imagines-tool-v0.8.2-windows-amd64.exe',
-  'myautoapi-imagines-tool-v0.8.2-darwin-arm64',
-  'myautoapi-imagines-tool-v0.8.2-darwin-amd64',
-  'myautoapi-imagines-tool-v0.8.2-linux-amd64',
+  'myautoapi-imagines-tool-v0.9.1-windows-amd64.exe',
+  'myautoapi-imagines-tool-v0.9.1-darwin-arm64',
+  'myautoapi-imagines-tool-v0.9.1-darwin-amd64',
+  'myautoapi-imagines-tool-v0.9.1-linux-amd64',
 ]
 const shellUrl = new URL('install/myautoapi-imagines-tool/install.sh', publicRoot)
 const powershellUrl = new URL('install/myautoapi-imagines-tool/install.ps1', publicRoot)
@@ -31,12 +31,12 @@ function parseChecksums(text) {
   )
 }
 
-test('publishes matching V0.8.2 native artifacts, scripts and checksums', async () => {
+test('publishes matching V0.9.1 native artifacts, scripts and checksums', async () => {
   assert.deepEqual((await readdir(releaseRoot)).sort(), ['SHA256SUMS', ...artifactNames].sort())
   assert.deepEqual((await readdir(entryRoot)).sort(), ['install.ps1', 'install.sh', 'releases'])
   assert.deepEqual(
     (await readdir(releasesRoot)).sort(),
-    ['v0.8.1', 'v0.8.2'],
+    ['v0.8.1', 'v0.8.2', 'v0.9.1'],
   )
   const [shell, powershell, checksum, ...artifacts] = await Promise.all([
     readFile(shellUrl, 'utf8'),
@@ -54,7 +54,7 @@ test('publishes matching V0.8.2 native artifacts, scripts and checksums', async 
     assert.match(installScript, new RegExp(digest))
   }
   for (const script of [shell, powershell]) {
-    assert.match(script, /releases\/v0\.8\.2/)
+    assert.match(script, /releases\/v0\.9\.1/)
     assert.doesNotMatch(script, /python|Expand-Archive|v0\.2-r1\.zip/i)
   }
   for (const script of [powershell]) {
@@ -87,10 +87,10 @@ test('publishes explicit content types and cache policy', async () => {
   }
   assert.match(
     headers,
-    /\/install\/myautoapi-imagines-tool\/releases\/v0\.8\.2\/myautoapi-imagines-tool-\*\s+Content-Type:\s*application\/octet-stream\s+Cache-Control:\s*public,\s*max-age=31536000,\s*immutable/i,
+    /\/install\/myautoapi-imagines-tool\/releases\/v0\.9\.1\/myautoapi-imagines-tool-\*\s+Content-Type:\s*application\/octet-stream\s+Cache-Control:\s*public,\s*max-age=31536000,\s*immutable/i,
   )
   assert.match(
     headers,
-    /\/install\/myautoapi-imagines-tool\/releases\/v0\.8\.2\/SHA256SUMS\s+Content-Type:\s*text\/plain;\s*charset=utf-8\s+Cache-Control:\s*public,\s*max-age=31536000,\s*immutable/i,
+    /\/install\/myautoapi-imagines-tool\/releases\/v0\.9\.1\/SHA256SUMS\s+Content-Type:\s*text\/plain;\s*charset=utf-8\s+Cache-Control:\s*public,\s*max-age=31536000,\s*immutable/i,
   )
 })

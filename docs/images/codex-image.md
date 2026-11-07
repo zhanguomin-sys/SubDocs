@@ -2,7 +2,7 @@
 
 Codex 适合把生图任务整理成可复盘的项目：先把口语需求变成清晰说明，再拆出多组提示词，生成批量脚本，记录图片结果，最后整理下一轮修改方向。
 
-临时生成几张图片，优先使用 [无限画布](/images/infinite-canvas)。在程序里调用 `gpt-image-2`，看 [GPT 生图 API](/images/image-generation)。使用 ChatGPT 桌面应用中 Codex 的内置 `image_gen`，先看 [Codex 内置生图](/images/codex-image-direct)。
+临时生成几张图片，优先使用 [无限画布](/images/infinite-canvas)。在程序里调用 `gpt-image-2.6-flare`，看 [GPT 生图 API](/images/image-generation)。使用 ChatGPT 桌面应用中 Codex 的内置 `image_gen`，先看 [Codex 内置生图](/images/codex-image-direct)。
 
 ## 补到生图 Skill 里
 
@@ -136,7 +136,7 @@ Codex 适合把生图任务整理成可复盘的项目：先把口语需求变�
 2. 脚本用于批量测试，不要做网页、数据库、队列或复杂管理系统。
 3. 根据项目定位生成 6 到 12 条测试任务，每条只测试一个主要变量，例如构图、背景、光线、色彩、风格、材质、文字区域。
 4. 生成一份 `批量提示词.json`，字段包括：编号、方向、测试目的、提示词、尺寸、输出文件名。
-5. 调用方式参考 `gpt-image-2` 的 GPT 生图 API：POST https://api.myautoapi.com/v1/images/generations，请求体至少包含 model、prompt、size。
+5. 调用方式参考 `gpt-image-2.6-flare` 的 GPT 生图 API：POST https://api.myautoapi.com/v1/images/generations，请求体至少包含 model、prompt、size。
 6. API Key 从环境变量 `MYAUTOAPI_API_KEY` 读取，不要写死进脚本。
 7. 不要安装新依赖；本机缺少必要工具时先说明缺什么，并等我确认。
 8. 图片保存到 `输出图片/`，接口原始返回保存到 `接口返回/`，生成结果追加写入 `结果记录.md`。

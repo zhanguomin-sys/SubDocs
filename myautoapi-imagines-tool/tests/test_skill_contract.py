@@ -86,19 +86,19 @@ class SkillContractTests(unittest.TestCase):
         ):
             self.assertNotIn(unavailable, self.skill)
 
-    def test_skill_routes_gpt_image_25_models_and_defaults_to_2k(self) -> None:
+    def test_skill_routes_gpt_image_26_models_and_defaults_to_2k(self) -> None:
         routing_rule = (
             "模型选择顺序固定为：用户明确指定模型时使用该模型；未指定模型且明确要求高清、高质量、"
-            "精细细节、精修、严格保留原图或重要成品时使用 `gpt-image-2.5-sunburst`；"
-            "其余未指定模型的任务默认使用 `gpt-image-2.5-flare`。"
+            "精细细节、精修、严格保留原图或重要成品时使用 `gpt-image-2.6-sunburst`；"
+            "其余未指定模型的任务默认使用 `gpt-image-2.6-flare`。"
         )
         for content in (self.skill, self.agents_rule):
             for phrase in (
-                "`gpt-image-2.5-flare`",
-                "`gpt-image-2.5-sunburst`",
-                "默认使用 `gpt-image-2.5-flare`",
+                "`gpt-image-2.6-flare`",
+                "`gpt-image-2.6-sunburst`",
+                "默认使用 `gpt-image-2.6-flare`",
                 "`2048x2048`",
-                "明确要求高清、高质量、精细细节、精修、严格保留原图或重要成品时使用 `gpt-image-2.5-sunburst`",
+                "明确要求高清、高质量、精细细节、精修、严格保留原图或重要成品时使用 `gpt-image-2.6-sunburst`",
                 "用户明确指定模型时使用该模型",
             ):
                 self.assertIn(phrase, content)
@@ -106,10 +106,10 @@ class SkillContractTests(unittest.TestCase):
 
         for quality in ("`xhigh`", "`max`"):
             self.assertIn(quality, self.skill)
-        self.assertIn("只适用于 `gpt-image-2.5-flare` 和 `gpt-image-2.5-sunburst`", self.skill)
-        self.assertNotIn('model="gpt-image-2.5-flare"', self.skill)
-        self.assertNotIn("--model gpt-image-2.5-flare", self.skill)
-        self.assertNotIn('$Model = "gpt-image-2.5-flare"', self.skill)
+        self.assertIn("只适用于两个 2.6 和两个 2.5 模型", self.skill)
+        self.assertNotIn('model="gpt-image-2.6-flare"', self.skill)
+        self.assertNotIn("--model gpt-image-2.6-flare", self.skill)
+        self.assertNotIn('$Model = "gpt-image-2.6-flare"', self.skill)
 
     def test_skill_contains_complete_text_to_image_parameter_guidance(self) -> None:
         for value in (
@@ -156,11 +156,27 @@ class SkillContractTests(unittest.TestCase):
             "GET https://api.myautoapi.com/v1/models",
             "不得自动加入白名单",
             "只输出 HTTP 状态和 `id`/`display_name`",
-            "Authorization: Bearer",
+            "原生 `models` 子命令",
             "未更新模型列表",
         ):
             self.assertIn(phrase, self.skill)
         self.assertNotIn("每次生图前探测", self.skill)
+        self.assertNotIn("$Key = (Get-Content", self.skill)
+        self.assertNotIn("curl --silent", self.skill)
+
+    def test_v091_keeps_legacy_models_and_constrains_gif(self) -> None:
+        for content in (self.skill, self.agents_rule):
+            for model in ("gpt-image-2.6-flare", "gpt-image-2.6-sunburst",
+                          "gpt-image-2.5-flare", "gpt-image-2.5-sunburst"):
+                self.assertIn(model, content)
+            self.assertIn("--output-format gif --size auto --quality low --n 1", content)
+            self.assertIn("不接参考图", content)
+            self.assertIn("精确帧数、时长或固定像素", content)
+            self.assertIn("rules/myautoapi-imagines-tool.rules", content)
+            self.assertIn("完全退出 Codex 再重新打开", content)
+        self.assertIn("{{MYAUTOAPI_IMAGE_TOOL_BASH}} generate", self.skill)
+        self.assertIn("{{MYAUTOAPI_IMAGE_TOOL_POWERSHELL}}", self.skill)
+        self.assertNotIn('"$tool_codex_home/tools/', self.skill)
 
     def test_skill_parallelizes_models_without_detached_background_jobs(self) -> None:
         for phrase in (
@@ -348,9 +364,9 @@ class SkillContractTests(unittest.TestCase):
             self.assertNotIn("uninstall", content.lower())
 
     def test_skill_has_both_platform_entries_and_metadata(self) -> None:
-        self.assertIn("myautoapi-imagines-tool\" generate", self.skill)
-        self.assertIn("myautoapi-imagines-tool\" edit", self.skill)
-        self.assertIn("myautoapi-imagines-tool.exe", self.skill)
+        self.assertIn("{{MYAUTOAPI_IMAGE_TOOL_BASH}} generate", self.skill)
+        self.assertIn("{{MYAUTOAPI_IMAGE_TOOL_BASH}} edit", self.skill)
+        self.assertIn("{{MYAUTOAPI_IMAGE_TOOL_POWERSHELL}}", self.skill)
         self.assertNotIn("python3", self.skill)
         self.assertNotIn("py $ToolScript", self.skill)
         self.assertIn("display_name: \"中转站生图与修图\"", self.openai_yaml)
