@@ -2,6 +2,27 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
+test('macOS discovery covers current Codex App layout and system Bash keeps the JavaScript heredoc outside command substitution', async () => {
+  const template = await readFile(
+    new URL('../myautoapi-codex-installer/codex-domestic-models/src/installer.sh.in', import.meta.url),
+    'utf8',
+  )
+
+  for (const path of [
+    '$app_root/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex',
+    '$app_root/Contents/Resources/codex-cli/bin/codex',
+    '$app_root/Contents/Resources/codex',
+    '$app_root/Contents/Resources/bin/codex',
+  ]) {
+    assert.ok(template.includes(path), 'macOS backend discovery must include ' + path)
+  }
+  assert.match(
+    template,
+    /invoke_model_import\(\)\s*\{\s*run_model_import[\s\S]*?<<'MYAUTOAPI_JAVASCRIPT'[\s\S]*?MYAUTOAPI_JAVASCRIPT\s*\}\s*if import_message="\$\(invoke_model_import\)"/,
+  )
+  assert.doesNotMatch(template, /if import_message="\$\(run_model_import/)
+})
+
 for (const extension of ['ps1', 'sh']) {
   test(`published domestic ${extension} installer matches the reviewed subproject`, async () => {
     const paths = [

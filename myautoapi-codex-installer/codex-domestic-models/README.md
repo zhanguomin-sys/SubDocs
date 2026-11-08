@@ -8,6 +8,8 @@ Windows 只读写 `CODEX_HOME` 内的配置和模型文件，不查找、启动�
 
 ## 运行脚本
 
+2026-11-08 同步上游提交 9501bc5 的 macOS 修复：发现新版 Codex App 内嵌后端路径，并把内嵌 JavaScript here-document 移出命令替换，兼容系统 Bash 3.2。改动后从源码模板重新构建，再将生成的 Shell 脚本同步到父安装目录和站点目录；版本号不变时也要比较脚本内容并发布。
+
 成功导入后，Windows 和 Linux/macOS 都会自动关闭 ChatGPT/Codex，正在运行的任务会中断，之后重新打开即可。重新运行同一入口就是更新模型。
 
 2026-11-08 按用户在 MyAutoAPI/Codex 下的实测修正 DeepSeek 名单：移除持续失败的 `deepseek-flash`，保留已通过 Responses 对话和工具调用的 `deepseek-v4.1-flash-1017`。升级会按精确 ID 清理旧目录中的 `deepseek-flash`，其余模型和配置保留。默认模型字段不会自动改写；之前选中被移除条目的用户，重新打开 App 后需新建任务并选择 `deepseek-v4.1-flash-1017`。

@@ -48,6 +48,8 @@ Windows 脚本只读写 `CODEX_HOME` 中的配置与模型文件；未设置时�
 
 ## 更新或卸载
 
+2026-11-08 修复 macOS 新版 Codex App 的后端路径发现，并兼容系统自带 Bash 3.2。重新运行同一入口即可更新；模型数量与版本号保持不变。
+
 **再次运行上面的导入命令，就是更新模型列表。**
 
 本版按 MyAutoAPI 实测结果移除 `deepseek-flash`（旧显示名称为 **DeepSeek V4.1 Flash**），保留已验证可用的 `deepseek-v4.1-flash-1017`。重新导入会从旧模型目录中清理 `deepseek-flash`，不会改写默认模型设置；如果之前选中的是它，请重新打开 App、新建任务并选择 `deepseek-v4.1-flash-1017`。
