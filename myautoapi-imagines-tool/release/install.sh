@@ -112,4 +112,18 @@ if ! { true </dev/tty; } 2>/dev/null; then
   echo "安装失败：未检测到可输入的终端。请在终端中直接运行安装命令并粘贴画图 Key。" >&2
   exit 1
 fi
-"$binary_path" install --key-stdin "$@" </dev/tty
+echo "现在需要填写‘专门画图分组’的 Key。" >&2
+echo "请勿填写编程分组 Key；输入仅用于本机生图工具。" >&2
+while true; do
+  printf '请输入专门画图分组 Key：' >&2
+  if ! IFS= read -r dedicated_image_key </dev/tty; then
+    echo "安装失败：未收到专门画图分组 Key，已停止安装。" >&2
+    exit 1
+  fi
+  if [[ -n "${dedicated_image_key//[[:space:]]/}" ]]; then
+    break
+  fi
+  echo "Key 不能为空，请重新输入。" >&2
+done
+printf '%s\n' "$dedicated_image_key" | "$binary_path" install --key-stdin "$@"
+unset dedicated_image_key

@@ -65,14 +65,14 @@ class PortPipelineTest(unittest.TestCase):
         release = self.root / 'myautoapi-imagines-tool/release'
         win = self.current_names['windows/amd64']
         (release / 'install.ps1').write_text(
-            '$Artifact = "' + win + '"\n$ExpectedSha256 = "' + '0' * 64 + '"\n& $BinaryPath install @args\n',
+            '$Artifact = "' + win + '"\n$ExpectedSha256 = "' + '0' * 64 + '"\n$DedicatedImageKey = Read-Host "请输入专门画图分组 Key"\n$DedicatedImageKey | & $BinaryPath install --key-stdin @args\n',
             encoding='utf-8',
         )
         shell = ''.join(
             'artifact="' + name + '"\nexpected_sha256="' + '0' * 64 + '"\n'
             for platform, name in self.current_names.items() if not platform.startswith('windows')
         )
-        (release / 'install.sh').write_text(shell + '"$binary_path" install "$@" </dev/tty\n', encoding='utf-8')
+        (release / 'install.sh').write_text(shell + 'IFS= read -r dedicated_image_key </dev/tty\nprintf \'%s\\n\' "$dedicated_image_key" | "$binary_path" install --key-stdin "$@"\n', encoding='utf-8')
 
     def run_port(self) -> None:
         with patch('sys.argv', [str(SCRIPT), str(self.upstream)]), contextlib.redirect_stdout(io.StringIO()):
@@ -93,6 +93,17 @@ class PortPipelineTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Cannot update installer hash'):
             self.run_port()
         self.assertEqual(snapshot(self.root), before)
+
+    def test_silent_stdin_entry_does_not_modify_any_output(self) -> None:
+        for extension, prompt in (('ps1', 'Read-Host'), ('sh', 'read -r dedicated_image_key </dev/tty')):
+            installer = self.root / ('myautoapi-imagines-tool/release/install.' + extension)
+            original = installer.read_text(encoding='utf-8')
+            installer.write_text(original.replace(prompt, 'missing_prompt'), encoding='utf-8')
+            before = snapshot(self.root)
+            with self.subTest(extension=extension), self.assertRaisesRegex(ValueError, 'must prompt'):
+                self.run_port()
+            self.assertEqual(snapshot(self.root), before)
+            installer.write_text(original, encoding='utf-8')
 
     def test_validated_staged_outputs_agree_and_keep_old_archive(self) -> None:
         historical = self.public / 'releases/v0.9.2/SHA256SUMS'

@@ -64,6 +64,7 @@ $InstalledBinaryPath = Join-Path $ToolCodexHome "tools\myautoapi-imagines-tool\m
 $NeedsDownload = $true
 $BinaryPath = $InstalledBinaryPath
 $TemporaryRoot = $null
+$DedicatedImageKey = $null
 
 try {
     if ((Test-Path -LiteralPath $InstalledReleasePath -PathType Leaf) -and (Test-Path -LiteralPath $InstalledBinaryPath -PathType Leaf)) {
@@ -88,7 +89,16 @@ try {
         }
     }
 
-    & $BinaryPath install --key-stdin @args
+    Write-Host "现在需要填写‘专门画图分组’的 Key。"
+    Write-Host "请勿填写编程分组 Key；输入仅用于本机生图工具。"
+    do {
+        $DedicatedImageKey = Read-Host "请输入专门画图分组 Key"
+        if ([string]::IsNullOrWhiteSpace($DedicatedImageKey)) {
+            Write-Host "Key 不能为空，请重新输入。"
+        }
+    } while ([string]::IsNullOrWhiteSpace($DedicatedImageKey))
+
+    $DedicatedImageKey | & $BinaryPath install --key-stdin @args
     if ($LASTEXITCODE -ne 0) {
         throw "安装程序返回退出码 $LASTEXITCODE。"
     }
@@ -97,6 +107,7 @@ catch {
     throw ("安装失败：" + $_.Exception.Message)
 }
 finally {
+    $DedicatedImageKey = $null
     if ($null -ne $TemporaryRoot -and (Test-Path -LiteralPath $TemporaryRoot)) {
         Remove-Item -LiteralPath $TemporaryRoot -Recurse -Force
     }

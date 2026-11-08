@@ -17,7 +17,7 @@
 - Windows：`https://docs.myautoapi.com/install/myautoapi-imagines-tool/install.ps1`
 - Linux/macOS：`https://docs.myautoapi.com/install/myautoapi-imagines-tool/install.sh`
 
-入口按当前平台只下载一个原生程序，并校验 SHA-256。首次安装或用户明确要求重新配置画图 Key 时，入口调用 `install --key-stdin`，将用户输入交给程序保存；已有正确制品时可以跳过下载，继续显式配置 Key。不要在聊天、命令参数、日志或 Git 中收集或保存真实 Key。
+入口按当前平台只下载一个原生程序，并校验 SHA-256。首次安装或用户明确要求重新配置画图 Key 时，入口先显示“请输入专门画图分组 Key”，读取非空的一行后，通过标准输入交给 `install --key-stdin` 保存。该原生选项本身不显示输入提示，不能直接连接交互终端，否则会停在“正在检查安装位置……”等待输入。已有正确制品时可以跳过下载，继续显式配置 Key。不要在聊天、命令参数、日志或 Git 中收集或保存真实 Key。
 
 安装后，Codex 按程序写入的绝对路径直接调用原生命令。普通更新由已安装程序的 `update` 子命令完成，沿用已保存的专门画图 Key，不要求用户再次输入。普通 `update` 先比较版本；版本相同时直接提示已是最新版，不会因 SHA-256 变化重新下载。同版本制品替换需要 `update --reinstall`，也可重新使用稳定安装入口；原生重装保留 Key，稳定安装入口会显式配置 Key。下载后的程序仍须通过清单中的 SHA-256 和程序版本校验。
 

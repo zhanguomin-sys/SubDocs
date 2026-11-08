@@ -36,7 +36,7 @@ python myautoapi-imagines-tool/release/port_upstream.py <上游仓库目录>
 
 脚本校验四个平台的上游 SHA-256，生成独立的 `releases/v0.9.2-upstream-c28a911/` 归档、无版本号的 `current/` 制品、两份校验清单、`latest.json` 和安装脚本中的新哈希。旧 `releases/v0.9.2/` 保留原字节与 immutable 缓存，不再覆盖。不要运行旧 `build_release.py` 来发布：保留的 Go 源码不是当前正式实现；该入口默认拒绝构建，`--legacy-source` 只允许历史复现，其输出不得覆盖正式制品或入口。
 
-初次安装或显式重新配置 Key 时，公开安装入口调用 `install --key-stdin`。普通更新使用工具自身的 `update`，保留已保存的 Key；它先比较版本，版本相同时不会因 SHA-256 变化下载。同版本制品替换需 `update --reinstall`，该原生重装保留 Key；也可重新使用稳定安装入口并显式配置 Key。下载后仍校验 SHA-256 与程序版本。保留用户当前不带版本号的安装入口与 `current/` 地址，不要求用户追加版本参数。
+初次安装或显式重新配置 Key 时，公开安装入口先显示输入提示，读取非空的一行，再通过管道调用 `install --key-stdin`；该原生选项会静默等输入，不能直接连接交互终端。普通更新使用工具自身的 `update`，保留已保存的 Key；它先比较版本，版本相同时不会因 SHA-256 变化下载。同版本制品替换需 `update --reinstall`，该原生重装保留 Key；也可重新使用稳定安装入口并显式配置 Key。下载后仍校验 SHA-256 与程序版本。保留用户当前不带版本号的安装入口与 `current/` 地址，不要求用户追加版本参数。
 
 发布前使用隔离 `CODEX_HOME` 和合成 Key 检查 Windows、Linux 安装及更新流程、生成的 Skill/规则与固定域名，并核对所有制品的 SHA-256。两个 Mac 制品尚未实机验证；Apple Silicon 只完成 ad-hoc 签名分页哈希核验，不能据此宣称 Mac 实机可用。
 

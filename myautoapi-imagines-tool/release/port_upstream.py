@@ -107,15 +107,13 @@ def prepare_installer(path: Path, hashes: dict[str, str], extension: str) -> str
         text, count = re.subn(pattern, lambda match: match[1] + sha + match[2], text)
         if count != 1:
             raise ValueError('Cannot update installer hash: ' + name)
-    # Explicit bootstrap/Key configuration always accepts the entered Key; update preserves it.
+    # --key-stdin is silent: public interactive entry points must prompt first.
     if extension == 'ps1':
-        text = text.replace('& $BinaryPath install @args', '& $BinaryPath install --key-stdin @args')
-        if '--key-stdin @args' not in text:
-            raise ValueError('PowerShell installer does not pass --key-stdin')
+        if 'Read-Host' not in text or '$DedicatedImageKey | & $BinaryPath install --key-stdin @args' not in text:
+            raise ValueError('PowerShell installer must prompt before piping to --key-stdin')
     else:
-        text = text.replace('install "$@" </dev/tty', 'install --key-stdin "$@" </dev/tty')
-        if 'install --key-stdin "$@" </dev/tty' not in text:
-            raise ValueError('Shell installer does not pass --key-stdin')
+        if 'read -r dedicated_image_key </dev/tty' not in text or '| "$binary_path" install --key-stdin "$@"' not in text:
+            raise ValueError('Shell installer must prompt before piping to --key-stdin')
     return text
 
 
