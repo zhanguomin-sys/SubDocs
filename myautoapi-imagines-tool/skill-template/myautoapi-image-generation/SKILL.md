@@ -56,8 +56,7 @@ description: "Use when a user asks to generate, draw, make, regenerate, compare,
 ```
 
 ```powershell
-$ToolPath = {{MYAUTOAPI_IMAGE_TOOL_POWERSHELL}}
-& $ToolPath models
+& {{MYAUTOAPI_IMAGE_TOOL_POWERSHELL}} models
 ```
 
 ## 选择调用方式
@@ -150,6 +149,8 @@ Nano Banana 的参考图和修图使用重复的 `--image` 说明人物、物体
 ## 已安装路径与放行规则
 
 安装器会把下面的占位替换为本机工具的绝对路径，并写入 `rules/myautoapi-imagines-tool.rules`。只运行这个绝对路径，不临时拼接路径或改用 shell 包装；不要改成 `bash -lc`、`powershell -Command` 或 `Start-Process`。完全退出 Codex 再重新打开，以便加载新规则。宿主不支持放行规则或规则尚未生效时按下文申请最小许可。
+
+Windows 的审批边界必须保持清晰：提交给宿主执行的生图步骤只能是一条以已安装程序绝对路径开头的原生程序调用。提示词文件的 here-string、UTF-8 写入和 `finally` 清理由宿主分开的文件操作完成，不能把变量赋值、`WriteAllText`、`try/finally`、`Remove-Item` 和生图调用拼成一条 PowerShell 脚本提交；也不能使用 `& $ToolPath` 这种变量路径调用。若宿主无法把文件准备和原生程序调用拆开，只为文件准备步骤申请最小权限，不要放行整个 PowerShell。
 
 ## 调用流程
 
@@ -249,17 +250,10 @@ text(JSON.stringify({
 
 内层 `yield_time_ms: 5000` 也是每次最长等待时间，不是固定睡眠；进程退出时会立即返回。返回 `session_id` 说明命令仍在运行，必须每 5 秒收取同一个 `session_id` 并累积每次返回的 `output`，不等待用户再次发消息或催促；每累计 30 秒仍未退出时，用 Code Mode 的 `notify(...)` 发出中文状态，再继续收取。命令完成后只用一次 `text(...)` 显式转发最终退出码和完整输出。宿主实际返回独立 stderr 字段时一并转发；没有该字段时不得虚构。Windows PowerShell 保持前述直接前台调用，不使用本节的 Code Mode 兜底。
 
-Windows PowerShell：
+Windows PowerShell：先在独立的文件操作中用单引号 here-string 写入 UTF-8 提示词文件，并记录 `$PromptFile`、`$OutputDir`、模型和参数。提交给宿主审批的只能是下面这一条原生程序调用；不要把文件准备脚本和它放在同一个命令字符串中：
 
 ```powershell
-$ToolPath = {{MYAUTOAPI_IMAGE_TOOL_POWERSHELL}}
-$Prompt = @'
-用户给出的完整图片描述或修改要求
-'@
-$PromptFile = [System.IO.Path]::GetTempFileName()
-try {
-  [System.IO.File]::WriteAllText($PromptFile, $Prompt, [System.Text.UTF8Encoding]::new($false))
-  & $ToolPath generate `
+& {{MYAUTOAPI_IMAGE_TOOL_POWERSHELL}} generate `
     --model $Model `
     --prompt-file $PromptFile `
     --n 1 `
@@ -267,12 +261,9 @@ try {
     --quality $Quality `
     --output-name "准确的图片名称" `
     --output-dir "$OutputDir"
-} finally {
-  Remove-Item -LiteralPath $PromptFile -Force
-}
 ```
 
-参考图或修改图时把最后一段改为 `& $ToolPath edit`，并在 `--prompt-file` 前加入一个或多个独立的 `--image "$InputImage"` 参数。Windows 调用 Grok Imagine 或 Nano Banana 时使用对应模型名，并用独立的 `--resolution` 和 `--aspect-ratio` 参数代替 `--size`；Nano Banana 不传 `--quality`。
+生成结束后，在独立的清理操作中执行 `Remove-Item -LiteralPath $PromptFile -Force`。参考图或修改图时，提交的原生调用开头保持 `& {{MYAUTOAPI_IMAGE_TOOL_POWERSHELL}} edit`，并在 `--prompt-file` 前加入一个或多个独立的 `--image "$InputImage"` 参数。Windows 调用 Grok Imagine 或 Nano Banana 时使用对应模型名，并用独立的 `--resolution` 和 `--aspect-ratio` 参数代替 `--size`；Nano Banana 不传 `--quality`。
 
 工具是独立程序，不安装或调用 Python、Node 或其它运行环境。宿主为加载本 `SKILL.md` 进行的一次读取属于 Skill 加载；加载后不要再次搜索或读取 Skill。生图调用不要使用 `Get-ChildItem`、`Get-Content`、`Get-Process`、`Test-Path` 或 `mkdir` 做调用前检查或运行中轮询；模型探测只调用上文的原生 `models` 子命令。
 

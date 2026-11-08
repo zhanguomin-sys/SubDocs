@@ -1,4 +1,4 @@
-"""V0.9.1 installer contract tests without real credentials or network calls."""
+"""V0.9.2 installer contract tests without real credentials or network calls."""
 
 from __future__ import annotations
 
@@ -196,7 +196,7 @@ class InstallerContractTests(unittest.TestCase):
 
         self.assertEqual(result.status, "upgraded")
         self.assertEqual(key_path.read_bytes(), b"synthetic-upgrade-key")
-        self.assertEqual((self.tool_dir / "VERSION").read_text(encoding="utf-8"), "0.9.1\n")
+        self.assertEqual((self.tool_dir / "VERSION").read_text(encoding="utf-8"), "0.9.2\n")
 
     def test_v076_install_upgrades_to_v081_and_replaces_the_dedicated_key(self) -> None:
         self.install()
@@ -213,7 +213,7 @@ class InstallerContractTests(unittest.TestCase):
 
         self.assertEqual(result.status, "upgraded")
         self.assertEqual(key_path.read_bytes(), b"synthetic-upgrade-key")
-        self.assertEqual((self.tool_dir / "VERSION").read_text(encoding="utf-8"), "0.9.1\n")
+        self.assertEqual((self.tool_dir / "VERSION").read_text(encoding="utf-8"), "0.9.2\n")
 
     def test_legacy_key_is_ignored_and_preserved(self) -> None:
         self.prepare_auth()

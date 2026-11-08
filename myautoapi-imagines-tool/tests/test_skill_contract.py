@@ -280,7 +280,11 @@ class SkillContractTests(unittest.TestCase):
         windows_section = code_mode_tail.split("Windows PowerShell：", 1)[1].split(
             "## 结果处理", 1
         )[0]
-        self.assertIn("& $ToolPath generate", windows_section)
+        self.assertIn("& {{MYAUTOAPI_IMAGE_TOOL_POWERSHELL}} generate", windows_section)
+        self.assertIn("提交给宿主审批的只能是下面这一条原生程序调用", windows_section)
+        self.assertIn("不要把文件准备脚本和它放在同一个命令字符串中", windows_section)
+        self.assertNotIn("& $ToolPath generate", windows_section)
+        self.assertIn("& {{MYAUTOAPI_IMAGE_TOOL_POWERSHELL}} edit", windows_section)
         self.assertIn("--output-dir \"$OutputDir\"", windows_section)
         self.assertNotIn("exec_command", windows_section)
         self.assertNotIn("恢复核查", windows_section)
@@ -331,17 +335,21 @@ class SkillContractTests(unittest.TestCase):
                 self.assertIn(phrase, content)
         self.assertIn("不得把“正在运行”当成最终结果", self.skill)
 
-    def test_powershell_prompt_is_passed_as_a_here_string_variable(self) -> None:
+    def test_powershell_prompt_is_prepared_separately_from_native_call(self) -> None:
         for content in (self.skill, self.agents_rule):
             self.assertIn("单引号 here-string", content)
             self.assertIn("作为 `--prompt-file` 的独立参数", content)
-        self.assertIn("$Prompt = @'", self.skill)
         self.assertIn("--prompt-file $PromptFile", self.skill)
-        self.assertIn("UTF8Encoding", self.skill)
+        self.assertIn("UTF-8", self.skill)
         self.assertIn("Remove-Item -LiteralPath $PromptFile", self.skill)
         self.assertIn("--model $Model", self.skill)
-        powershell_example = self.skill.split("```powershell", 1)[1].split("```", 1)[0]
-        self.assertNotIn('--prompt "用户给出的完整图片描述"', powershell_example)
+        self.assertIn("文件准备和原生程序调用拆开", self.skill)
+        windows_example = self.skill.split("Windows PowerShell：", 1)[1].split(
+            "```powershell", 1
+        )[1].split("```", 1)[0]
+        self.assertNotIn('--prompt "用户给出的完整图片描述"', windows_example)
+        for forbidden in ("$ToolPath =", "try {", "WriteAllText", "Remove-Item"):
+            self.assertNotIn(forbidden, windows_example)
 
     def test_global_rule_has_explicit_manual_update_entry(self) -> None:
         for phrase in (

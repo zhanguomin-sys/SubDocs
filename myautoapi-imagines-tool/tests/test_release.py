@@ -1,4 +1,4 @@
-"""V0.9.1 native artifact and online installer contracts."""
+"""V0.9.2 native artifact and online installer contracts."""
 
 from __future__ import annotations
 
@@ -86,7 +86,7 @@ class ReleaseContractTests(unittest.TestCase):
             self.run_linux_entry(Path(temporary), damage_binary=True)
 
     def test_builder_defines_all_supported_native_targets(self) -> None:
-        self.assertEqual(release.RELEASE_REVISION, "v0.9.1")
+        self.assertEqual(release.RELEASE_REVISION, "v0.9.2")
         self.assertEqual(
             set(release.TARGETS),
             {
@@ -100,12 +100,12 @@ class ReleaseContractTests(unittest.TestCase):
         self.assertFalse(release.artifact_name("darwin", "arm64").endswith(".exe"))
         self.assertFalse(release.artifact_name("linux", "amd64").endswith(".exe"))
 
-    def test_online_entries_pin_v091_artifacts_and_hashes(self) -> None:
+    def test_online_entries_pin_v092_artifacts_and_hashes(self) -> None:
         for script in (
             self.bash_installer,
             self.powershell_installer,
         ):
-            self.assertIn("releases/v0.9.1", script)
+            self.assertIn("releases/v0.9.2", script)
             self.assertNotIn("v0.2-r1.zip", script)
             self.assertNotRegex(script, r"(?i)python|安装\.py|Expand-Archive")
         bash_hashes = re.findall(r'expected_sha256="([0-9a-f]{64})"', self.bash_installer)
@@ -222,8 +222,8 @@ class ReleaseContractTests(unittest.TestCase):
             self.assertEqual(completed.returncode, 0, completed.stderr)
             self.assertEqual(result_path.read_text(encoding="utf-8"), "terminal-input-ok\n")
 
-    def test_install_state_version_is_v091(self) -> None:
-        self.assertEqual((PROJECT_ROOT / "VERSION").read_text(encoding="utf-8").strip(), "0.9.1")
+    def test_install_state_version_is_v092(self) -> None:
+        self.assertEqual((PROJECT_ROOT / "VERSION").read_text(encoding="utf-8").strip(), "0.9.2")
 
     def test_powershell_entry_points_do_not_exit_the_calling_session(self) -> None:
         for script in (self.powershell_installer,):
@@ -334,7 +334,7 @@ class ReleaseContractTests(unittest.TestCase):
                     self.assertNotEqual(completed.returncode, 0)
                     self.assertEqual(
                         download_log.read_text(encoding="utf-8").strip(),
-                        f"https://docs.myautoapi.com/install/myautoapi-imagines-tool/releases/v0.9.1/{artifact}",
+                        f"https://docs.myautoapi.com/install/myautoapi-imagines-tool/releases/v0.9.2/{artifact}",
                     )
 
     def test_shell_installer_repairs_same_version_linux_binary_without_execute_permission(self) -> None:
@@ -425,7 +425,7 @@ class ReleaseContractTests(unittest.TestCase):
             self.assertEqual(result_path.read_text(encoding="utf-8"), "repaired-and-launched\n")
             self.assertEqual(
                 download_log.read_text(encoding="utf-8").strip(),
-                f"https://docs.myautoapi.com/install/myautoapi-imagines-tool/releases/v0.9.1/{artifact}",
+                f"https://docs.myautoapi.com/install/myautoapi-imagines-tool/releases/v0.9.2/{artifact}",
             )
 
 

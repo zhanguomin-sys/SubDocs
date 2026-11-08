@@ -76,7 +76,7 @@
 
 ### 生成 GIF 动图 {#gif}
 
-在 Codex 中安装 V0.9.1 生图工具后，直接说 `画一个红色立方体旋转的循环 GIF 动图`。Skill 自动使用 2.6 Flare；说“用 2.6 Sunburst”则使用 Sunburst。GIF 只支持文字生成，不接参考图或修图，不批量生成。
+在 Codex 中安装 V0.9.2 生图工具后，直接说 `画一个红色立方体旋转的循环 GIF 动图`。Skill 自动使用 2.6 Flare；说“用 2.6 Sunburst”则使用 Sunburst。GIF 只支持文字生成，不接参考图或修图，不批量生成。
 
 自己调用时，向 `POST https://api.myautoapi.com/v1/images/generations` 发送 JSON，请求头仍为 `Authorization: Bearer <API_KEY>`，并设置 `Content-Type: application/json`：
 

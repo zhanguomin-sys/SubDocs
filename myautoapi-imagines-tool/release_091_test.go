@@ -173,7 +173,7 @@ func TestV091RulesInstallUpgradeAndUninstallPreserveOtherRules(t *testing.T) {
 	if err := installWithTestKey(&output); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(output.String(), "升级完成：V0.9.1") || !strings.Contains(output.String(), "完全退出") {
+	if !strings.Contains(output.String(), "升级完成：V0.9.2") || !strings.Contains(output.String(), "完全退出") {
 		t.Fatalf("upgrade/restart message missing: %s", output.String())
 	}
 	if !regularFileExists(layout.rulesPath) {

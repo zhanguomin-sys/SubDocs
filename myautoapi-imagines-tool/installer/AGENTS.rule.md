@@ -27,4 +27,5 @@
 - API Key 由工具直接从 `$CODEX_HOME/tools/myautoapi-imagines-tool/api-key` 读取。AI 不打开、读取、复制、展示、记录、扫描或提交 `auth.json`；旧版 `auth.json` 读取仅作为工具内部回退模式，不在 Skill 中主动切换。
 - 只有用户明确说“更新生图工具”“升级生图工具”或要求重装时才执行更新。用户要求修复时先捕捉本机真实原因，不把更新当成修复。Windows 使用 `irm https://docs.myautoapi.com/install/myautoapi-imagines-tool/install.ps1 | iex`，Linux x64、Apple Silicon 或 Intel Mac 使用 `curl -fsSL https://docs.myautoapi.com/install/myautoapi-imagines-tool/install.sh | bash`；用户明确要求更新后，给出当前系统的安装命令，让用户在终端执行并粘贴专门画图分组 Key，不在聊天中收集 Key。
 - 更新入口会按当前平台选择一个程序、校验 SHA-256；每次执行都输入并覆盖 `api-key`，同版本只跳过下载；不创建后台服务、计划任务、开机启动，也不在正常生图时检查更新。
+- Windows 生图审批时，提交给宿主的生图步骤必须是以已安装程序绝对路径开头的单条原生调用；here-string、UTF-8 提示词文件写入和 `finally` 清理必须分开处理，不能把 PowerShell 脚本、变量路径、`WriteAllText`、`try/finally` 或 `Remove-Item` 与 `generate`/`edit` 拼在同一条命令中。
 <!-- myautoapi-image-generation:end -->
