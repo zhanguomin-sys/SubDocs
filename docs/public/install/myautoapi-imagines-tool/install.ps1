@@ -81,7 +81,7 @@ try {
         $TemporaryRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("myautoapi-imagines-tool-" + [System.Guid]::NewGuid().ToString("N"))
         $BinaryPath = Join-Path $TemporaryRoot $Artifact
         New-Item -ItemType Directory -Path $TemporaryRoot | Out-Null
-        Download-WithPercent -Uri "$ReleaseBase/$Artifact" -Destination $BinaryPath -Activity "正在下载中转站生图工具 V0.9.2"
+        Download-WithPercent -Uri "$ReleaseBase/$Artifact?sha256=$ExpectedSha256" -Destination $BinaryPath -Activity "正在下载中转站生图工具 V0.9.2"
         $ActualSha256 = (Get-FileHash -LiteralPath $BinaryPath -Algorithm SHA256).Hash.ToLowerInvariant()
         if ($ActualSha256 -ne $ExpectedSha256) {
             throw "安装程序 SHA-256 校验不通过，已停止安装。"

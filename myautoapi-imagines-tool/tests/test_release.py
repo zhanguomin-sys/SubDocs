@@ -334,7 +334,7 @@ class ReleaseContractTests(unittest.TestCase):
                     self.assertNotEqual(completed.returncode, 0)
                     self.assertEqual(
                         download_log.read_text(encoding="utf-8").strip(),
-                        f"https://docs.myautoapi.com/install/myautoapi-imagines-tool/releases/v0.9.2/{artifact}",
+                        f"https://docs.myautoapi.com/install/myautoapi-imagines-tool/releases/v0.9.2/{artifact}?sha256={hashes[artifact]}",
                     )
 
     def test_shell_installer_repairs_same_version_linux_binary_without_execute_permission(self) -> None:
@@ -425,7 +425,7 @@ class ReleaseContractTests(unittest.TestCase):
             self.assertEqual(result_path.read_text(encoding="utf-8"), "repaired-and-launched\n")
             self.assertEqual(
                 download_log.read_text(encoding="utf-8").strip(),
-                f"https://docs.myautoapi.com/install/myautoapi-imagines-tool/releases/v0.9.2/{artifact}",
+                f"https://docs.myautoapi.com/install/myautoapi-imagines-tool/releases/v0.9.2/{artifact}?sha256={expected_sha256}",
             )
 
 

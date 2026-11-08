@@ -94,7 +94,7 @@ else
 
   echo "正在下载中转站生图工具 V0.9.2……"
   curl --fail --location --progress-bar --show-error --proto '=https' --proto-redir '=https' --tlsv1.2 \
-    "$release_base/$artifact" --output "$binary_path"
+    "$release_base/$artifact?sha256=$expected_sha256" --output "$binary_path"
 
   actual_sha256="$(sha256_for_file "$binary_path")"
   if [[ "$actual_sha256" != "$expected_sha256" ]]; then
