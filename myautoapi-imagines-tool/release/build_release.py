@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Build the self-contained V0.9.2 release artifacts."""
+"""Build the retained legacy Go implementation only when explicitly requested."""
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import os
 import re
@@ -67,11 +68,26 @@ def update_release_script_hashes(hashes: dict[str, str]) -> None:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--legacy-source",
+        action="store_true",
+        help="explicitly build the historical Go source; not the current release",
+    )
+    arguments = parser.parse_args()
+    if not arguments.legacy_source:
+        parser.error(
+            "当前发布制品来自固定上游原生程序，请使用 release/port_upstream.py <上游仓库目录>。"
+            "保留的 Go 源码不是当前发布实现；仅历史复现可显式传入 --legacy-source。"
+        )
+    print(
+        "警告：正在构建历史 Go 实现，输出不得替换当前正式发布制品、安装脚本或 latest.json。"
+    )
     if (PROJECT_ROOT / "VERSION").read_text(encoding="utf-8").strip() != "0.9.2":
         raise SystemExit("发布失败：V0.9.2 必须使用安装状态版本 0.9.2。")
 
     subprocess.run(["go", "test", "./..."], cwd=PROJECT_ROOT, check=True)
-    output_dir = PROJECT_ROOT / "dist" / RELEASE_REVISION
+    output_dir = PROJECT_ROOT / "dist" / ("legacy-" + RELEASE_REVISION)
     output_dir.mkdir(parents=True, exist_ok=True)
     for stale_artifact in output_dir.glob(f"{ARTIFACT_PREFIX}-*"):
         if stale_artifact.is_file():
@@ -120,7 +136,7 @@ def main() -> int:
         "".join(f"{current_hashes[path.name]}  {path.name}\n" for path in current_artifacts),
         encoding="ascii",
     )
-    update_release_script_hashes(current_hashes)
+    # Historical builds must not rewrite the current upstream-based installers.
     print(output_dir)
     print(checksum_path.read_text(encoding="ascii"), end="")
     return 0

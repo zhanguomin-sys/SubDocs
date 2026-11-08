@@ -20,8 +20,25 @@ node --test tests/*.test.mjs
 - `docs/public/install/codex-models.sh`
 - `docs/public/install/myautoapi-imagines-tool/install.ps1`
 - `docs/public/install/myautoapi-imagines-tool/install.sh`
-- `docs/public/install/myautoapi-imagines-tool/releases/v0.9.2/`
+- `docs/public/install/myautoapi-imagines-tool/releases/v0.9.2-upstream-c28a911/`
 - `docs/public/install/myautoapi-imagines-tool/current/`
+- `docs/public/install/myautoapi-imagines-tool/latest.json`
+
+### 图片工具制品来源
+
+当前 V0.9.2 制品来自 `youdaowudao/subdocs` 固定提交 `c28a91174db4f065ff4c4121e348f20afebda85c` 的原生程序。它们通过 `myautoapi-imagines-tool/release/port_upstream.py` 等长替换品牌、固定 API 和更新域名，并重新计算 Apple Silicon 程序现有 ad-hoc 签名的分页哈希。来源校验值与输出校验值记录在 `myautoapi-imagines-tool/release/upstream-port.json`。
+
+维护者在仓库根目录使用固定上游检出目录复现制品：
+
+```text
+python myautoapi-imagines-tool/release/port_upstream.py <上游仓库目录>
+```
+
+脚本校验四个平台的上游 SHA-256，生成独立的 `releases/v0.9.2-upstream-c28a911/` 归档、无版本号的 `current/` 制品、两份校验清单、`latest.json` 和安装脚本中的新哈希。旧 `releases/v0.9.2/` 保留原字节与 immutable 缓存，不再覆盖。不要运行旧 `build_release.py` 来发布：保留的 Go 源码不是当前正式实现；该入口默认拒绝构建，`--legacy-source` 只允许历史复现，其输出不得覆盖正式制品或入口。
+
+初次安装或显式重新配置 Key 时，公开安装入口调用 `install --key-stdin`。普通更新使用工具自身的 `update`，保留已保存的 Key；它先比较版本，版本相同时不会因 SHA-256 变化下载。同版本制品替换需 `update --reinstall`，该原生重装保留 Key；也可重新使用稳定安装入口并显式配置 Key。下载后仍校验 SHA-256 与程序版本。保留用户当前不带版本号的安装入口与 `current/` 地址，不要求用户追加版本参数。
+
+发布前使用隔离 `CODEX_HOME` 和合成 Key 检查 Windows、Linux 安装及更新流程、生成的 Skill/规则与固定域名，并核对所有制品的 SHA-256。两个 Mac 制品尚未实机验证；Apple Silicon 只完成 ad-hoc 签名分页哈希核验，不能据此宣称 Mac 实机可用。
 
 ## 2. 上传 GitHub
 
@@ -80,8 +97,9 @@ https://docs.myautoapi.com/install/codex-models.ps1
 https://docs.myautoapi.com/install/codex-models.sh
 https://docs.myautoapi.com/install/myautoapi-imagines-tool/install.ps1
 https://docs.myautoapi.com/install/myautoapi-imagines-tool/install.sh
+https://docs.myautoapi.com/install/myautoapi-imagines-tool/latest.json
 ```
 
-安装脚本必须直接显示纯文本，V0.9.2 的四个平台制品必须可以下载。之后每次推送到 `main`，Cloudflare Pages 会自动重新构建并发布。
+安装脚本必须直接显示纯文本，`latest.json` 必须返回有效 JSON，四个平台的 `current/` 制品必须可以下载且与公开清单的大小和 SHA-256 一致。安装入口和更新清单应及时获取新内容，避免缓存旧哈希与新程序不一致；安装脚本、清单、`current/` 文件及对应校验文件必须作为同一次发布上线。之后每次推送到 `main`，Cloudflare Pages 会自动重新构建并发布。
 
 官方操作参考：[VitePress 部署](https://developers.cloudflare.com/pages/framework-guides/deploy-a-vitepress-site/)、[自定义域名](https://developers.cloudflare.com/pages/configuration/custom-domains/)。

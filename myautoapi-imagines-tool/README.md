@@ -1,142 +1,80 @@
 # myautoapi-imagines-tool
 
-这是一个给 Codex 使用的本地图片生成工具。它适合需要直接用自然语言生图、又希望请求统一经过 MyAutoAPI 中转站的用户；安装后，普通任务默认调用 `gpt-image-2.6-flare` 生成 2K 图片，明确要求高清、精修或重要成品时调用 `gpt-image-2.6-sunburst`，成功后把本地图片显示在当前对话中。
+这是供 Codex 使用的 MyAutoAPI 原生图片工具，支持文生图、参考图、修图、多图和两个 2.6 模型的 GIF 文生图。普通任务默认使用 `gpt-image-2.6-flare`，明确要求高清、精修或重要成品时使用 `gpt-image-2.6-sunburst`。
 
-当前源码版本是 `V0.9.2`。每次执行安装或更新命令都要求粘贴专门画图分组 Key，并覆盖工具目录中的旧 Key；同版本只跳过下载，仍继续配置。默认模型升级到 2.6 Flare / Sunburst；保留两个 2.5 静态图模型，共支持 10 个模型，并增加 2.6 GIF 文生图。
+## 当前发布来源
 
-`V0.9.2` 发布包已放入文档站的 `docs/public/install/myautoapi-imagines-tool/`，随文档站部署上线。这里的更新是用户明确对 Codex 说“更新生图工具”后，由 Codex 在当前任务中完成检查、下载、安装和验证；修复问题时先捕捉本机真实原因，不把更新当成修复。
+当前正式制品是对方仓库 [youdaowudao/subdocs](https://github.com/youdaowudao/subdocs) 固定提交 `c28a91174db4f065ff4c4121e348f20afebda85c` 发布的 V0.9.2 原生程序，经 MyAutoAPI 品牌和域名迁移后发布。对方仓库未提供该工具的当前源码；本目录保留的 Go/Python 源码是此前的独立移植实现，供历史参考，**不是当前正式制品的构建来源**。
 
-V0.9.2 在 MyAutoAPI 源码上同步上游 2.6 模型、GIF 动图、Codex 放行规则和 Windows 原生调用审批边界。原有 V0.8.2 的稳定性、专门 Key 与固定 MyAutoAPI 接口保持。GIF 仅支持两个 2.6 模型的文生图，使用 `--output-format gif --size auto --quality low --n 1`；不接参考图、不批量，实际帧数、尺寸和时长以文件解码为准。
+迁移脚本为 `release/port_upstream.py`。它先核对四个平台的固定上游 SHA-256，再等长替换 `usegoodai`、`UseGoodAI`、`USEGOODAI`，同时迁移工具名、安装目录、Skill、全局规则和固定网络入口。Apple Silicon 程序原有的 ad-hoc 签名分页哈希会重新计算，文件结构和长度保持不变。`release/upstream-port.json` 记录来源提交、输入和输出哈希、替换数量及签名分页数量，便于复现和核对。
 
-## 一键安装
+固定 API 已迁移为 `https://api.myautoapi.com`；原生更新清单为 `https://docs.myautoapi.com/install/myautoapi-imagines-tool/latest.json`。工具仍可能下载接口返回的外部 HTTPS 图片 URL。版本号仍为 `V0.9.2`，不能仅凭版本号判断是否已经取得当前制品，还应核对 SHA-256。
 
-运行对应系统的一键安装命令。每次运行时，安装器都会要求粘贴“专门画图分组”的 Key，并覆盖工具目录中已有的 Key。输入内容会正常显示在终端中；安装器不会把 Key 再打印到后续提示、日志或安装清单。
+## 安装与更新
 
-Linux x64、Apple Silicon 或 Intel Mac：
+公开安装入口保持不带版本号：
 
-```bash
-curl -fsSL https://docs.myautoapi.com/install/myautoapi-imagines-tool/install.sh | bash
-```
+- Windows：`https://docs.myautoapi.com/install/myautoapi-imagines-tool/install.ps1`
+- Linux/macOS：`https://docs.myautoapi.com/install/myautoapi-imagines-tool/install.sh`
 
-Windows PowerShell：
+入口按当前平台只下载一个原生程序，并校验 SHA-256。首次安装或用户明确要求重新配置画图 Key 时，入口调用 `install --key-stdin`，将用户输入交给程序保存；已有正确制品时可以跳过下载，继续显式配置 Key。不要在聊天、命令参数、日志或 Git 中收集或保存真实 Key。
 
-```powershell
-irm https://docs.myautoapi.com/install/myautoapi-imagines-tool/install.ps1 | iex
-```
+安装后，Codex 按程序写入的绝对路径直接调用原生命令。普通更新由已安装程序的 `update` 子命令完成，沿用已保存的专门画图 Key，不要求用户再次输入。普通 `update` 先比较版本；版本相同时直接提示已是最新版，不会因 SHA-256 变化重新下载。同版本制品替换需要 `update --reinstall`，也可重新使用稳定安装入口；原生重装保留 Key，稳定安装入口会显式配置 Key。下载后的程序仍须通过清单中的 SHA-256 和程序版本校验。
 
-V0.9.2 发布资产支持 64 位 x64 Windows、64 位 x64 Linux、Apple Silicon 64 位 Mac 和 Intel 64 位 Mac。公开入口仍只有 Windows `install.ps1` 和 Linux/macOS `install.sh` 两个；Shell 入口自动判断当前系统和架构，只下载对应的一个 `V0.9.2` 原生程序，核对内置 SHA-256 和 ELF 或 Mach-O 架构后运行。Apple Silicon 在 Rosetta 下运行时优先使用 arm64 程序。客户端不需要 Python、Node、Git、SDK 或管理员权限；安装器不继续下载代码，只会写入以下用户目录：
+用户文件默认位于 `~/.codex/`；设置 `CODEX_HOME` 时改用该目录：
 
-- 工具：`$CODEX_HOME/tools/myautoapi-imagines-tool/`；其中 `api-key` 保存“专门画图分组”的 Key，`key-source` 保存当前 Key 来源；未设置 `CODEX_HOME` 时使用 `~/.codex/tools/myautoapi-imagines-tool/`。
-- Skill：`$CODEX_HOME/skills/myautoapi-image-generation/`；未设置时使用 `~/.codex/skills/myautoapi-image-generation/`。
-- 命令放行规则：`$CODEX_HOME/rules/myautoapi-imagines-tool.rules`，仅匹配本工具绝对程序路径的指定子命令，不放行通用 shell。
-- 全局默认规则：`$CODEX_HOME/AGENTS.md`；未设置时使用 `~/.codex/AGENTS.md`。
+- 程序、版本、安装清单和专用 Key：`tools/myautoapi-imagines-tool/`。
+- Skill：`skills/myautoapi-image-generation/`。
+- 原生命令放行规则：`rules/myautoapi-imagines-tool.rules`。
+- 全局生图规则块：`AGENTS.md`。
 
-安装器不会修改当前项目的 `AGENTS.md`，不会写入或修改 `$CODEX_HOME/auth.json`，也不会写入 `.agents/skills/` 或 `skill-packs/`。已有 V0.9.2 且架构、SHA-256 匹配时直接复用程序，继续输入并覆盖画图 Key。V0.2 至 V0.9.1 原生安装可以升级到 V0.9.2；架构或 SHA-256 不匹配时重新下载正式程序。损坏的托管文件会修复。目标目录无法确认归属、版本不受支持、规则标记破损或存在非空 `AGENTS.override.md` 时会停止，不覆盖用户文件。
+安装或更新完成后需要完全退出并重新打开 Codex，再开始新任务，以加载新的规则。工具没有后台服务、计划任务或开机启动项，也不在普通生图时自动更新。
 
-## 第一次使用
+## 调用行为
 
-安装完成后完全退出 Codex 再重新打开，以加载放行规则，然后新建任务，再发送一条短句，例如：
+当前发布程序保留上游 V0.9.2 的 `generate`、`edit`、`models`、`paths`、`doctor`、`recover`、`update` 和 `version` 等原生子命令。Codex 使用安装器生成的 Skill 中的绝对工具路径，一次提交一条原生命令；提示词直接通过 `--prompt` 传递，不创建 PowerShell 提示词临时文件，因此不需要额外清理临时提示词文件。具体引号和命令格式以当前安装的 Skill 为准。
 
-```text
-画一张白底红苹果
-```
+API Key 由原生程序内部读取。排错先用 `doctor`；查看模型用 `models`；找回已完成调用的结果用 `recover`。用户要求修复时先诊断真实原因，用户明确要求更新或重装时才运行相应子命令。
 
-不需要安装或手工运行 Python，不需要在提示词里写 MyAutoAPI。普通任务默认使用 `gpt-image-2.6-flare`，明确要求高清、高质量、精细细节、精修、严格保留原图或重要成品时使用 `gpt-image-2.6-sunburst`；也可以明确指定两个 2.5 模型或其它六个模型。图片生成完全失败时，Codex 会提醒客户到后台查看是否有生成记录，或让 AI 修复生图工具；不自动重试或更换模型。
+默认模型为 `gpt-image-2.6-flare`，两个 2.6 模型默认 `2048x2048`、`high`、`png`。共支持以下十个模型：
 
-Linux 或 macOS Code Mode 会每 5 秒收取同一个前台会话；进程退出时立即取得结果，不等待用户再次发消息。生成超过 30 秒时，Codex 先报告仍在生成，再继续等待同一个调用。
+| 模型 | 用途 |
+| --- | --- |
+| `gpt-image-2.6-flare` | 普通生图、参考图、修图和多图的默认模型 |
+| `gpt-image-2.6-sunburst` | 高清、精修或重要成品 |
+| `gpt-image-2.5-flare` | 用户明确指定时使用的静态图模型 |
+| `gpt-image-2.5-sunburst` | 用户明确指定时使用的静态图模型 |
+| `gpt-image-2` | 文生图、参考图、修图、多图 |
+| `gpt-image-1k-th` | 文生图、参考图、修图、多图 |
+| `gpt-image-2-adobe` | 文生图、多图 |
+| `grok-imagine-image` | 文生图、参考图、修图、多图 |
+| `nano-banana-2` | 文生图、参考图、修图、多图 |
+| `nano-banana-pro` | 文生图、参考图、修图、多图 |
 
-## 更新工具
+GIF 仅使用两个 2.6 模型的文生图模式，支持 `--frame-count` 和 `--frame-duration-ms` 请求参数；尺寸、帧数和时长以实际返回文件与 stdout 的动画信息为准。多图由工具内部拆成独立单张请求，并发上限为 3，保留成功结果。完整参数和限制以当前原生程序生成的 Skill 为准，不以保留源码中的旧模板代替。
 
-稳定的一键安装入口同时作为更新入口。用户只需对 Codex 说：
+## 发布复现
 
-```text
-更新生图工具
-```
-
-Codex 给出当前系统的一键安装命令，用户在终端执行并粘贴专门画图分组 Key。每次执行都会覆盖旧 Key，不需要额外参数。输入为空时重新输入；没有输入或保存失败时保留原有 Key。
-
-更新入口只在用户明确要求时联网。它先比较本地版本与在线版本；已经是最新版且本机文件完整时不下载原生程序。发现新版本时只下载当前平台的一个程序，校验 SHA-256 后执行事务更新，每次执行都继续输入并保存画图 Key；失败时恢复原有工具、Skill、规则和 Key。工具不创建后台服务、计划任务或开机启动项，也不在正常生图时检查更新。
-
-## 卸载工具
-
-不提供公网卸载脚本。用户只需对 Codex 说“卸载中转站生图工具”，由 Codex 调用已安装原生程序的 `uninstall` 命令。卸载范围固定为：
-
-- `$CODEX_HOME/tools/myautoapi-imagines-tool/` 内的受管程序、版本和来源标记；默认保留 `api-key`，永久删除前必须单独确认。
-- `$CODEX_HOME/skills/myautoapi-image-generation/` 内的本工具 Skill。
-- `$CODEX_HOME/AGENTS.md` 中由本工具维护的规则块，不改动用户其它内容。
-- `$CODEX_HOME/rules/myautoapi-imagines-tool.rules` 中本工具托管的放行规则。
-
-未设置 `CODEX_HOME` 时，上述位置使用当前用户的 `~/.codex/`。安装到用户机器的全局规则和生图 Skill 不暴露卸载命令；卸载说明只保留在本项目文档中。
-
-## 工具边界
-
-- 固定接口：Images 模型使用 `https://api.myautoapi.com/v1/images/generations` 和 `/v1/images/edits`；Nano Banana 使用 `https://api.myautoapi.com/v1/responses`
-- 支持模型：`gpt-image-2.5-flare`、`gpt-image-2.5-sunburst`、`gpt-image-2.6-flare`、`gpt-image-2.6-sunburst`、`gpt-image-2`、`gpt-image-1k-th`、`gpt-image-2-adobe`、`grok-imagine-image`、`nano-banana-2`、`nano-banana-pro`
-- `gpt-image-2.6-flare` 支持文生图、参考图、修图和多图；普通任务默认使用，默认 `2048x2048`、`high`
-- `gpt-image-2.6-sunburst` 支持文生图、参考图、修图和多图；明确的高质量与精细编辑任务使用，默认 `2048x2048`、`high`
-- `gpt-image-2` 支持文生图、参考图、修图和多图；默认 `1024x1024`、`high`
-- `gpt-image-1k-th` 支持文生图、参考图、修图和多图；固定 `1024x1024`，已验证 `low` 和 `high`，多图固定拆成单张请求
-- `gpt-image-2-adobe` 开放已验证的 `1024x1536`、`1536x2304`、`2304x3456`、`low` 文生图；多图由工具内部拆成多次单张请求
-- `grok-imagine-image` 支持文生图、参考图、修图和多图；支持 `1k`、`2k`，以及 `1:1`、`16:9`、`9:16`、`4:3`、`3:4`、`3:2`、`2:3`
-- Grok Imagine 质量支持 `low`、`medium`、`high`；未指定时使用模型默认质量
-- `nano-banana-2` 支持文生图、参考图、修图和多图；本轮真实验证分辨率 `512`、`1k`、`2k`、`4k`、15 种比例、PNG/JPEG/WebP 各 1 张参考图，以及 2 张和 4 张不同参考图
-- `nano-banana-pro` 支持文生图、参考图、修图和多图；本地接受 `1k`、`2k` 或 `4k` 请求；上游目前实测输出固定为 1024x1024，不能承诺请求分辨率生效
-- Nano Banana 参考图的本地校验上限仍为 14 个 `--image`；14 张远端请求返回 HTTP 502，尚未形成远端支持结论
-- 默认每次请求：`n=1`；同一画面要求通用支持 `n=1` 到 `n=10`，Grok Imagine 支持 `n=1` 到 `n=9`
-- 默认参数：`gpt-image-2.6-flare`、`2048x2048`、`high`、`png`
-- 质量支持：通用为 `low`、`medium`、`high`、`auto`；两个 2.6 和两个 2.5 模型另外支持 `xhigh` 和 `max`
-- 常用尺寸建议：`1024x1024`、`1536x1024`、`1024x1536`、`2048x2048`、`2048x1152`、`1152x2048`、`3840x2160`、`2160x3840`、`auto`
-- 精确尺寸支持 `WIDTHxHEIGHT`：宽高为 16 的倍数，单边不超过 3840，长短边比例不超过 3:1，总像素为 655360 至 8294400
-- 支持接口返回的 `b64_json`，也支持 HTTPS 图片 URL 回退；每次 URL 只下载一次
-- GPT Image 和 Grok 的参考图、修图通过固定 `/v1/images/edits` 提交；Nano Banana 把文本和参考图一起提交到 `/v1/responses`；输入图片不写入用户输出目录
-- 多图在一次工具调用内拆成独立的单张请求，并发上限为 3；任意请求失败时保留其它成功图片，最终数量不超过用户请求的 `n`
-- 图片按接口返回的真实格式保存；支持验证 PNG、JPEG、WebP 和 GIF；GIF 另返回实际动画信息
-- 成功时只在 `images` 下保存最终图片；文件名由 Skill 根据画面主体提供，重名自动追加数字，不覆盖旧图
-- stdout 使用 `requested_count` 和 `output_count` 标明请求数量与实际成功数量；单图返回 `output_file`，多图返回 `output_files`；API 原始响应只在内存中处理，不写入用户目录
-- 用户明确要求多个不同模型时，Codex 为每个模型提交一个独立前台调用并在同一批中并发启动；工具返回路径后，Codex 不重新读取图片，直接用绝对路径 Markdown 图片语法展示，并在最终回复中再次嵌入全部成功图片
-- API Key 默认由工具从 `$CODEX_HOME/tools/myautoapi-imagines-tool/api-key` 读取，调用方不传 `--api-key` 或 `--base-url`。旧版 `auth.json` 读取只保留为工具内部回退模式。
-
-客户端使用预编译原生程序，不安装运行环境或额外依赖。专门画图 Key 在 Linux 和 Mac 上使用 `0600` 权限；Windows 不额外重写 ACL。其它普通文件继承正常默认权限，Linux 和 Mac 工具文件增加必需的可执行属性。
-
-## 验证状态
-
-V0.9.2 根据上游文档和发布记录，在 MyAutoAPI 源码上同步 2.6 模型、GIF、原生工具命令放行规则和 Windows 原生调用审批边界，使用 Go 1.27.3 重新构建四个平台制品。Linux 和 Windows 原生 Go 测试通过，Python 契约测试通过；Windows 在隔离 `CODEX_HOME` 中实测 V0.8.2 升级、取消输入、同版本换 Key、含中文与单引号的路径、运行中卸载及用户规则保留。实际 Codex 规则验证原生程序路径精确命中，安装、卸载和 Shell 均未放行。测试仅使用合成 Key 和模拟接口，未调用真实付费生图；MyAutoAPI 的 GIF 远端效果尚未实测，两个 Mac 制品为交叉编译，尚无 Mac 实机验证。
-
-V0.8.2 依据[上游发布记录 fb13477](https://github.com/youdaowudao/subdocs/commit/fb134772b387e9465aea2c0d2bf63d60f0e21192)列出的修复范围，在 MyAutoAPI 源码上完成移植，并使用 Go 1.27.3 重新构建四个平台制品。Go 测试与 74 项 Python 测试通过；Windows 已在隔离的 `CODEX_HOME` 中实测 V0.8.1 升级、取消输入保留旧 Key、同版本换 Key及运行中卸载。Linux 安装、缓存复用、损坏修复和终端输入由发布测试覆盖。没有调用真实付费生图接口；Apple Silicon 与 Intel Mac 已交叉编译，尚未进行 Mac 实机验证。
-
-V0.8.1 的 Go 测试和 74 项 Python 测试通过，独立审查未发现阻塞问题。Linux x64 使用真实 `curl | bash`、本地 HTTPS 和控制伪终端验证了 12 个场景，包括重复换 Key、取消输入、缓存损坏、下载失败、V0.8.0 升级和卸载后重装；独立审查再次运行全部 12 项，结果通过。本轮尚未在 Windows、Apple Silicon Mac 和 Intel Mac 实机运行。
-
-V0.1 的 Python 参考实现已完成 `gpt-image-2` 请求、结果保存和无密钥契约测试；V0.3-r5 的原生安装、专门 Key、更新和 Windows 生图流程已经验证。V0.4.0 已真实验证 `gpt-image-2` 的 1K、2K、4K、横图、竖图、方图、自动尺寸和四档质量，并验证 `b64_json` 与 HTTPS URL 两种图片返回。V0.4.1 已真实验证参考图、图片修改和三张多图结果；测试确认三张结果都会逐张进入当前对话显示流程。V0.5.0 已验证 `gpt-image-1k-th` 和 `gpt-image-2-adobe`，V0.6.0 已验证 `grok-imagine-image`。V0.7.0 已真实验证两个 Nano Banana 模型均能返回有效 PNG，工具可完成解析、保存和显示；参考图、多图、嵌套图片解析及逐张展示由本地契约测试覆盖。V0.7.1 的多模型并发和结果绑定由本地 Skill 契约测试覆盖。V0.7.2 的 macOS Code Mode 结果转发与受限目录恢复已在 Linux 使用假工具和临时图片目录模拟验证。V0.7.3 增加 Intel Mac 构建和自动分流。V0.7.4 修复多图独立请求、部分成功保留和直接 Markdown 展示。V0.7.5 已验证 Nano Banana 2 的 512/1K/2K/4K、比例、PNG/JPEG/WebP 各 1 张参考图及 2/4 张不同参考图，并明确 14 张远端请求仍无支持结论；同时修正空参考图提示、V0.7.4 升级和发布测试隔离。V0.7.6 在 Linux 实测 `gpt-image-2` 完成后可立即取得结果，并用本地契约覆盖 5 秒连续收取和 30 秒中文状态通知。V0.8.0 已从子项目源码真实验证 Flare 默认 2K 文生图和 Sunburst 默认 2K 修图，两者均返回实际 `2048x2048` PNG；六档质量和旧模型不变由本地契约覆盖。
-
-原有 `V0.2-r1` 依赖客户端 Python，不能作为通用一键安装发布。`V0.2-r2` 首次改为原生程序，`V0.2-r3` 收缩为 Windows x64 和 Apple Silicon Mac；`V0.3-r3` 在这两个目标上加入专门画图分组 Key，并把生图输出移出 Codex Home；`V0.3-r4` 加入用户主动触发的更新入口；`V0.3-r5` 收敛为两个公开入口并修正 Windows 提示词传参；`V0.7.3` 增加 Intel Mac 原生程序，Mac 仍只保留一条自动分流的安装入口。Windows 已完成真实安装和生图验证，Apple Silicon 与 Intel Mac 实机验证仍待分别完成。
-
-## 发布维护
-
-本子项目源码随文档仓库维护，`dist/` 是忽略的本地构建输出；手动同步到 `docs/public/` 的制品随站点发布。每次修改安装器、正式工具、Skill、清单或 README 后，维护者必须完成以下动作：
-
-1. 运行全部无密钥测试和 Skill 校验。
-2. 运行 `python3 release/build_release.py`，重新生成 Windows x64、Linux x64、Apple Silicon Mac、Intel Mac 四个程序和 `SHA256SUMS`。
-3. 把新 SHA-256 同步写入 `release/` 下 Windows、Linux/macOS 两份公开安装脚本，重新运行发布契约测试。
-4. 手动把两份公开安装脚本、四个平台程序和 `SHA256SUMS` 迁移到父仓库 `docs/public/install/myautoapi-imagines-tool/` 对应版本目录。
-5. 在父仓库完成站点构建、公网哈希核对和隔离 `CODEX_HOME` 安装测试后再推送。
-
-发布脚本不得自动修改、提交或推送父仓库。手动迁移是两个仓库之间固定的发布边界。
-
-`V0.3-r5` 是旧版发布编号。V0.4 开始使用 `V0.4.0`、`V0.4.1` 这样的版本号，不再为普通发布增加 `rN`。任何受管文件变化都必须重新构建原生程序、SHA-256 和两份公开安装脚本。
-
-## 项目目录
+在文档仓库根目录，向迁移脚本传入固定上游仓库的检出目录：
 
 ```text
-myautoapi-imagines-tool/
-  *.go              原生安装、卸载和生图程序源码
-  installer/        旧 Python 安装兼容代码和全局规则资源
-  release/          原生发布构建脚本和公网一键安装入口
-  tool/             V0.1 Python 参考实现
-  skill-template/  安装包内的“中转站生图” Skill
-  tests/            无密钥契约测试和安装器测试
-  test-records/     脱敏后的真实测试记录
-  skill-evaluations/ Skill 基线、前向和安装流程演练
-  plans/            版本实施计划
+python myautoapi-imagines-tool/release/port_upstream.py <上游仓库目录>
 ```
 
-父项目的 `subdocs/docs/`、站点页面、导航和其它多模型文档不属于本子项目的 V0.8.1 发布资产范围；生图分组方法页需要随已支持模型同步维护。
+脚本只接受已固定校验值的上游程序，生成：
+
+- `docs/public/install/myautoapi-imagines-tool/releases/v0.9.2-upstream-c28a911/`：本次上游迁移制品的独立归档和 `SHA256SUMS`。旧 `releases/v0.9.2/` 保留原字节，不代表本次制品。
+- `docs/public/install/myautoapi-imagines-tool/current/`：不带版本号的四平台文件和 `SHA256SUMS`。
+- `docs/public/install/myautoapi-imagines-tool/latest.json`：原生更新使用的当前平台路径、大小与哈希。
+- `release/install.ps1`、`release/install.sh` 及公开副本：同步新的制品哈希。
+- `release/upstream-port.json`：可追溯的迁移记录。
+
+安装脚本、更新清单、程序与校验文件必须一同发布；用户继续使用现有稳定入口，不需要追加版本号或查询参数。
+
+`release/build_release.py` 是保留 Go 实现的历史构建器，默认拒绝运行并提示使用 `port_upstream.py`。只有明确传入 `--legacy-source` 才会构建历史源码；输出隔离在 `dist/legacy-v0.9.2/`，不再修改正式安装脚本中的哈希。它的输出不得覆盖当前正式制品、安装脚本、校验清单或 `latest.json`。不要将旧 Go/Python 测试通过等同于当前发布程序已经验证。
+
+## 验证边界
+
+正式制品应核对固定上游哈希、迁移后哈希、品牌残留、固定 API/更新域名、公开脚本和 `latest.json` 的一致性，并在隔离 `CODEX_HOME` 中用合成 Key 验证 Windows、Linux 安装、保留 Key 的更新和重装流程。Linux 本地 HTTPS 夹具已验证：普通更新跳过同版本不同哈希，`update --reinstall` 正确解析 `current/...` 相对路径并保留 Key。测试不得读取或提交真实 Key，也不以诊断测试发起付费生图请求。
+
+Apple Silicon 程序重新计算现有 ad-hoc 签名的 1560 个 SHA-256 分页哈希；Intel Mac 程序没有该签名。两个 Mac 制品尚未实机验证，签名结构和校验值核验不能替代 Mac 上的安装及运行验证。远端生图是否成功仍取决于 MyAutoAPI 的模型、分组权限和接口服务，不能仅由本地安装测试推断。

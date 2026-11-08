@@ -1,0 +1,26 @@
+{
+  "version": "0.9.2",
+  "release": "V0.9.2",
+  "files": {
+    "windows/amd64": {
+      "path": "current/myautoapi-imagines-tool-windows-amd64.exe",
+      "sha256": "3bc1abcfd0ab8c90b625d0461345116df3d6d1a28b747a80a0aff3adcee22896",
+      "size": 6909440
+    },
+    "darwin/arm64": {
+      "path": "current/myautoapi-imagines-tool-darwin-arm64",
+      "sha256": "925f090ed745335424d9d8e5968b0c30d56ee45a60e1ba7eafac7fd6f5dac9df",
+      "size": 6436466
+    },
+    "darwin/amd64": {
+      "path": "current/myautoapi-imagines-tool-darwin-amd64",
+      "sha256": "b1d3b8c82e6fbb6ee30e544b717ec1876eb2153d06039661d472ca2e2b40b274",
+      "size": 6874096
+    },
+    "linux/amd64": {
+      "path": "current/myautoapi-imagines-tool-linux-amd64",
+      "sha256": "046653c0a4c4023266ab01df555caa8356efb4921a9fe41ec6bfc5235df12382",
+      "size": 6758584
+    }
+  }
+}

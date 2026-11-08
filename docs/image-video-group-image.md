@@ -86,7 +86,7 @@ curl -fsSL https://docs.myautoapi.com/install/myautoapi-imagines-tool/install.sh
 <details>
 <summary>更新、卸载和文件位置</summary>
 
-更新：对 Codex 说“更新生图工具”，按提示运行命令，重新粘贴专门画图分组 Key。安装或更新后完全退出 Codex 再重新打开，让启动时加载新放行规则。
+更新：对 Codex 说“更新生图工具”，Codex 会运行工具内置更新，沿用已保存的专门画图分组 Key，无需重新输入。首次安装或更换 Key 时才使用第 2 步的安装入口。安装或更新后完全退出 Codex 再重新打开，让启动时加载新放行规则。
 
 卸载：对 Codex 说“卸载中转站生图工具”。专门画图 Key 默认保留，永久删除前会单独确认。
 

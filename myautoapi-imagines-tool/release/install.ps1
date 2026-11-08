@@ -56,7 +56,7 @@ if ($Architecture.ToUpperInvariant() -ne "AMD64") {
     throw ("安装失败：V0.9.2 仅支持 64 位 x64 Windows，当前架构为 " + $Architecture + "。")
 }
 $Artifact = "myautoapi-imagines-tool-windows-amd64.exe"
-$ExpectedSha256 = "55a2becddf1ba353a4e3ef77364cd5a254b2f6ddaa30cc22135ce5288218ed4c"
+$ExpectedSha256 = "3bc1abcfd0ab8c90b625d0461345116df3d6d1a28b747a80a0aff3adcee22896"
 
 $ToolCodexHome = if ([string]::IsNullOrWhiteSpace($env:CODEX_HOME)) { Join-Path $HOME ".codex" } else { $env:CODEX_HOME }
 $InstalledReleasePath = Join-Path $ToolCodexHome "tools\myautoapi-imagines-tool\RELEASE"
@@ -88,7 +88,7 @@ try {
         }
     }
 
-    & $BinaryPath install @args
+    & $BinaryPath install --key-stdin @args
     if ($LASTEXITCODE -ne 0) {
         throw "安装程序返回退出码 $LASTEXITCODE。"
     }
