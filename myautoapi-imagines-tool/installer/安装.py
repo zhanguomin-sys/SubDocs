@@ -196,7 +196,7 @@ def _read_installed_state(layout: Layout, manifest: dict[str, Any]) -> dict[str,
         if state.get("managed_by") != MANAGED_BY or state.get("schema_version") != 1:
             raise InstallationError(f"目标目录无法确认由本工具管理：{layout.tool_dir}")
         installed_version = state.get("version")
-        if installed_version not in {manifest["version"], "0.2.0", "0.3.0", "0.4.0", "0.4.1", "0.5.0", "0.6.0", "0.7.0", "0.7.1", "0.7.2", "0.7.3", "0.7.4", "0.7.5", "0.7.6", "0.8.0"}:
+        if installed_version not in {manifest["version"], "0.2.0", "0.3.0", "0.4.0", "0.4.1", "0.5.0", "0.6.0", "0.7.0", "0.7.1", "0.7.2", "0.7.3", "0.7.4", "0.7.5", "0.7.6", "0.8.0", "0.8.1", "0.8.2", "0.8.3", "0.9.0", "0.9.1"}:
             raise InstallationError(
                 f"已安装版本为 {installed_version}，当前安装包为 {manifest['version']}；不支持直接升级。"
             )

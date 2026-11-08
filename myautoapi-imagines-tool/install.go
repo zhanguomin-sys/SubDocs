@@ -484,7 +484,7 @@ func readInstallState(layout installLayout) (*installState, error) {
 		if json.Unmarshal(content, state) != nil || state.SchemaVersion != 1 || state.ManagedBy != managedBy {
 			return nil, fmt.Errorf("目标目录无法确认由本工具管理：%s", layout.toolDir)
 		}
-		if state.Version != version() && state.Version != "0.2.0" && state.Version != "0.3.0" && state.Version != "0.4.0" && state.Version != "0.4.1" && state.Version != "0.5.0" && state.Version != "0.6.0" && state.Version != "0.7.0" && state.Version != "0.7.1" && state.Version != "0.7.2" && state.Version != "0.7.3" && state.Version != "0.7.4" && state.Version != "0.7.5" && state.Version != "0.7.6" && state.Version != "0.8.0" && state.Version != "0.8.1" && state.Version != "0.8.2" && state.Version != "0.8.3" && state.Version != "0.9.0" {
+		if state.Version != version() && state.Version != "0.2.0" && state.Version != "0.3.0" && state.Version != "0.4.0" && state.Version != "0.4.1" && state.Version != "0.5.0" && state.Version != "0.6.0" && state.Version != "0.7.0" && state.Version != "0.7.1" && state.Version != "0.7.2" && state.Version != "0.7.3" && state.Version != "0.7.4" && state.Version != "0.7.5" && state.Version != "0.7.6" && state.Version != "0.8.0" && state.Version != "0.8.1" && state.Version != "0.8.2" && state.Version != "0.8.3" && state.Version != "0.9.0" && state.Version != "0.9.1" {
 			return nil, fmt.Errorf("已安装版本为 %s，当前安装包为 %s；不支持直接升级。", state.Version, version())
 		}
 		return state, nil

@@ -56,7 +56,7 @@ if ($Architecture.ToUpperInvariant() -ne "AMD64") {
     throw ("安装失败：V0.9.2 仅支持 64 位 x64 Windows，当前架构为 " + $Architecture + "。")
 }
 $Artifact = "myautoapi-imagines-tool-v0.9.2-windows-amd64.exe"
-$ExpectedSha256 = "b7459c450ca572fc2456ed88bf8dbdbeb6a0cf4a7cc04aa38e5b326611e5e3d5"
+$ExpectedSha256 = "55a2becddf1ba353a4e3ef77364cd5a254b2f6ddaa30cc22135ce5288218ed4c"
 
 $ToolCodexHome = if ([string]::IsNullOrWhiteSpace($env:CODEX_HOME)) { Join-Path $HOME ".codex" } else { $env:CODEX_HOME }
 $InstalledReleasePath = Join-Path $ToolCodexHome "tools\myautoapi-imagines-tool\RELEASE"

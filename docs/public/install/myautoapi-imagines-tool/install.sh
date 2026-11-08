@@ -20,17 +20,17 @@ fi
 case "$system_name/$machine_name/$translated" in
   Darwin/arm64/*|Darwin/x86_64/1)
     artifact="myautoapi-imagines-tool-v0.9.2-darwin-arm64"
-    expected_sha256="b2aacb1e6df3603c87b9b26301e275f00322772117fafa00d904f57b7d384d20"
+    expected_sha256="0724ea493654c6296c641b7d17b353b778b16e2584cc9e41f209f80385e37ec0"
     expected_binary_format="macho-arm64"
     ;;
   Darwin/x86_64/*)
     artifact="myautoapi-imagines-tool-v0.9.2-darwin-amd64"
-    expected_sha256="eaaded9ef25a63a7e10adc769c427bcc5551b44adaa3b6e7ecef119618c27c89"
+    expected_sha256="db227a3fa07e7953df7036f5b69dd827cbf000459690e6aeebc2a51920ec9c54"
     expected_binary_format="macho-x86_64"
     ;;
   Linux/x86_64/*|Linux/amd64/*)
     artifact="myautoapi-imagines-tool-v0.9.2-linux-amd64"
-    expected_sha256="41ec09d247f77f99f24b5aaa31f190fce2866843d3adf2a34aa3bcc399764a1b"
+    expected_sha256="317c7e21e89ca5721534ddbc8d3b6ff08ad90970e2f23382ceaf061cfd0b586c"
     expected_binary_format="elf-x86_64"
     ;;
   *)

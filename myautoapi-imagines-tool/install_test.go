@@ -361,6 +361,48 @@ func TestNativeInstallUpgradesV076ReplacesExistingKey(t *testing.T) {
 	}
 }
 
+func TestNativeInstallUpgradesV091(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("CODEX_HOME", root)
+	if err := installWithTestKey(&bytes.Buffer{}); err != nil {
+		t.Fatal(err)
+	}
+	layout := buildInstallLayout(root)
+	stateBytes, err := os.ReadFile(layout.statePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	state := installState{}
+	if err := json.Unmarshal(stateBytes, &state); err != nil {
+		t.Fatal(err)
+	}
+	state.Version = "0.9.1"
+	state.Release = "V0.9.1"
+	state.Files["VERSION"] = sha256Hex([]byte("0.9.1\n"))
+	state.Files["RELEASE"] = sha256Hex([]byte("V0.9.1"))
+	updated, _ := json.MarshalIndent(state, "", "  ")
+	if err := os.WriteFile(layout.statePath, append(updated, '\n'), 0o666); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(layout.versionPath, []byte("0.9.1\n"), 0o666); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(layout.releasePath, []byte("V0.9.1"), 0o666); err != nil {
+		t.Fatal(err)
+	}
+
+	var output bytes.Buffer
+	if err := installWithInput(&output, strings.NewReader("v091-upgrade-key\n")); err != nil {
+		t.Fatalf("V0.9.1 upgrade failed: %v", err)
+	}
+	if !strings.Contains(output.String(), "升级完成：V0.9.2") {
+		t.Fatalf("version upgrade output missing: %s", output.String())
+	}
+	if got := string(mustReadFile(t, layout.versionPath)); got != "0.9.2\n" {
+		t.Fatalf("VERSION was not updated: %q", got)
+	}
+}
+
 func TestNativeInstallRollsBackDedicatedKeyWithManagedFiles(t *testing.T) {
 	root := t.TempDir()
 	t.Setenv("CODEX_HOME", root)
