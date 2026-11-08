@@ -21,6 +21,7 @@ node --test tests/*.test.mjs
 - `docs/public/install/myautoapi-imagines-tool/install.ps1`
 - `docs/public/install/myautoapi-imagines-tool/install.sh`
 - `docs/public/install/myautoapi-imagines-tool/releases/v0.9.2/`
+- `docs/public/install/myautoapi-imagines-tool/current/`
 
 ## 2. 上传 GitHub
 

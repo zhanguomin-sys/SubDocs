@@ -6,6 +6,7 @@ from __future__ import annotations
 import hashlib
 import os
 import re
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -24,6 +25,11 @@ TARGETS = (
 def artifact_name(goos: str, goarch: str) -> str:
     suffix = ".exe" if goos == "windows" else ""
     return f"{ARTIFACT_PREFIX}-{goos}-{goarch}{suffix}"
+
+
+def current_artifact_name(goos: str, goarch: str) -> str:
+    suffix = ".exe" if goos == "windows" else ""
+    return f"myautoapi-imagines-tool-{goos}-{goarch}{suffix}"
 
 
 def sha256(path: Path) -> str:
@@ -98,7 +104,23 @@ def main() -> int:
         "".join(f"{hashes[path.name]}  {path.name}\n" for path in artifacts),
         encoding="ascii",
     )
-    update_release_script_hashes(hashes)
+    current_dir = output_dir / "current"
+    current_dir.mkdir(parents=True, exist_ok=True)
+    for stale_artifact in current_dir.iterdir():
+        if stale_artifact.is_file():
+            stale_artifact.unlink()
+    current_artifacts: list[Path] = []
+    current_hashes: dict[str, str] = {}
+    for (goos, goarch), artifact in zip(TARGETS, artifacts):
+        current_path = current_dir / current_artifact_name(goos, goarch)
+        shutil.copyfile(artifact, current_path)
+        current_artifacts.append(current_path)
+        current_hashes[current_path.name] = hashes[artifact.name]
+    (current_dir / "SHA256SUMS").write_text(
+        "".join(f"{current_hashes[path.name]}  {path.name}\n" for path in current_artifacts),
+        encoding="ascii",
+    )
+    update_release_script_hashes(current_hashes)
     print(output_dir)
     print(checksum_path.read_text(encoding="ascii"), end="")
     return 0

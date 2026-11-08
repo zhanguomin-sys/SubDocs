@@ -8,15 +8,26 @@ const releaseRoot = new URL(
   'install/myautoapi-imagines-tool/releases/v0.9.2/',
   publicRoot,
 )
+const currentRoot = new URL(
+  'install/myautoapi-imagines-tool/current/',
+  publicRoot,
+)
 const artifactNames = [
   'myautoapi-imagines-tool-v0.9.2-windows-amd64.exe',
   'myautoapi-imagines-tool-v0.9.2-darwin-arm64',
   'myautoapi-imagines-tool-v0.9.2-darwin-amd64',
   'myautoapi-imagines-tool-v0.9.2-linux-amd64',
 ]
+const currentArtifactNames = [
+  'myautoapi-imagines-tool-windows-amd64.exe',
+  'myautoapi-imagines-tool-darwin-arm64',
+  'myautoapi-imagines-tool-darwin-amd64',
+  'myautoapi-imagines-tool-linux-amd64',
+]
 const shellUrl = new URL('install/myautoapi-imagines-tool/install.sh', publicRoot)
 const powershellUrl = new URL('install/myautoapi-imagines-tool/install.ps1', publicRoot)
 const checksumUrl = new URL('SHA256SUMS', releaseRoot)
+const currentChecksumUrl = new URL('SHA256SUMS', currentRoot)
 const headersUrl = new URL('_headers', publicRoot)
 const entryRoot = new URL('install/myautoapi-imagines-tool/', publicRoot)
 const releasesRoot = new URL('install/myautoapi-imagines-tool/releases/', publicRoot)
@@ -33,19 +44,26 @@ function parseChecksums(text) {
 
 test('publishes matching V0.9.2 native artifacts, scripts and checksums', async () => {
   assert.deepEqual((await readdir(releaseRoot)).sort(), ['SHA256SUMS', ...artifactNames].sort())
-  assert.deepEqual((await readdir(entryRoot)).sort(), ['install.ps1', 'install.sh', 'releases'])
+  assert.deepEqual((await readdir(currentRoot)).sort(), ['SHA256SUMS', ...currentArtifactNames].sort())
+  assert.deepEqual((await readdir(entryRoot)).sort(), ['current', 'install.ps1', 'install.sh', 'releases'])
   assert.deepEqual(
     (await readdir(releasesRoot)).sort(),
     ['v0.8.1', 'v0.8.2', 'v0.9.1', 'v0.9.2'],
   )
-  const [shell, powershell, checksum, ...artifacts] = await Promise.all([
+  const [shell, powershell, checksum, currentChecksum, ...files] = await Promise.all([
     readFile(shellUrl, 'utf8'),
     readFile(powershellUrl, 'utf8'),
     readFile(checksumUrl, 'utf8'),
+    readFile(currentChecksumUrl, 'utf8'),
     ...artifactNames.map((name) => readFile(new URL(name, releaseRoot))),
+    ...currentArtifactNames.map((name) => readFile(new URL(name, currentRoot))),
   ])
+  const artifacts = files.slice(0, artifactNames.length)
+  const currentArtifacts = files.slice(artifactNames.length)
   const checksums = parseChecksums(checksum)
+  const currentChecksums = parseChecksums(currentChecksum)
   assert.equal(checksums.size, artifactNames.length)
+  assert.equal(currentChecksums.size, currentArtifactNames.length)
 
   for (const [index, name] of artifactNames.entries()) {
     const digest = createHash('sha256').update(artifacts[index]).digest('hex')
@@ -53,8 +71,14 @@ test('publishes matching V0.9.2 native artifacts, scripts and checksums', async 
     const installScript = name.includes('windows') ? powershell : shell
     assert.match(installScript, new RegExp(digest))
   }
+  for (const [index, name] of currentArtifactNames.entries()) {
+    const digest = createHash('sha256').update(currentArtifacts[index]).digest('hex')
+    assert.equal(currentChecksums.get(name), digest)
+    const installScript = name.includes('windows') ? powershell : shell
+    assert.match(installScript, new RegExp(digest))
+  }
   for (const script of [shell, powershell]) {
-    assert.match(script, /releases\/v0\.9\.2/)
+    assert.match(script, /\/current/)
     assert.doesNotMatch(script, /python|Expand-Archive|v0\.2-r1\.zip/i)
   }
   for (const script of [powershell]) {
@@ -92,5 +116,13 @@ test('publishes explicit content types and cache policy', async () => {
   assert.match(
     headers,
     /\/install\/myautoapi-imagines-tool\/releases\/v0\.9\.2\/SHA256SUMS\s+Content-Type:\s*text\/plain;\s*charset=utf-8\s+Cache-Control:\s*public,\s*max-age=31536000,\s*immutable/i,
+  )
+  assert.match(
+    headers,
+    /\/install\/myautoapi-imagines-tool\/current\/myautoapi-imagines-tool-\*\s+Content-Type:\s*application\/octet-stream\s+Cache-Control:\s*public,\s*max-age=0,\s*must-revalidate/i,
+  )
+  assert.match(
+    headers,
+    /\/install\/myautoapi-imagines-tool\/current\/SHA256SUMS\s+Content-Type:\s*text\/plain;\s*charset=utf-8\s+Cache-Control:\s*public,\s*max-age=0,\s*must-revalidate/i,
   )
 })

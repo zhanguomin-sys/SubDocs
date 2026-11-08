@@ -3,7 +3,7 @@
 set -euo pipefail
 
 release_revision="V0.9.2"
-release_base="https://docs.myautoapi.com/install/myautoapi-imagines-tool/releases/v0.9.2"
+release_base="https://docs.myautoapi.com/install/myautoapi-imagines-tool/current"
 
 if ! command -v curl >/dev/null 2>&1; then
   echo "安装失败：未找到 curl，无法下载安装程序。" >&2
@@ -19,17 +19,17 @@ fi
 
 case "$system_name/$machine_name/$translated" in
   Darwin/arm64/*|Darwin/x86_64/1)
-    artifact="myautoapi-imagines-tool-v0.9.2-darwin-arm64"
+    artifact="myautoapi-imagines-tool-darwin-arm64"
     expected_sha256="0724ea493654c6296c641b7d17b353b778b16e2584cc9e41f209f80385e37ec0"
     expected_binary_format="macho-arm64"
     ;;
   Darwin/x86_64/*)
-    artifact="myautoapi-imagines-tool-v0.9.2-darwin-amd64"
+    artifact="myautoapi-imagines-tool-darwin-amd64"
     expected_sha256="db227a3fa07e7953df7036f5b69dd827cbf000459690e6aeebc2a51920ec9c54"
     expected_binary_format="macho-x86_64"
     ;;
   Linux/x86_64/*|Linux/amd64/*)
-    artifact="myautoapi-imagines-tool-v0.9.2-linux-amd64"
+    artifact="myautoapi-imagines-tool-linux-amd64"
     expected_sha256="317c7e21e89ca5721534ddbc8d3b6ff08ad90970e2f23382ceaf061cfd0b586c"
     expected_binary_format="elf-x86_64"
     ;;
@@ -94,7 +94,7 @@ else
 
   echo "正在下载中转站生图工具 V0.9.2……"
   curl --fail --location --progress-bar --show-error --proto '=https' --proto-redir '=https' --tlsv1.2 \
-    "$release_base/$artifact?sha256=$expected_sha256" --output "$binary_path"
+    "$release_base/$artifact" --output "$binary_path"
 
   actual_sha256="$(sha256_for_file "$binary_path")"
   if [[ "$actual_sha256" != "$expected_sha256" ]]; then

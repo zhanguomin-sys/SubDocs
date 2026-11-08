@@ -99,13 +99,17 @@ class ReleaseContractTests(unittest.TestCase):
         self.assertTrue(release.artifact_name("windows", "amd64").endswith(".exe"))
         self.assertFalse(release.artifact_name("darwin", "arm64").endswith(".exe"))
         self.assertFalse(release.artifact_name("linux", "amd64").endswith(".exe"))
+        self.assertEqual(
+            release.current_artifact_name("windows", "amd64"),
+            "myautoapi-imagines-tool-windows-amd64.exe",
+        )
 
     def test_online_entries_pin_v092_artifacts_and_hashes(self) -> None:
         for script in (
             self.bash_installer,
             self.powershell_installer,
         ):
-            self.assertIn("releases/v0.9.2", script)
+            self.assertIn("/current", script)
             self.assertNotIn("v0.2-r1.zip", script)
             self.assertNotRegex(script, r"(?i)python|安装\.py|Expand-Archive")
         bash_hashes = re.findall(r'expected_sha256="([0-9a-f]{64})"', self.bash_installer)
@@ -138,7 +142,26 @@ class ReleaseContractTests(unittest.TestCase):
             artifact_path = output_dir / artifact
             self.assertTrue(artifact_path.is_file())
             self.assertEqual(release.sha256(artifact_path), expected_digest)
-            if "-windows-" in artifact:
+
+        current_dir = output_dir / "current"
+        current_checksum_path = current_dir / "SHA256SUMS"
+        current_hashes = {
+            artifact: digest
+            for digest, artifact in (
+                line.split(maxsplit=1)
+                for line in current_checksum_path.read_text(encoding="ascii").splitlines()
+            )
+        }
+        expected_current_artifacts = {
+            release.current_artifact_name(goos, goarch)
+            for goos, goarch in release.TARGETS
+        }
+        self.assertEqual(set(current_hashes), expected_current_artifacts)
+        for artifact, expected_digest in current_hashes.items():
+            artifact_path = current_dir / artifact
+            self.assertTrue(artifact_path.is_file())
+            self.assertEqual(release.sha256(artifact_path), expected_digest)
+            if artifact.endswith("windows-amd64.exe"):
                 self.assertIn(f'$Artifact = "{artifact}"', self.powershell_installer)
                 self.assertIn(f'$ExpectedSha256 = "{expected_digest}"', self.powershell_installer)
             else:
@@ -334,7 +357,7 @@ class ReleaseContractTests(unittest.TestCase):
                     self.assertNotEqual(completed.returncode, 0)
                     self.assertEqual(
                         download_log.read_text(encoding="utf-8").strip(),
-                        f"https://docs.myautoapi.com/install/myautoapi-imagines-tool/releases/v0.9.2/{artifact}?sha256={hashes[artifact]}",
+                        f"https://docs.myautoapi.com/install/myautoapi-imagines-tool/current/{artifact}",
                     )
 
     def test_shell_installer_repairs_same_version_linux_binary_without_execute_permission(self) -> None:
@@ -425,7 +448,7 @@ class ReleaseContractTests(unittest.TestCase):
             self.assertEqual(result_path.read_text(encoding="utf-8"), "repaired-and-launched\n")
             self.assertEqual(
                 download_log.read_text(encoding="utf-8").strip(),
-                f"https://docs.myautoapi.com/install/myautoapi-imagines-tool/releases/v0.9.2/{artifact}?sha256={expected_sha256}",
+                f"https://docs.myautoapi.com/install/myautoapi-imagines-tool/current/{artifact}",
             )
 
 
