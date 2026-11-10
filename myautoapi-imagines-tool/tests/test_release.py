@@ -284,10 +284,10 @@ class ReleaseContractTests(unittest.TestCase):
 
     def test_shell_installer_downloads_the_expected_artifact_for_each_platform(self) -> None:
         cases = (
-            ("Darwin", "arm64", "0", "darwin-arm64", "Mach-O 64-bit executable arm64"),
-            ("Darwin", "x86_64", "0", "darwin-amd64", "Mach-O 64-bit executable x86_64"),
-            ("Darwin", "x86_64", "1", "darwin-arm64", "Mach-O 64-bit executable arm64"),
-            ("Linux", "x86_64", "0", "linux-amd64", "ELF 64-bit LSB executable, x86-64"),
+            ("Darwin", "arm64", "0", "darwin-arm64", "Mach-O 64-bit executable arm64", "macOS Apple 芯片"),
+            ("Darwin", "x86_64", "0", "darwin-amd64", "Mach-O 64-bit executable x86_64", "macOS Intel 芯片"),
+            ("Darwin", "x86_64", "1", "darwin-arm64", "Mach-O 64-bit executable arm64", "macOS Apple 芯片"),
+            ("Linux", "x86_64", "0", "linux-amd64", "ELF 64-bit LSB executable, x86-64", "Linux x64"),
         )
         hashes = dict(
             re.findall(
@@ -296,7 +296,7 @@ class ReleaseContractTests(unittest.TestCase):
             )
         )
 
-        for system, machine, translated, artifact_suffix, file_description in cases:
+        for system, machine, translated, artifact_suffix, file_description, selected_platform in cases:
             with self.subTest(system=system, machine=machine, translated=translated):
                 with tempfile.TemporaryDirectory() as temporary_directory:
                     temporary_root = Path(temporary_directory)
@@ -355,6 +355,7 @@ class ReleaseContractTests(unittest.TestCase):
                     )
 
                     self.assertNotEqual(completed.returncode, 0)
+                    self.assertIn(f"已检测到{selected_platform}，自动选择", completed.stdout)
                     self.assertEqual(
                         download_log.read_text(encoding="utf-8").strip(),
                         f"https://docs.myautoapi.com/install/myautoapi-imagines-tool/current/{artifact}",

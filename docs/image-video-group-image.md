@@ -35,7 +35,7 @@ curl -fsSL https://docs.myautoapi.com/install/myautoapi-imagines-tool/install.sh
 
 :::
 
-看到“请输入专门画图分组 Key”时，粘贴第 1 步复制的 Key，按回车。支持 x64 Windows、x64 Linux 和 Mac（Apple 芯片和 Intel 芯片）。
+看到“请输入专门画图分组 Key”时，粘贴第 1 步复制的 Key，按回车。支持 x64 Windows、x64 Linux 和 Mac（Apple 芯片和 Intel 芯片）。Mac 安装器会自动识别当前芯片；Apple 芯片选择 `darwin-arm64`，Intel 选择 `darwin-amd64`，不需要手动选择或下载 `.exe`。
 
 ## 3. 打开 Codex 开始生图
 
