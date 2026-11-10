@@ -1,6 +1,6 @@
 # MyAutoAPI Codex 一键配置
 
-一条命令把 Codex App、ChatGPT 和 Codex CLI 的模型请求切换到 MyAutoAPI中转站。脚本会写入当前用户的 `~/.codex/config.toml` 和 `~/.codex/auth.json`，写入后自动关闭正在运行的 ChatGPT 软件和 Codex。Windows 的 `.exe` 接入助手不能在 macOS 上运行；Mac 使用下面的原生 shell 入口。
+一条命令把 Codex App、ChatGPT 和 Codex CLI 的模型请求切换到 MyAutoAPI中转站。脚本会写入当前用户的 `~/.codex/config.toml` 和 `~/.codex/auth.json`，写入后自动关闭正在运行的 ChatGPT 软件和 Codex。
 
 ## Windows
 
@@ -20,7 +20,7 @@ curl -fsSL https://docs.myautoapi.com/install/myautoapi-codex-installer/install.
 
 ## 给 Codex 增加国产模型
 
-已经接入 Codex 后，运行对应命令可导入 10 个国产模型，同时保留原有 GPT、默认模型、接口和 Key。Windows 只读写 `CODEX_HOME` 中的配置和模型文件，不依赖 Codex CLI；macOS 与 Linux 使用同一个 `.sh` 入口，自动调用系统自带 JXA 或本机 Node.js。导入成功后各平台都会自动关闭 ChatGPT/Codex。完成后把 MyAutoAPI API Key 切换到 **国产模型大全 0.45x** 分组，重新打开 App 并新建任务选择模型。重复运行同一命令就是更新。
+已经接入 Codex 后，运行对应命令可导入 11 个国产模型，同时保留原有 GPT、默认模型、接口和 Key。Windows 只读写 `CODEX_HOME` 中的配置和模型文件，不依赖 Codex CLI；导入成功后各平台都会自动关闭 ChatGPT/Codex。完成后把 MyAutoAPI API Key 切换到 **国产模型大全 0.45x** 分组，重新打开 App 并新建任务选择模型。重复运行同一命令就是更新。
 
 Windows：
 
@@ -28,7 +28,7 @@ Windows：
 irm https://docs.myautoapi.com/install/codex-models.ps1 | iex
 ```
 
-Linux/macOS（同一入口自动识别系统；Apple 芯片和 Intel Mac 都使用此入口）：
+Linux/macOS（同一入口自动识别系统）：
 
 ```bash
 curl -fsSL https://docs.myautoapi.com/install/codex-models.sh | sh

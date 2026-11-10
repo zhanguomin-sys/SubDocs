@@ -22,26 +22,22 @@ case "$system_name/$machine_name/$translated" in
     artifact="myautoapi-imagines-tool-darwin-arm64"
     expected_sha256="925f090ed745335424d9d8e5968b0c30d56ee45a60e1ba7eafac7fd6f5dac9df"
     expected_binary_format="macho-arm64"
-    selected_platform="macOS Apple 芯片"
     ;;
   Darwin/x86_64/*)
     artifact="myautoapi-imagines-tool-darwin-amd64"
     expected_sha256="b1d3b8c82e6fbb6ee30e544b717ec1876eb2153d06039661d472ca2e2b40b274"
     expected_binary_format="macho-x86_64"
-    selected_platform="macOS Intel 芯片"
     ;;
   Linux/x86_64/*|Linux/amd64/*)
     artifact="myautoapi-imagines-tool-linux-amd64"
     expected_sha256="046653c0a4c4023266ab01df555caa8356efb4921a9fe41ec6bfc5235df12382"
     expected_binary_format="elf-x86_64"
-    selected_platform="Linux x64"
     ;;
   *)
     echo "安装失败：V0.9.2 仅支持 64 位 x64 Linux、Apple Silicon Mac 或 Intel 64 位 Mac，当前为 $system_name/$machine_name。" >&2
     exit 1
     ;;
 esac
-echo "已检测到$selected_platform，自动选择 $artifact。"
 
 binary_matches_architecture() {
   local candidate="$1"
