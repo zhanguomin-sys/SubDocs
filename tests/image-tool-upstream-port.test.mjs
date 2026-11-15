@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url'
 import test from 'node:test'
 
 const entryRoot = new URL('../docs/public/install/myautoapi-imagines-tool/', import.meta.url)
-const portRelease = 'releases/v0.9.2-upstream-c28a911/'
+const portRelease = 'releases/v0.9.6-upstream-af403b1/'
 const platforms = {
   'windows/amd64': 'windows-amd64.exe',
   'darwin/arm64': 'darwin-arm64',
@@ -21,14 +21,14 @@ const nativePlatform = (process.platform === 'win32' ? 'windows' : process.platf
 
 test('native updater metadata names only verified MyAutoAPI artifacts', async () => {
   const manifest = JSON.parse(await readFile(new URL('latest.json', entryRoot), 'utf8'))
-  assert.equal(manifest.version, '0.9.2')
-  assert.equal(manifest.release, 'V0.9.2')
+  assert.equal(manifest.version, '0.9.6')
+  assert.equal(manifest.release, 'V0.9.6')
   assert.deepEqual(Object.keys(manifest.files).sort(), Object.keys(platforms).sort())
   for (const [platform, suffix] of Object.entries(platforms)) {
     const file = manifest.files[platform]
     assert.equal(typeof file.path, 'string')
     assert.doesNotMatch(file.path, /usegoodai|https?:|^\/|\\|(?:^|\/)\.\.(?:\/|$)/i)
-    assert.ok(file.path.endsWith('/myautoapi-imagines-tool-' + suffix) || file.path.endsWith('/myautoapi-imagines-tool-v0.9.2-' + suffix))
+    assert.ok(file.path.endsWith('/myautoapi-imagines-tool-' + suffix) || file.path.endsWith('/myautoapi-imagines-tool-v0.9.6-' + suffix))
     const bytes = await readFile(new URL(file.path, entryRoot))
     assert.equal(file.sha256, sha256(bytes), platform + ' checksum')
     assert.equal(file.size, bytes.length, platform + ' size')
@@ -39,7 +39,7 @@ test('native updater metadata names only verified MyAutoAPI artifacts', async ()
 
 test('all native release and stable artifacts contain the MyAutoAPI endpoints', async () => {
   for (const suffix of Object.values(platforms)) {
-    const release = await readFile(new URL(portRelease + 'myautoapi-imagines-tool-v0.9.2-' + suffix, entryRoot))
+    const release = await readFile(new URL(portRelease + 'myautoapi-imagines-tool-v0.9.6-' + suffix, entryRoot))
     const current = await readFile(new URL('current/myautoapi-imagines-tool-' + suffix, entryRoot))
     assert.equal(sha256(current), sha256(release), suffix + ' stable and release bytes')
     const content = current.toString('latin1')
@@ -158,12 +158,12 @@ test('ported native installer stays in isolated CODEX_HOME and preserves other t
   // No generate, edit, models, doctor or update request runs in this test.
   run(program, ['install', '--key-stdin'], 'sk-' + '0'.repeat(48) + '\n')
   assert.ok(existsSync(installed))
-  assert.equal(run(installed, ['version']).trim(), '0.9.2')
+  assert.equal(run(installed, ['version']).trim(), '0.9.6')
   // A second install must reuse the fixture instead of waiting for key input.
   run(program, ['install'])
   const record = JSON.parse(await readFile(path.join(home, 'tools', 'myautoapi-imagines-tool', 'install-manifest.json'), 'utf8'))
   assert.equal(record.managed_by, 'myautoapi-imagines-tool')
-  assert.equal(record.version, '0.9.2')
+  assert.equal(record.version, '0.9.6')
   assert.equal(record.platform, nativePlatform)
   assert.equal(record.files['tool/' + installedName], sha256(await readFile(installed)))
   assert.equal(sha256(await readFile(installed)), sha256(await readFile(program)), 'installed program must match the ported artifact')

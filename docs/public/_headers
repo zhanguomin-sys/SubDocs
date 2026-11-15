@@ -77,3 +77,11 @@
 /install/myautoapi-imagines-tool/releases/v0.9.2-upstream-c28a911/SHA256SUMS
   Content-Type: text/plain; charset=utf-8
   Cache-Control: public, max-age=31536000, immutable
+
+/install/myautoapi-imagines-tool/releases/v0.9.6-upstream-af403b1/myautoapi-imagines-tool-*
+  Content-Type: application/octet-stream
+  Cache-Control: public, max-age=31536000, immutable
+
+/install/myautoapi-imagines-tool/releases/v0.9.6-upstream-af403b1/SHA256SUMS
+  Content-Type: text/plain; charset=utf-8
+  Cache-Control: public, max-age=31536000, immutable

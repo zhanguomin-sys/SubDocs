@@ -59,7 +59,7 @@ test('documents the verified Nano Banana Responses request contract on the param
   assert.match(paramsSource, /只在 `output` 里找/)
 })
 
-test('keeps the V0.9.2 upgrade scoped to MyAutoAPI image tooling', () => {
+test('keeps the V0.9.6 upgrade scoped to MyAutoAPI image tooling', () => {
   assert.match(imageToolDocSource, /V0\.9\.2/)
   assert.match(imageToolDocSource, /\$CODEX_HOME/)
   assert.match(imageToolDocSource, /rules\/myautoapi-imagines-tool\.rules/)
