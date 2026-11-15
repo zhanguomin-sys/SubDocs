@@ -5,7 +5,7 @@ import test from 'node:test'
 
 const publicRoot = new URL('../docs/public/', import.meta.url)
 const releaseRoot = new URL(
-  'install/myautoapi-imagines-tool/releases/v0.9.6-upstream-af403b1/',
+  'install/myautoapi-imagines-tool/releases/v0.9.2-upstream-c28a911/',
   publicRoot,
 )
 const currentRoot = new URL(
@@ -13,10 +13,10 @@ const currentRoot = new URL(
   publicRoot,
 )
 const artifactNames = [
-  'myautoapi-imagines-tool-v0.9.6-windows-amd64.exe',
-  'myautoapi-imagines-tool-v0.9.6-darwin-arm64',
-  'myautoapi-imagines-tool-v0.9.6-darwin-amd64',
-  'myautoapi-imagines-tool-v0.9.6-linux-amd64',
+  'myautoapi-imagines-tool-v0.9.2-windows-amd64.exe',
+  'myautoapi-imagines-tool-v0.9.2-darwin-arm64',
+  'myautoapi-imagines-tool-v0.9.2-darwin-amd64',
+  'myautoapi-imagines-tool-v0.9.2-linux-amd64',
 ]
 const currentArtifactNames = [
   'myautoapi-imagines-tool-windows-amd64.exe',
@@ -42,13 +42,13 @@ function parseChecksums(text) {
   )
 }
 
-test('publishes matching V0.9.6 native artifacts, scripts and checksums', async () => {
+test('publishes matching V0.9.2 native artifacts, scripts and checksums', async () => {
   assert.deepEqual((await readdir(releaseRoot)).sort(), ['SHA256SUMS', ...artifactNames].sort())
   assert.deepEqual((await readdir(currentRoot)).sort(), ['SHA256SUMS', ...currentArtifactNames].sort())
   assert.deepEqual((await readdir(entryRoot)).sort(), ['current', 'install.ps1', 'install.sh', 'latest.json', 'releases'])
   assert.deepEqual(
     (await readdir(releasesRoot)).sort(),
-    ['v0.8.1', 'v0.8.2', 'v0.9.1', 'v0.9.2', 'v0.9.2-upstream-c28a911', 'v0.9.6-upstream-af403b1'],
+    ['v0.8.1', 'v0.8.2', 'v0.9.1', 'v0.9.2', 'v0.9.2-upstream-c28a911'],
   )
   const [shell, powershell, checksum, currentChecksum, ...files] = await Promise.all([
     readFile(shellUrl, 'utf8'),

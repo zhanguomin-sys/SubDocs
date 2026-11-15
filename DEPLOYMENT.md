@@ -20,13 +20,13 @@ node --test tests/*.test.mjs
 - `docs/public/install/codex-models.sh`
 - `docs/public/install/myautoapi-imagines-tool/install.ps1`
 - `docs/public/install/myautoapi-imagines-tool/install.sh`
-- `docs/public/install/myautoapi-imagines-tool/releases/v0.9.6-upstream-af403b1/`
+- `docs/public/install/myautoapi-imagines-tool/releases/v0.9.2-upstream-c28a911/`
 - `docs/public/install/myautoapi-imagines-tool/current/`
 - `docs/public/install/myautoapi-imagines-tool/latest.json`
 
 ### 图片工具制品来源
 
-当前 V0.9.6 制品来自 `youdaowudao/subdocs` 固定提交 `af403b16978b41ef632236123d546650235f792a` 的原生程序。它们通过 `myautoapi-imagines-tool/release/port_upstream.py` 等长替换品牌、固定 API 和更新域名，并重新计算 Apple Silicon 程序现有 ad-hoc 签名的分页哈希。来源校验值与输出校验值记录在 `myautoapi-imagines-tool/release/upstream-port.json`。
+当前 V0.9.2 制品来自 `youdaowudao/subdocs` 固定提交 `c28a91174db4f065ff4c4121e348f20afebda85c` 的原生程序。它们通过 `myautoapi-imagines-tool/release/port_upstream.py` 等长替换品牌、固定 API 和更新域名，并重新计算 Apple Silicon 程序现有 ad-hoc 签名的分页哈希。来源校验值与输出校验值记录在 `myautoapi-imagines-tool/release/upstream-port.json`。
 
 维护者在仓库根目录使用固定上游检出目录复现制品：
 
@@ -34,7 +34,7 @@ node --test tests/*.test.mjs
 python myautoapi-imagines-tool/release/port_upstream.py <上游仓库目录>
 ```
 
-脚本校验四个平台的上游 SHA-256，生成独立的 `releases/v0.9.6-upstream-af403b1/` 归档、无版本号的 `current/` 制品、两份校验清单、`latest.json` 和安装脚本中的新哈希。旧 `releases/v0.9.2/` 保留原字节与 immutable 缓存，不再覆盖。不要运行旧 `build_release.py` 来发布：保留的 Go 源码不是当前正式实现；该入口默认拒绝构建，`--legacy-source` 只允许历史复现，其输出不得覆盖正式制品或入口。
+脚本校验四个平台的上游 SHA-256，生成独立的 `releases/v0.9.2-upstream-c28a911/` 归档、无版本号的 `current/` 制品、两份校验清单、`latest.json` 和安装脚本中的新哈希。旧 `releases/v0.9.2/` 保留原字节与 immutable 缓存，不再覆盖。不要运行旧 `build_release.py` 来发布：保留的 Go 源码不是当前正式实现；该入口默认拒绝构建，`--legacy-source` 只允许历史复现，其输出不得覆盖正式制品或入口。
 
 初次安装或显式重新配置 Key 时，公开安装入口先显示输入提示，读取非空的一行，再通过管道调用 `install --key-stdin`；该原生选项会静默等输入，不能直接连接交互终端。普通更新使用工具自身的 `update`，保留已保存的 Key；它先比较版本，版本相同时不会因 SHA-256 变化下载。同版本制品替换需 `update --reinstall`，该原生重装保留 Key；也可重新使用稳定安装入口并显式配置 Key。下载后仍校验 SHA-256 与程序版本。保留用户当前不带版本号的安装入口与 `current/` 地址，不要求用户追加版本参数。
 

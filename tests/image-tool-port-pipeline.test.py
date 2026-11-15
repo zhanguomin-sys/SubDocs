@@ -37,7 +37,7 @@ class PortPipelineTest(unittest.TestCase):
         self.port = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(self.port)
         self.upstream = Path(self.temporary.name) / 'synthetic-upstream'
-        self.source = self.upstream / 'docs/public/install/usegoodai-imagines-tool/releases/v0.9.6'
+        self.source = self.upstream / 'docs/public/install/usegoodai-imagines-tool/releases/v0.9.2'
         self.source.mkdir(parents=True)
         hashes = {}
         self.current_names = {}
@@ -49,7 +49,7 @@ class PortPipelineTest(unittest.TestCase):
                 'https://docs.usegoodai.com/install/usegoodai-imagines-tool/latest.json\n'
                 'UseGoodAI USEGOODAI usegoodai\n'
             ).encode('ascii')
-            (self.source / ('usegoodai-imagines-tool-v0.9.6-' + suffix)).write_bytes(payload)
+            (self.source / ('usegoodai-imagines-tool-v0.9.2-' + suffix)).write_bytes(payload)
             hashes[platform] = hashlib.sha256(payload).hexdigest()
             self.current_names[platform] = 'myautoapi-imagines-tool-' + suffix
         self.port.UPSTREAM_HASHES = hashes
@@ -79,7 +79,7 @@ class PortPipelineTest(unittest.TestCase):
             self.port.main()
 
     def test_bad_last_platform_hash_does_not_modify_any_output(self) -> None:
-        final_source = self.source / 'usegoodai-imagines-tool-v0.9.6-linux-amd64'
+        final_source = self.source / 'usegoodai-imagines-tool-v0.9.2-linux-amd64'
         final_source.write_bytes(final_source.read_bytes() + b'corrupted')
         before = snapshot(self.root)
         with self.assertRaisesRegex(ValueError, 'Upstream SHA-256 mismatch'):
@@ -118,7 +118,7 @@ class PortPipelineTest(unittest.TestCase):
             self.assertEqual(hashlib.sha256(current).hexdigest(), item['sha256'])
             self.assertEqual(len(current), item['size'])
             suffix = self.current_names[platform].removeprefix('myautoapi-imagines-tool-')
-            archived = self.public / 'releases' / self.port.ARCHIVE / ('myautoapi-imagines-tool-v0.9.6-' + suffix)
+            archived = self.public / 'releases' / self.port.ARCHIVE / ('myautoapi-imagines-tool-v0.9.2-' + suffix)
             self.assertEqual(archived.read_bytes(), current)
         for extension in ('ps1', 'sh'):
             internal = self.root / ('myautoapi-imagines-tool/release/install.' + extension)

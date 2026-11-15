@@ -4,11 +4,11 @@
 
 ## 当前发布来源
 
-当前正式制品是对方仓库 [youdaowudao/subdocs](https://github.com/youdaowudao/subdocs) 固定提交 `af403b16978b41ef632236123d546650235f792a` 发布的 V0.9.6 原生程序，经 MyAutoAPI 品牌和域名迁移后发布。对方仓库未提供该工具的当前源码；本目录保留的 Go/Python 源码是此前的独立移植实现，供历史参考，**不是当前正式制品的构建来源**。
+当前正式制品是对方仓库 [youdaowudao/subdocs](https://github.com/youdaowudao/subdocs) 固定提交 `c28a91174db4f065ff4c4121e348f20afebda85c` 发布的 V0.9.2 原生程序，经 MyAutoAPI 品牌和域名迁移后发布。对方仓库未提供该工具的当前源码；本目录保留的 Go/Python 源码是此前的独立移植实现，供历史参考，**不是当前正式制品的构建来源**。
 
 迁移脚本为 `release/port_upstream.py`。它先核对四个平台的固定上游 SHA-256，再等长替换 `usegoodai`、`UseGoodAI`、`USEGOODAI`，同时迁移工具名、安装目录、Skill、全局规则和固定网络入口。Apple Silicon 程序原有的 ad-hoc 签名分页哈希会重新计算，文件结构和长度保持不变。`release/upstream-port.json` 记录来源提交、输入和输出哈希、替换数量及签名分页数量，便于复现和核对。
 
-固定 API 已迁移为 `https://api.myautoapi.com`；原生更新清单为 `https://docs.myautoapi.com/install/myautoapi-imagines-tool/latest.json`。工具仍可能下载接口返回的外部 HTTPS 图片 URL。版本号仍为 `V0.9.6`，不能仅凭版本号判断是否已经取得当前制品，还应核对 SHA-256。
+固定 API 已迁移为 `https://api.myautoapi.com`；原生更新清单为 `https://docs.myautoapi.com/install/myautoapi-imagines-tool/latest.json`。工具仍可能下载接口返回的外部 HTTPS 图片 URL。版本号仍为 `V0.9.2`，不能仅凭版本号判断是否已经取得当前制品，还应核对 SHA-256。
 
 ## 安装与更新
 
@@ -32,7 +32,7 @@
 
 ## 调用行为
 
-当前发布程序保留上游 V0.9.6 的 `generate`、`edit`、`models`、`paths`、`doctor`、`recover`、`update` 和 `version` 等原生子命令。Codex 使用安装器生成的 Skill 中的绝对工具路径，一次提交一条原生命令；提示词直接通过 `--prompt` 传递，不创建 PowerShell 提示词临时文件，因此不需要额外清理临时提示词文件。具体引号和命令格式以当前安装的 Skill 为准。
+当前发布程序保留上游 V0.9.2 的 `generate`、`edit`、`models`、`paths`、`doctor`、`recover`、`update` 和 `version` 等原生子命令。Codex 使用安装器生成的 Skill 中的绝对工具路径，一次提交一条原生命令；提示词直接通过 `--prompt` 传递，不创建 PowerShell 提示词临时文件，因此不需要额外清理临时提示词文件。具体引号和命令格式以当前安装的 Skill 为准。
 
 API Key 由原生程序内部读取。排错先用 `doctor`；查看模型用 `models`；找回已完成调用的结果用 `recover`。用户要求修复时先诊断真实原因，用户明确要求更新或重装时才运行相应子命令。
 
@@ -63,7 +63,7 @@ python myautoapi-imagines-tool/release/port_upstream.py <上游仓库目录>
 
 脚本只接受已固定校验值的上游程序，生成：
 
-- `docs/public/install/myautoapi-imagines-tool/releases/v0.9.6-upstream-af403b1/`：本次上游迁移制品的独立归档和 `SHA256SUMS`。旧 `releases/v0.9.2/` 保留原字节，不代表本次制品。
+- `docs/public/install/myautoapi-imagines-tool/releases/v0.9.2-upstream-c28a911/`：本次上游迁移制品的独立归档和 `SHA256SUMS`。旧 `releases/v0.9.2/` 保留原字节，不代表本次制品。
 - `docs/public/install/myautoapi-imagines-tool/current/`：不带版本号的四平台文件和 `SHA256SUMS`。
 - `docs/public/install/myautoapi-imagines-tool/latest.json`：原生更新使用的当前平台路径、大小与哈希。
 - `release/install.ps1`、`release/install.sh` 及公开副本：同步新的制品哈希。

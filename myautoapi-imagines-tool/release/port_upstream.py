@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rebrand the pinned upstream V0.9.6 programs without changing their logic."""
+"""Rebrand the pinned upstream V0.9.2 programs without changing their logic."""
 from __future__ import annotations
 
 import argparse
@@ -12,14 +12,14 @@ import struct
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
-UPSTREAM_COMMIT = 'af403b16978b41ef632236123d546650235f792a'
-VERSION = '0.9.6'
-ARCHIVE = 'v0.9.6-upstream-af403b1'
+UPSTREAM_COMMIT = 'c28a91174db4f065ff4c4121e348f20afebda85c'
+VERSION = '0.9.2'
+ARCHIVE = 'v0.9.2-upstream-c28a911'
 UPSTREAM_HASHES = {
-    'windows/amd64': '2bf839ad8c29d610505353bf1a7ee9ae44a2a58e8e97ffb95b4acb89b9efd855',
-    'darwin/arm64': '2226dee1dc542bdec4bfe3caf4adb072c7cd451f5f5c7f204ed8181f6912eae0',
-    'darwin/amd64': 'fdeae3edad4a86cc56fd44e6d085a01ea3b1606eb8e2b2d7bac527320e6dcfac',
-    'linux/amd64': 'af08770a42208742a4defceacdf8182728eec45dabf62b6ff071505b661f4432',
+    'windows/amd64': '11947f21ae3a591bf46f092f322c7ad7cc97758edf7cdbaf344f9a423ca8f282',
+    'darwin/arm64': '13d1941c91c84e668aee11bb808910607897a02dcb282d8e8ca906a2172677b4',
+    'darwin/amd64': 'f993f4cd429cebd811429cdacb129de6ce1f283d3e844f0b5de7cc4c16404428',
+    'linux/amd64': 'e629977b7490d26063f7f6df23cfd5a3421117414ad080e8c328621880c9014c',
 }
 REPLACEMENTS = ((b'usegoodai', b'myautoapi'), (b'UseGoodAI', b'MyAutoAPI'), (b'USEGOODAI', b'MYAUTOAPI'))
 
@@ -63,7 +63,7 @@ def refresh_macho_signature(data: bytearray) -> int:
 def transform_platform(source: Path, platform: str, expected: str) -> dict[str, object]:
     """Read, transform, and validate one upstream artifact without writing it."""
     suffix = platform.replace('/', '-') + ('.exe' if platform.startswith('windows') else '')
-    upstream_name = 'usegoodai-imagines-tool-v0.9.6-' + suffix
+    upstream_name = 'usegoodai-imagines-tool-v0.9.2-' + suffix
     original = (source / upstream_name).read_bytes()
     if digest(original) != expected:
         raise ValueError('Upstream SHA-256 mismatch: ' + upstream_name)
@@ -82,7 +82,7 @@ def transform_platform(source: Path, platform: str, expected: str) -> dict[str, 
     for required in (b'https://api.myautoapi.com', b'https://docs.myautoapi.com/install/myautoapi-imagines-tool/latest.json'):
         if required not in result:
             raise ValueError('Missing branded endpoint in ' + upstream_name + ': ' + required.decode())
-    artifact = 'myautoapi-imagines-tool-v0.9.6-' + suffix
+    artifact = 'myautoapi-imagines-tool-v0.9.2-' + suffix
     current_name = 'myautoapi-imagines-tool-' + suffix
     branded = bytes(result)
     return {
@@ -143,7 +143,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('upstream', type=Path, help='Pinned youdaowudao/subdocs checkout')
     args = parser.parse_args()
-    source = args.upstream / 'docs/public/install/usegoodai-imagines-tool/releases/v0.9.6'
+    source = args.upstream / 'docs/public/install/usegoodai-imagines-tool/releases/v0.9.2'
     public = ROOT / 'docs/public/install/myautoapi-imagines-tool'
     release = public / 'releases' / ARCHIVE
     current = public / 'current'

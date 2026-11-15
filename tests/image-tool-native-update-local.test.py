@@ -97,12 +97,12 @@ class NativeUpdateTest(unittest.TestCase):
                 run(source, ['install', '--key-stdin'], key + '\n')
                 installed = home / 'tools/myautoapi-imagines-tool/myautoapi-imagines-tool'
                 key_path = installed.parent / 'api-key'
-                self.assertEqual(run(installed, ['version']).strip(), '0.9.6')
+                self.assertEqual(run(installed, ['version']).strip(), '0.9.2')
                 self.assertEqual(sha256(installed.read_bytes()), sha256(old))
                 self.assertEqual(key_path.read_text().strip(), key)
                 manifest_path = latest.decode().removeprefix(f'https://127.0.0.1:{server.server_port}')
                 artifact_path = manifest_path.removesuffix('latest.json') + 'current/myautoapi-imagines-tool-linux-amd64'
-                manifest = {'version': '0.9.6', 'release': 'V0.9.6', 'files': {'linux/amd64': {
+                manifest = {'version': '0.9.2', 'release': 'V0.9.2', 'files': {'linux/amd64': {
                     'path': 'current/myautoapi-imagines-tool-linux-amd64', 'sha256': sha256(payload), 'size': len(payload),
                 }}}
                 state['content'][manifest_path] = json.dumps(manifest).encode()
@@ -130,9 +130,9 @@ class NativeUpdateTest(unittest.TestCase):
                 self.assertEqual(installed.read_bytes(), payload, output)
                 self.assertEqual(key_path.read_text().strip(), key)
                 record = json.loads((installed.parent / 'install-manifest.json').read_text())
-                self.assertEqual(record['version'], '0.9.6')
+                self.assertEqual(record['version'], '0.9.2')
                 self.assertEqual(record['files']['tool/myautoapi-imagines-tool'], sha256(payload))
-                self.assertEqual(run(installed, ['version']).strip(), '0.9.6')
+                self.assertEqual(run(installed, ['version']).strip(), '0.9.2')
                 self.assertEqual(state['unexpected'], [])
                 self.assertEqual(state['requests'], [manifest_path, manifest_path, artifact_path, manifest_path, artifact_path])
             finally:
