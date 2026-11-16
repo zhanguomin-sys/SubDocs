@@ -8,7 +8,7 @@ title: 快速开始
 
 开始前确认：
 
-- 已安装 ChatGPT / Codex App；还没安装先看 [Codex 接入](/clients/codex)。
+- 已安装 ChatGPT / Codex App；还没安装先看 [Codex 接入](/codex/)。
 - 已打开 MyAutoAPI 管理后台，方便下一步创建 API 密钥。
 - 账号有余额。
 
@@ -79,7 +79,7 @@ curl -fsSL https://docs.myautoapi.com/install/myautoapi-codex-installer/install.
 | 遇到的问题 | 先做这个 | 还是不行 |
 | --- | --- | --- |
 | PowerShell 提示无法下载脚本 | 检查网络后重新运行第 2 步命令 | 仍然失败时，改用下面的 CC Switch 接入 |
-| 脚本提示未检测到 Codex App | 先安装 Codex App，再回到本页重新运行脚本 | 看 [Codex 接入](/clients/codex) |
+| 脚本提示未检测到 Codex App | 先安装 Codex App，再回到本页重新运行脚本 | 看 [Codex 接入](/codex/) |
 | Codex 提示 `INSUFFICIENT_BALANCE` 或 `Insufficient account balance` | 登录后台充值，充值后重新测试 | 仍然提示余额不足时，确认 Codex 使用的是当前账号的 API Key |
 | 脚本提示未能自动关闭，或脚本完成后 Codex 还是不能回复 | 重启电脑，再重新打开 Codex 并新建任务 | 看 [报错与踩坑](/errors/) |
 
@@ -127,7 +127,7 @@ curl -fsSL https://docs.myautoapi.com/install/myautoapi-codex-installer/restore.
 | 顺序 | 方式 | 入口 |
 | --- | --- | --- |
 | 第二种 | CC Switch 接入 | [Codex CC Switch 接入](/codex-cc-switch) |
-| 第三种 | 手动配置 | [Codex 手动接入](/clients/codex-manual-config) |
+| 第三种 | 手动配置 | [Codex 手动接入](/codex/manual-config) |
 
 ## 安装生图工具
 

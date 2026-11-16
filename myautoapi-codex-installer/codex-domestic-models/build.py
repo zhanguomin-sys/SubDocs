@@ -4,8 +4,9 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
+TOOL_VERSION = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
 # Codex version whose bundled catalog is saved in src/gpt-catalog.json; update both together.
-OFFICIAL_SNAPSHOT_VERSION = '0.162.1'
+OFFICIAL_SNAPSHOT_VERSION = '0.165.0'
 
 
 def catalog():
@@ -49,12 +50,15 @@ def parent_powershell_process_functions():
 
 def build():
     data = catalog()
+    official = json.loads((ROOT / 'src/gpt-catalog.json').read_text(encoding='utf-8'))
     shell_processes = parent_shell_process_functions()
     shell = (ROOT / 'src/installer.sh.in').read_text(encoding='utf-8')
     for marker, content in {
+        '@TOOL_VERSION@': TOOL_VERSION,
         '@MODEL_COUNT@': str(len(data['models'])),
         '# @PARENT_PROCESS_FUNCTIONS@': shell_processes,
         '// @DOMESTIC_CATALOG@': 'var DOMESTIC_CATALOG = ' + json.dumps(data, ensure_ascii=False, separators=(',', ':')) + ';',
+        '// @OFFICIAL_CATALOG@': 'var BUNDLED_OFFICIAL_CATALOG = ' + json.dumps(official, ensure_ascii=False, separators=(',', ':')) + ';',
         '// @CORE@': (ROOT / 'src/core.js').read_text(encoding='utf-8'),
         '// @MACOS_HOST@': (ROOT / 'src/macos-host.js').read_text(encoding='utf-8'),
         '// @LINUX_HOST@': (ROOT / 'src/linux-host.js').read_text(encoding='utf-8'),
@@ -67,7 +71,6 @@ $ErrorActionPreference = 'Stop'
 function Say([string]$Message) { Write-Host $Message }
 '''
     ps += '$DomesticCatalog = ConvertFrom-Json -InputObject @\'\n' + json.dumps(data, ensure_ascii=False) + "\n'@\n"
-    official = json.loads((ROOT / 'src/gpt-catalog.json').read_text(encoding='utf-8'))
     ps += "$BundledOfficialVersion = '" + OFFICIAL_SNAPSHOT_VERSION + "'\n"
     ps += '$BundledOfficialCatalog = ConvertFrom-Json -InputObject @\'\n' + json.dumps(official, ensure_ascii=False) + "\n'@\n"
     ps += parent_powershell_process_functions() + '\n' + (ROOT / 'src/core.ps1').read_text(encoding='utf-8') + '\n' + (ROOT / 'src/windows-host.ps1').read_text(encoding='utf-8')

@@ -1,0 +1,8 @@
+model_provider = "OpenAI"
+model = "gpt-6.1-sol"
+
+[model_providers.OpenAI]
+name = "OpenAI"
+base_url = "https://api.myautoapi.com"
+wire_api = "responses"
+requires_openai_auth = true

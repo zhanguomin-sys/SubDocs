@@ -1,4 +1,5 @@
 #!/bin/sh
+# MyAutoAPI codex-models version: @TOOL_VERSION@
 set -eu
 
 say() { printf '%s\n' "$*"; }
@@ -84,9 +85,12 @@ if [ -z "$app_backend" ]; then app_backend="$(command -v codex || true)"; fi
 }
 fi
 
+# Keep the literal here-document outside command substitution: the macOS system
+# Bash 3.2 otherwise interprets backticks in JavaScript as shell substitutions.
 invoke_model_import() {
 run_model_import "$target_codex_home" "$app_backend" "$model_action" <<'MYAUTOAPI_JAVASCRIPT'
 // @DOMESTIC_CATALOG@
+// @OFFICIAL_CATALOG@
 // @CORE@
 // @MACOS_HOST@
 // @LINUX_HOST@

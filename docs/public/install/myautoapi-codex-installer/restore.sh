@@ -42,6 +42,34 @@ clean_config() {
   trap 'rm -f "${config_temp:-}"' RETURN
 
   awk '
+    # Track TOML multi-line strings so their contents are never read as tables or keys.
+    function update_multiline(line,    rest, double_at, single_at, at) {
+      rest = line
+      while (1) {
+        if (multiline == "") {
+          double_at = index(rest, "\"\"\"")
+          single_at = index(rest, "\047\047\047")
+          if (double_at == 0 && single_at == 0) {
+            return
+          }
+          if (double_at != 0 && (single_at == 0 || double_at < single_at)) {
+            multiline = "\"\"\""
+            at = double_at
+          } else {
+            multiline = "\047\047\047"
+            at = single_at
+          }
+        } else {
+          at = index(rest, multiline)
+          if (at == 0) {
+            return
+          }
+          multiline = ""
+        }
+        rest = substr(rest, at + 3)
+      }
+    }
+
     function emit(line) {
       if (removed_root && !emitted && line ~ /^[[:space:]]*$/) {
         return
@@ -55,11 +83,26 @@ clean_config() {
       skip_provider = 0
       removed_root = 0
       emitted = 0
+      multiline = ""
+      skip_value = 0
     }
 
     {
       match_line = $0
       sub(/\r$/, "", match_line)
+
+      in_string = multiline != ""
+      update_multiline(match_line)
+      if (in_string) {
+        if (skip_provider || skip_value) {
+          if (multiline == "") {
+            skip_value = 0
+          }
+          next
+        }
+        emit($0)
+        next
+      }
 
       is_table = match_line ~ /^[[:space:]]*\[\[?[^]]+\]\]?[[:space:]]*(#.*)?$/
       is_provider = match_line ~ /^[[:space:]]*\[model_providers\.[^]]+\][[:space:]]*(#.*)?$/
@@ -79,6 +122,7 @@ clean_config() {
 
       if (in_root && match_line ~ /^[[:space:]]*(model_provider|model|review_model)[[:space:]]*=/) {
         removed_root = 1
+        skip_value = multiline != ""
         next
       }
 

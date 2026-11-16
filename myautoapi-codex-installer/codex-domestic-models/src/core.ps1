@@ -1,6 +1,6 @@
 # Windows PowerShell 5.1 compatible. Keep behavior in sync with core.js via parity tests.
-# Remove this importer's unsupported ID even when an old catalog has no managed record.
-$RetiredModels = @('deepseek-flash')
+# Models the relay has retired or the user dropped: removed from the snapshot, cache and existing catalog alike.
+$RetiredModels = @('gpt-5.5', 'deepseek-flash')
 
 function New-ModelImportError([string]$Message) {
   $problem=New-Object System.Exception -ArgumentList $Message

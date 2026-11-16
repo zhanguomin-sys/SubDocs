@@ -2,6 +2,8 @@
 
 MyAutoAPI 中转站的接入教程与工具下载站，使用 VitePress 构建。
 
+2026-11-16 同步上游文档 0.1.18（`2f835e2`）、Codex 配置/恢复脚本及国产模型导入脚本 1.0.2。遵循当前正式发布的回退状态，生图工具继续为 V0.9.2；保留 MyAutoAPI 自有价格、分组和 DeepSeek 1017 模型 ID。本次未发布上游的图形化接入助手或 Mac App 合集，快速开始继续使用现有命令入口。详见 [同步记录](UPSTREAM-SYNC.md)。
+
 - 文档：<https://docs.myautoapi.com>
 - 中转站：<https://myautoapi.com>
 - API：<https://api.myautoapi.com>

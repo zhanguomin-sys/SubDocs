@@ -19,13 +19,24 @@ for (const [name, path, sourcePath] of installers) {
   test(`${name} installer writes the required OpenAI auth config`, async () => {
     const installer = await readFile(path, 'utf8')
 
-    assert.match(installer, /^requires_openai_auth = true$/m)
+    // The scripts build config.toml from strings; the written file is compared
+    // byte for byte with the helper's in quick-connect/connect/importconfig_test.go.
+    assert.match(installer, /requires_openai_auth = true/)
     assert.doesNotMatch(installer, /x-openai-actor-authorization|local-image-extension/)
   })
 
   test(`published ${name} installer matches the installer source`, async () => {
     const installer = await readFile(path, 'utf8')
     const source = await readFile(sourcePath, 'utf8')
+
+    assert.equal(installer, source)
+  })
+}
+
+for (const name of ['restore.sh', 'restore.ps1']) {
+  test(`published ${name} matches the installer source`, async () => {
+    const installer = await readFile(new URL(`../docs/public/install/myautoapi-codex-installer/${name}`, import.meta.url), 'utf8')
+    const source = await readFile(new URL(`../myautoapi-codex-installer/install/${name}`, import.meta.url), 'utf8')
 
     assert.equal(installer, source)
   })
