@@ -18,14 +18,14 @@ npm install -g @google/gemini-cli
 
 ## 2. 准备 Gemini 分组的 Key
 
-Key 的分组选 **Gemini 分组（反重力 Antigravity 反代）**（创建方法看 [快速开始](/quick-start)）。
+Key 的分组选 **Gemini 分组**（创建方法看 [快速开始](/quick-start)）。
 
-MyAutoAPI 的 Gemini 反重力分组为 0.35 倍率，`gemini-4-argon` 使用单独的 0.5 倍率分组。本文配置使用反重力分组；最新价格和可用模型见 [模型价格](/models)。Gemini CLI 后台的提示补全、分类等请求使用的 `gemini-2.5-flash-lite` 也在反重力分组里。
+MyAutoAPI 的 Gemini 分组按 token 计费，当前倍率为 **0.8**。Argon、Barium、Carbon、Hydrogen 和 Neon 均使用这个分组。最新价格和可用模型见 [模型价格](/models)。Gemini CLI 后台的提示补全、分类等请求使用的 `gemini-2.5-flash-lite` 也在这个分组里。
 
 | 用途 | 模型 ID |
 | --- | --- |
-| 重要任务 | `gemini-4-barium`、`gemini-3.1-pro-preview` |
-| 日常编程（推荐默认） | `gemini-3.8-flash` |
+| 复杂编程、长上下文 | `gemini-4-neon`、`gemini-4-argon`、`gemini-4-carbon`、`gemini-4-barium` |
+| 日常编程 | `gemini-4-hydrogen`、`gemini-3.8-flash`（示例默认） |
 | 简单、高频操作 | `gemini-3.1-flash-lite` |
 
 ## 3. 写入 `.env`

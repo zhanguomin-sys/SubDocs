@@ -1,0 +1,37 @@
+* { box-sizing: border-box; }
+:root {
+  color-scheme: light;
+  font-family: "Segoe UI", "Microsoft YaHei UI", sans-serif;
+  color: #17283e;
+  background: #f3f6fa;
+  font-size: 14px;
+}
+body { margin: 0; }
+main { max-width: 960px; margin: auto; padding: 23px 30px; }
+header, .heading, .row, footer, .brand, .actions { display: flex; align-items: center; gap: 10px; }
+header, .heading, .row, footer { justify-content: space-between; }
+.brand { font-weight: 700; }
+.brand span { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; color: white; background: #17283e; font-family: Georgia, serif; }
+.version { color: #465b72; font-variant-numeric: tabular-nums; }
+h1 { font-size: 26px; margin: 14px 0 5px; }
+h2 { font-size: 16px; margin: 0; }
+p { color: #465b72; margin: 4px 0; }
+section { margin: 10px 0; padding: 13px 17px; border: 1px solid #dfe7f1; border-radius: 10px; background: white; }
+form { display: grid; grid-template-columns: 145px minmax(0, 1fr); gap: 8px 12px; align-items: center; margin-top: 9px; }
+form button { grid-column: 2; justify-self: start; }
+input, select, button { font: inherit; border-radius: 6px; min-height: 34px; }
+input, select { display: block; width: 100%; padding: 5px 9px; border: 1px solid #a6b6cb; color: #17283e; background: white; }
+button { padding: 5px 11px; border: 1px solid #a6b6cb; background: white; color: #17283e; cursor: pointer; }
+button:hover:not(:disabled) { background: #eaf0f7; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid #215acd; outline-offset: 2px; }
+.primary { background: #1848aa; border-color: #1848aa; color: white; }
+.primary:hover:not(:disabled) { background: #12367f; }
+.text { color: #14449c; background: transparent; border-color: transparent; }
+button:disabled { cursor: wait; opacity: .6; }
+#status { min-height: 38px; margin: 4px 0; white-space: pre-line; overflow-wrap: anywhere; color: #1b6348; }
+#status.error { color: #9e2719; }
+@media(max-width: 610px) {
+  main { padding: 18px; }
+  .actions { flex-wrap: wrap; }
+  form { grid-template-columns: 130px minmax(0, 1fr); }
+}

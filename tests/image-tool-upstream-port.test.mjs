@@ -2,14 +2,14 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
-import { mkdtemp, mkdir, readFile, realpath, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, readFile, realpath, rename, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import test from 'node:test'
 
 const entryRoot = new URL('../docs/public/install/myautoapi-imagines-tool/', import.meta.url)
-const portRelease = 'releases/v0.9.2-upstream-c28a911/'
+const portRelease = 'releases/v0.9.7-upstream-af1c363/'
 const platforms = {
   'windows/amd64': 'windows-amd64.exe',
   'darwin/arm64': 'darwin-arm64',
@@ -21,14 +21,14 @@ const nativePlatform = (process.platform === 'win32' ? 'windows' : process.platf
 
 test('native updater metadata names only verified MyAutoAPI artifacts', async () => {
   const manifest = JSON.parse(await readFile(new URL('latest.json', entryRoot), 'utf8'))
-  assert.equal(manifest.version, '0.9.2')
-  assert.equal(manifest.release, 'V0.9.2')
+  assert.equal(manifest.version, '0.9.7')
+  assert.equal(manifest.release, 'V0.9.7')
   assert.deepEqual(Object.keys(manifest.files).sort(), Object.keys(platforms).sort())
   for (const [platform, suffix] of Object.entries(platforms)) {
     const file = manifest.files[platform]
     assert.equal(typeof file.path, 'string')
     assert.doesNotMatch(file.path, /usegoodai|https?:|^\/|\\|(?:^|\/)\.\.(?:\/|$)/i)
-    assert.ok(file.path.endsWith('/myautoapi-imagines-tool-' + suffix) || file.path.endsWith('/myautoapi-imagines-tool-v0.9.2-' + suffix))
+    assert.equal(file.path, portRelease + 'myautoapi-imagines-tool-v0.9.7-' + suffix)
     const bytes = await readFile(new URL(file.path, entryRoot))
     assert.equal(file.sha256, sha256(bytes), platform + ' checksum')
     assert.equal(file.size, bytes.length, platform + ' size')
@@ -39,7 +39,7 @@ test('native updater metadata names only verified MyAutoAPI artifacts', async ()
 
 test('all native release and stable artifacts contain the MyAutoAPI endpoints', async () => {
   for (const suffix of Object.values(platforms)) {
-    const release = await readFile(new URL(portRelease + 'myautoapi-imagines-tool-v0.9.2-' + suffix, entryRoot))
+    const release = await readFile(new URL(portRelease + 'myautoapi-imagines-tool-v0.9.7-' + suffix, entryRoot))
     const current = await readFile(new URL('current/myautoapi-imagines-tool-' + suffix, entryRoot))
     assert.equal(sha256(current), sha256(release), suffix + ' stable and release bytes')
     const content = current.toString('latin1')
@@ -151,19 +151,19 @@ test('ported native installer stays in isolated CODEX_HOME and preserves other t
   function run(binary, args, input, runEnv = env) {
     const result = spawnSync(binary, args, { env: runEnv, input, encoding: 'utf8', timeout: 20000, windowsHide: true })
     assert.ifError(result.error)
-    assert.equal(result.status, 0, 'native ' + args[0] + ' failed with status ' + result.status)
+    assert.equal(result.status, 0, 'native ' + args[0] + ' failed with status ' + result.status + ': ' + result.stderr)
     return result.stdout
   }
   // A synthetic fixture stays local: install only copies embedded assets.
   // No generate, edit, models, doctor or update request runs in this test.
   run(program, ['install', '--key-stdin'], 'sk-' + '0'.repeat(48) + '\n')
   assert.ok(existsSync(installed))
-  assert.equal(run(installed, ['version']).trim(), '0.9.2')
+  assert.equal(run(installed, ['version']).trim(), '0.9.7')
   // A second install must reuse the fixture instead of waiting for key input.
   run(program, ['install'])
   const record = JSON.parse(await readFile(path.join(home, 'tools', 'myautoapi-imagines-tool', 'install-manifest.json'), 'utf8'))
   assert.equal(record.managed_by, 'myautoapi-imagines-tool')
-  assert.equal(record.version, '0.9.2')
+  assert.equal(record.version, '0.9.7')
   assert.equal(record.platform, nativePlatform)
   assert.equal(record.files['tool/' + installedName], sha256(await readFile(installed)))
   assert.equal(sha256(await readFile(installed)), sha256(await readFile(program)), 'installed program must match the ported artifact')
@@ -187,6 +187,18 @@ test('ported native installer stays in isolated CODEX_HOME and preserves other t
   assert.equal(await readFile(path.join(foreign, 'sentinel.txt'), 'utf8'), 'keep unrelated tool\n')
   assert.equal(existsSync(path.join(home, 'tools', 'usegoodai-imagines-tool')), false)
 
+  // Repair an installation with the original managed Skill and no tool directory.
+  // Locally this can also be run against the previously published V0.9.6.
+  const sourceWithRecognizedSkill = process.env.TEST_IMAGE_TOOL_V096 || program
+  const recoveryHome = path.join(await realpath(temporary), 'Only the old Skill remains')
+  run(sourceWithRecognizedSkill, ['install', '--key-stdin'], 'sk-' + '8'.repeat(48) + '\n', envFor(recoveryHome))
+  const toolDirectory = path.join(recoveryHome, 'tools', 'myautoapi-imagines-tool')
+  assert.equal(await realpath(toolDirectory), toolDirectory)
+  await rename(toolDirectory, path.join(recoveryHome, 'saved-fixture-tool'))
+  run(program, ['install', '--key-stdin'], 'sk-' + '9'.repeat(48) + '\n', envFor(recoveryHome))
+  const repaired = path.join(recoveryHome, 'tools', 'myautoapi-imagines-tool', installedName)
+  assert.equal(run(repaired, ['version'], undefined, envFor(recoveryHome)).trim(), '0.9.7')
+
   if (process.platform === 'win32') {
     const legacyHome = path.join(temporary, 'Existing 0.9.2 Installation')
     const legacyEnv = envFor(legacyHome)
@@ -196,17 +208,17 @@ test('ported native installer stays in isolated CODEX_HOME and preserves other t
     const legacyKeyPath = path.join(legacyHome, 'tools', 'myautoapi-imagines-tool', 'api-key')
     const migratedProgram = path.join(legacyHome, 'tools', 'myautoapi-imagines-tool', installedName)
 
-    // Install the prior same-version release, then exercise the ported program against it.
+    // Install the original release, then exercise the new port against it.
     run(legacyProgram, ['install'], legacyKey + '\n', legacyEnv)
     assert.ok((await readFile(legacyKeyPath, 'utf8')) === legacyKey, 'legacy fixture key was saved')
     assert.notEqual(sha256(await readFile(migratedProgram)), sha256(await readFile(program)), 'legacy fixture must use the original binary')
     run(program, ['install'], undefined, legacyEnv)
-    assert.ok((await readFile(legacyKeyPath, 'utf8')) === legacyKey, 'same-version migration preserves the saved key')
-    assert.equal(sha256(await readFile(migratedProgram)), sha256(await readFile(program)), 'same-version migration replaces the old binary')
+    assert.ok((await readFile(legacyKeyPath, 'utf8')) === legacyKey, 'migration preserves the saved key')
+    assert.equal(sha256(await readFile(migratedProgram)), sha256(await readFile(program)), 'migration replaces the old binary')
     run(program, ['install', '--key-stdin'], replacementKey + '\n', legacyEnv)
     assert.ok((await readFile(legacyKeyPath, 'utf8')) === replacementKey, '--key-stdin replaces the saved key')
     const legacyRecord = JSON.parse(await readFile(path.join(legacyHome, 'tools', 'myautoapi-imagines-tool', 'install-manifest.json'), 'utf8'))
-    assert.equal(legacyRecord.version, '0.9.2')
+    assert.equal(legacyRecord.version, '0.9.7')
     assert.equal(legacyRecord.files['tool/' + installedName], sha256(await readFile(path.join(legacyHome, 'tools', 'myautoapi-imagines-tool', installedName))))
   }
 })

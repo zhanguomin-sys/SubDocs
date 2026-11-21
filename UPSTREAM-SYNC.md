@@ -1,5 +1,15 @@
 # 上游同步记录
 
+## 2026-11-21
+
+- 按 [上游 0.1.33](https://github.com/youdaowudao/subdocs/commit/44f424414dcbc5368bcda01ace6826bca3b353f0) 同步选定内容。Gemini 文档和页面采用本站 0.8 token 倍率，Argon、Barium、Carbon、Hydrogen 和 Neon 同组；Neon 的分组缓存读取价待确认。本站未配置上游的按次分组。
+- 补充 GPT-6.2 Astra / Sol 官方参考价，本站分组价格及可用性以实际配置为准。
+- 国产模型导入脚本更新为 1.0.3；Codex 官方快照为 0.170.0，本站十个国产模型和 DeepSeek 1017 的请求 ID 保持原样。
+- Windows 接入助手 V1.2.2 从本站源码构建。接入 Codex、Claude Code，以及通过 Claude 桌面应用自身的导入功能配置网关；语言功能只保存 Codex 的简体中文偏好。macOS 沿用现有接入方式。
+- 发布生图工具 V0.9.7，来源为上游 `af1c363`；四平台制品按固定校验值迁移，保留旧发布归档和本站生图分组价格。
+
+验证覆盖 VitePress 构建、两种价格模式、官方 Codex 0.170.0 和 Shell / PowerShell 下的模型导入、Windows 接入助手启动及配置与更新检查。生图工具在 Windows 和 Linux 使用测试 Key 安装，Linux 在本地 HTTPS 服务验证 0.9.2 升级保留 Key 与 0.9.6 残留 Skill 恢复；Mac 制品核对文件结构和哈希，未实机运行。
+
 ## 2026-11-16
 
 - 基线：MyAutoAPI `f205770d63d56b075c919ac9ae6b7edbc845e77a`，备份分支 `backup/before-upstream-20261116`。

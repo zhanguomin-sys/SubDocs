@@ -5,7 +5,7 @@ import vue from '@vitejs/plugin-vue'
 import { createSSRApp } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
-test('renders Argon in its own 0.5 group and keeps Barium in the 0.35 Gemini group', async () => {
+test('renders verified Gemini token prices and GPT-6.2 official references', async () => {
   const server = await createServer({
     configFile: false,
     plugins: [vue()],
@@ -16,62 +16,44 @@ test('renders Argon in its own 0.5 group and keeps Barium in the 0.35 Gemini gro
   try {
     const { default: pricing } = await server.ssrLoadModule('/docs/.vitepress/theme/components/ModelPricing.vue')
 
-    const cases = [
-      {
-        groupId: 'gemini-antigravity',
-        count: 13,
-        firstIds: ['gemini-4-barium', 'gemini-3.8-flash'],
-        amounts: ['¥0.70', '¥3.50', '¥0.035', '¥4.20'],
-        multiplier: /0\.35 倍率/,
-      },
-      {
-        groupId: 'gemini-4-argon',
-        count: 1,
-        firstIds: ['gemini-4-argon'],
-        amounts: ['¥1.00', '¥5.00', '¥0.05', '¥6.00'],
-        multiplier: /0\.5 倍率/,
-      },
-    ]
-
-    for (const { groupId, count, firstIds, amounts: groupAmounts, multiplier } of cases) {
-      for (const priceMode of ['group', 'official']) {
-        const component = {
-          ...pricing,
-          setup(props, context) {
-            const state = pricing.setup(props, context)
-            state.activeCategory.value = 'gemini'
-            state.activeGroupId.value = groupId
-            state.priceMode.value = priceMode
-            return state
-          },
-        }
-        const html = await renderToString(createSSRApp(component))
-        const rows = [...html.matchAll(/<tr\b[^>]*>[\s\S]*?<\/tr>/g)]
-          .map(([row]) => row)
-          .filter((row) => row.includes('class="model-id-cell"'))
-        const ids = rows.map((row) => row.match(/<strong>(gemini-[^<]+)<\/strong>/)[1])
-
-        assert.equal(ids.length, count)
-        assert.deepEqual(ids.slice(0, firstIds.length), firstIds)
-        assert.ok(rows[0].includes(`aria-label="复制 ${firstIds[0]}"`))
-        if (groupId === 'gemini-antigravity') {
-          assert.ok(!ids.includes('gemini-4-argon'))
-          assert.match(rows[0], /渠道基准/)
-          assert.doesNotMatch(rows[0], /官方|价格待确认|NaN/)
-        }
-
-        const priceClass = priceMode === 'group' ? 'group-price' : 'official-price'
-        const amounts = [...rows[0].matchAll(new RegExp(`<strong class="${priceClass}">([^<]+)<`, 'g'))]
-          .map((match) => match[1])
-        assert.deepEqual(amounts, priceMode === 'group'
-          ? groupAmounts
-          : ['¥14.00', '¥70.00', '¥0.70', '¥84.00'])
-        if (priceMode === 'group') {
-          const activeCard = html.match(/<button\b[^>]*class="[^"]*pricing-group-card[^"]*"[^>]*aria-pressed="true"[^>]*>[\s\S]*?<\/button>/)[0]
-          assert.match(activeCard, multiplier)
-        }
+    const render = async (category, group, mode) => {
+      const component = {
+        ...pricing,
+        setup(props, context) {
+          const state = pricing.setup(props, context)
+          state.activeCategory.value = category
+          state.activeGroupId.value = group
+          state.priceMode.value = mode
+          return state
+        },
       }
+      const html = await renderToString(createSSRApp(component))
+      const rows = new Map([...html.matchAll(/<tr\b[^>]*>[\s\S]*?<\/tr>/g)]
+        .map(([row]) => row)
+        .filter((row) => row.includes('class="model-id-cell"'))
+        .map((row) => [row.match(/class="model-id-title"><strong>([^<]+)<\/strong>/)[1], row]))
+      return { html, rows }
     }
+    const groupGemini = await render('gemini', 'gemini-antigravity', 'group')
+    const officialGemini = await render('gemini', 'gemini-antigravity', 'official')
+    const amounts = (row, mode) => [...row.matchAll(new RegExp(`<strong class="${mode}-price">([^<]+)<`, 'g'))]
+      .map((match) => match[1])
+
+    assert.match(groupGemini.html, /0\.8 倍率/)
+    assert.equal(groupGemini.rows.size, 17)
+    assert.deepEqual(amounts(groupGemini.rows.get('gemini-4-neon'), 'group'), ['¥2.40', '¥12.00', '¥14.40'])
+    assert.match(groupGemini.rows.get('gemini-4-neon'), /分组价待确认/)
+    assert.deepEqual(amounts(groupGemini.rows.get('gemini-4-argon'), 'group'), ['¥1.60', '¥8.00', '¥0.08', '¥9.60'])
+    assert.deepEqual(amounts(officialGemini.rows.get('gemini-4-neon'), 'official'), ['¥21.00', '¥105.00', '¥1.05', '¥126.00'])
+
+    const groupGpt = await render('gpt', 'gpt-0.18', 'group')
+    const officialGpt = await render('gpt', 'gpt-0.18', 'official')
+    for (const id of ['gpt-6.2-astra', 'gpt-6.2-sol']) {
+      assert.match(groupGpt.rows.get(id), /本站分组价格待确认/)
+      assert.deepEqual(amounts(groupGpt.rows.get(id), 'group'), [])
+    }
+    assert.deepEqual(amounts(officialGpt.rows.get('gpt-6.2-astra'), 'official'), ['¥56.00', '¥280.00', '¥2.80', '¥336.00'])
+    assert.deepEqual(amounts(officialGpt.rows.get('gpt-6.2-sol'), 'official'), ['¥14.00', '¥70.00', '¥0.70', '¥84.00'])
   } finally {
     await server.close()
   }

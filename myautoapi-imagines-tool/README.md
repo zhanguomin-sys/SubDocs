@@ -4,11 +4,11 @@
 
 ## 当前发布来源
 
-当前正式制品是对方仓库 [youdaowudao/subdocs](https://github.com/youdaowudao/subdocs) 固定提交 `c28a91174db4f065ff4c4121e348f20afebda85c` 发布的 V0.9.2 原生程序，经 MyAutoAPI 品牌和域名迁移后发布。对方仓库未提供该工具的当前源码；本目录保留的 Go/Python 源码是此前的独立移植实现，供历史参考，**不是当前正式制品的构建来源**。
+当前正式制品以 [youdaowudao/subdocs](https://github.com/youdaowudao/subdocs) 固定提交 `af1c363279957b289bdbf1593a2031c900470919` 的 V0.9.7 原生程序为基础，经 MyAutoAPI 品牌和域名迁移后发布。本目录保留的 Go/Python 源码供历史参考。
 
 迁移脚本为 `release/port_upstream.py`。它先核对四个平台的固定上游 SHA-256，再等长替换 `usegoodai`、`UseGoodAI`、`USEGOODAI`，同时迁移工具名、安装目录、Skill、全局规则和固定网络入口。Apple Silicon 程序原有的 ad-hoc 签名分页哈希会重新计算，文件结构和长度保持不变。`release/upstream-port.json` 记录来源提交、输入和输出哈希、替换数量及签名分页数量，便于复现和核对。
 
-固定 API 已迁移为 `https://api.myautoapi.com`；原生更新清单为 `https://docs.myautoapi.com/install/myautoapi-imagines-tool/latest.json`。工具仍可能下载接口返回的外部 HTTPS 图片 URL。版本号仍为 `V0.9.2`，不能仅凭版本号判断是否已经取得当前制品，还应核对 SHA-256。
+固定 API 为 `https://api.myautoapi.com`；原生更新清单为 `https://docs.myautoapi.com/install/myautoapi-imagines-tool/latest.json`，指向带版本号的下载文件。工具仍可能下载接口返回的外部 HTTPS 图片 URL。
 
 ## 安装与更新
 
@@ -32,7 +32,7 @@
 
 ## 调用行为
 
-当前发布程序保留上游 V0.9.2 的 `generate`、`edit`、`models`、`paths`、`doctor`、`recover`、`update` 和 `version` 等原生子命令。Codex 使用安装器生成的 Skill 中的绝对工具路径，一次提交一条原生命令；提示词直接通过 `--prompt` 传递，不创建 PowerShell 提示词临时文件，因此不需要额外清理临时提示词文件。具体引号和命令格式以当前安装的 Skill 为准。
+V0.9.7 改进恢复安装时对旧生图 Skill 的识别，保留 `generate`、`edit`、`models`、`paths`、`doctor`、`recover`、`update` 和 `version` 等原生子命令。Codex 使用安装器生成的 Skill 中的工具路径。具体引号和命令格式以当前安装的 Skill 为准。
 
 API Key 由原生程序内部读取。排错先用 `doctor`；查看模型用 `models`；找回已完成调用的结果用 `recover`。用户要求修复时先诊断真实原因，用户明确要求更新或重装时才运行相应子命令。
 
@@ -63,7 +63,7 @@ python myautoapi-imagines-tool/release/port_upstream.py <上游仓库目录>
 
 脚本只接受已固定校验值的上游程序，生成：
 
-- `docs/public/install/myautoapi-imagines-tool/releases/v0.9.2-upstream-c28a911/`：本次上游迁移制品的独立归档和 `SHA256SUMS`。旧 `releases/v0.9.2/` 保留原字节，不代表本次制品。
+- `docs/public/install/myautoapi-imagines-tool/releases/v0.9.7-upstream-af1c363/`：本次迁移制品的归档和 `SHA256SUMS`。旧版本归档保持原字节。
 - `docs/public/install/myautoapi-imagines-tool/current/`：不带版本号的四平台文件和 `SHA256SUMS`。
 - `docs/public/install/myautoapi-imagines-tool/latest.json`：原生更新使用的当前平台路径、大小与哈希。
 - `release/install.ps1`、`release/install.sh` 及公开副本：同步新的制品哈希。
@@ -77,4 +77,4 @@ python myautoapi-imagines-tool/release/port_upstream.py <上游仓库目录>
 
 正式制品应核对固定上游哈希、迁移后哈希、品牌残留、固定 API/更新域名、公开脚本和 `latest.json` 的一致性，并在隔离 `CODEX_HOME` 中用合成 Key 验证 Windows、Linux 安装、保留 Key 的更新和重装流程。Linux 本地 HTTPS 夹具已验证：普通更新跳过同版本不同哈希，`update --reinstall` 正确解析 `current/...` 相对路径并保留 Key。测试不得读取或提交真实 Key，也不以诊断测试发起付费生图请求。
 
-Apple Silicon 程序重新计算现有 ad-hoc 签名的 1560 个 SHA-256 分页哈希；Intel Mac 程序没有该签名。两个 Mac 制品尚未实机验证，签名结构和校验值核验不能替代 Mac 上的安装及运行验证。远端生图是否成功仍取决于 MyAutoAPI 的模型、分组权限和接口服务，不能仅由本地安装测试推断。
+Apple Silicon 程序重新计算现有 ad-hoc 签名的 1584 个 SHA-256 分页哈希；Intel Mac 程序没有该签名。Mac 制品已核对文件结构及校验值，尚未实机运行。测试未发起线上计费生图请求。

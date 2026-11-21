@@ -17,6 +17,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 PROGRAM = ROOT / 'docs/public/install/myautoapi-imagines-tool/current/myautoapi-imagines-tool-linux-amd64'
+LEGACY = ROOT / 'docs/public/install/myautoapi-imagines-tool/releases/v0.9.2-upstream-c28a911/myautoapi-imagines-tool-v0.9.2-linux-amd64'
 LATEST_URL = b'https://docs.myautoapi.com/install/myautoapi-imagines-tool/latest.json'
 
 
@@ -26,8 +27,9 @@ def sha256(data: bytes) -> str:
 
 @unittest.skipUnless(platform.system() == 'Linux' and platform.machine() in ('x86_64', 'amd64'), 'requires the Linux x64 release')
 class NativeUpdateTest(unittest.TestCase):
-    def test_same_version_requires_reinstall_and_checks_relative_current_payload(self) -> None:
+    def test_same_version_reinstall_then_upgrade_to_new_immutable_release(self) -> None:
         original = PROGRAM.read_bytes()
+        legacy = LEGACY.read_bytes()
         with tempfile.TemporaryDirectory(prefix='myautoapi-update-local-') as temporary:
             root = Path(temporary)
             certificate, private_key = root / 'localhost.crt', root / 'localhost.key'
@@ -74,7 +76,9 @@ class NativeUpdateTest(unittest.TestCase):
                 latest = (base + 'x' * padding + '/latest.json').encode()
                 self.assertEqual(len(latest), len(LATEST_URL))
                 self.assertEqual(original.count(LATEST_URL), 1)
-                payload = original.replace(LATEST_URL, latest)
+                self.assertEqual(legacy.count(LATEST_URL), 1)
+                new_payload = original.replace(LATEST_URL, latest)
+                payload = legacy.replace(LATEST_URL, latest)
                 # A harmless trailer creates an old V0.9.2 fixture with a different hash.
                 old = payload + b'\nlocal-same-version-old-fixture\n'
                 source = root / 'old-program'
@@ -133,8 +137,24 @@ class NativeUpdateTest(unittest.TestCase):
                 self.assertEqual(record['version'], '0.9.2')
                 self.assertEqual(record['files']['tool/myautoapi-imagines-tool'], sha256(payload))
                 self.assertEqual(run(installed, ['version']).strip(), '0.9.2')
+                immutable = 'releases/v0.9.7-upstream-af1c363/myautoapi-imagines-tool-v0.9.7-linux-amd64'
+                immutable_path = manifest_path.removesuffix('latest.json') + immutable
+                manifest['version'] = '0.9.7'
+                manifest['release'] = 'V0.9.7'
+                manifest['files']['linux/amd64'] = {
+                    'path': immutable, 'sha256': sha256(new_payload), 'size': len(new_payload),
+                }
+                state['content'][manifest_path] = json.dumps(manifest).encode()
+                state['content'][immutable_path] = new_payload
+                run(installed, ['update'])
+                self.assertEqual(run(installed, ['version']).strip(), '0.9.7')
+                self.assertEqual(installed.read_bytes(), new_payload)
+                self.assertEqual(key_path.read_text().strip(), key)
+                record = json.loads((installed.parent / 'install-manifest.json').read_text())
+                self.assertEqual(record['version'], '0.9.7')
+                self.assertEqual(record['files']['tool/myautoapi-imagines-tool'], sha256(new_payload))
                 self.assertEqual(state['unexpected'], [])
-                self.assertEqual(state['requests'], [manifest_path, manifest_path, artifact_path, manifest_path, artifact_path])
+                self.assertEqual(state['requests'], [manifest_path, manifest_path, artifact_path, manifest_path, artifact_path, manifest_path, immutable_path])
             finally:
                 for item in (server, proxy):
                     item.shutdown()

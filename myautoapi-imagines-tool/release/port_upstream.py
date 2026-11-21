@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rebrand the pinned upstream V0.9.2 programs without changing their logic."""
+"""Rebrand pinned upstream programs without changing their logic."""
 from __future__ import annotations
 
 import argparse
@@ -12,14 +12,14 @@ import struct
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
-UPSTREAM_COMMIT = 'c28a91174db4f065ff4c4121e348f20afebda85c'
-VERSION = '0.9.2'
-ARCHIVE = 'v0.9.2-upstream-c28a911'
+UPSTREAM_COMMIT = 'af1c363279957b289bdbf1593a2031c900470919'
+VERSION = '0.9.7'
+ARCHIVE = f'v{VERSION}-upstream-{UPSTREAM_COMMIT[:7]}'
 UPSTREAM_HASHES = {
-    'windows/amd64': '11947f21ae3a591bf46f092f322c7ad7cc97758edf7cdbaf344f9a423ca8f282',
-    'darwin/arm64': '13d1941c91c84e668aee11bb808910607897a02dcb282d8e8ca906a2172677b4',
-    'darwin/amd64': 'f993f4cd429cebd811429cdacb129de6ce1f283d3e844f0b5de7cc4c16404428',
-    'linux/amd64': 'e629977b7490d26063f7f6df23cfd5a3421117414ad080e8c328621880c9014c',
+    'windows/amd64': '718c75998bc7b5457bc6114ef60a5b19368f7143b3082443558b3c71ab38f448',
+    'darwin/arm64': '1c494086214c26e8c83c9b2a657ba625ade1ec13303970f2312170b52c084abc',
+    'darwin/amd64': 'cffb093358e1acfa3bf6a1608ff101e16678810c38bdf3ffc3dcc7e2b5e1b626',
+    'linux/amd64': 'c7a3970649ab8ee86420d6649cb12d32de3ab8a7e5f97782cd9a312f350ba26a',
 }
 REPLACEMENTS = ((b'usegoodai', b'myautoapi'), (b'UseGoodAI', b'MyAutoAPI'), (b'USEGOODAI', b'MYAUTOAPI'))
 
@@ -63,7 +63,7 @@ def refresh_macho_signature(data: bytearray) -> int:
 def transform_platform(source: Path, platform: str, expected: str) -> dict[str, object]:
     """Read, transform, and validate one upstream artifact without writing it."""
     suffix = platform.replace('/', '-') + ('.exe' if platform.startswith('windows') else '')
-    upstream_name = 'usegoodai-imagines-tool-v0.9.2-' + suffix
+    upstream_name = f'usegoodai-imagines-tool-v{VERSION}-{suffix}'
     original = (source / upstream_name).read_bytes()
     if digest(original) != expected:
         raise ValueError('Upstream SHA-256 mismatch: ' + upstream_name)
@@ -82,7 +82,7 @@ def transform_platform(source: Path, platform: str, expected: str) -> dict[str, 
     for required in (b'https://api.myautoapi.com', b'https://docs.myautoapi.com/install/myautoapi-imagines-tool/latest.json'):
         if required not in result:
             raise ValueError('Missing branded endpoint in ' + upstream_name + ': ' + required.decode())
-    artifact = 'myautoapi-imagines-tool-v0.9.2-' + suffix
+    artifact = f'myautoapi-imagines-tool-v{VERSION}-{suffix}'
     current_name = 'myautoapi-imagines-tool-' + suffix
     branded = bytes(result)
     return {
@@ -100,6 +100,7 @@ def transform_platform(source: Path, platform: str, expected: str) -> dict[str, 
 def prepare_installer(path: Path, hashes: dict[str, str], extension: str) -> str:
     """Prepare an installer copy and validate every expected hash replacement."""
     text = path.read_text(encoding='utf-8-sig')
+    text = re.sub(r'\bV\d+\.\d+\.\d+\b', f'V{VERSION}', text)
     for name, sha in hashes.items():
         if (extension == 'ps1') != name.endswith('.exe'):
             continue
@@ -143,7 +144,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('upstream', type=Path, help='Pinned youdaowudao/subdocs checkout')
     args = parser.parse_args()
-    source = args.upstream / 'docs/public/install/usegoodai-imagines-tool/releases/v0.9.2'
+    source = args.upstream / 'docs/public/install/usegoodai-imagines-tool/releases' / f'v{VERSION}'
     public = ROOT / 'docs/public/install/myautoapi-imagines-tool'
     release = public / 'releases' / ARCHIVE
     current = public / 'current'
@@ -161,7 +162,7 @@ def main() -> None:
         hashes[current_name] = sha
         release_sums.append(f'{sha}  {artifact}\n')
         current_sums.append(f'{sha}  {current_name}\n')
-        manifest['files'][platform] = {'path': 'current/' + current_name, 'sha256': sha, 'size': item['size']}
+        manifest['files'][platform] = {'path': f'releases/{ARCHIVE}/{artifact}', 'sha256': sha, 'size': item['size']}
         record['files'][platform] = {'upstream_sha256': expected, 'sha256': sha, 'size': item['size'], 'replacements': item['replacements'], 'signed_pages': item['signed_pages']}
     installers = {}
     for extension in ('ps1', 'sh'):
@@ -182,6 +183,9 @@ def main() -> None:
         mode = 0o644 if str(item['artifact']).endswith('.exe') else 0o755
         files[release / str(item['artifact'])] = (item['bytes'], mode)
         files[current / str(item['current_name'])] = (item['bytes'], mode)
+    for target, (content, _) in files.items():
+        if target.parent == release and target.exists() and target.read_bytes() != content:
+            raise ValueError('Cannot replace an existing immutable release file: ' + target.name)
     write_staged_files(files)
     print(json.dumps(record, ensure_ascii=False, indent=2))
 

@@ -6,7 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 TOOL_VERSION = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
 # Codex version whose bundled catalog is saved in src/gpt-catalog.json; update both together.
-OFFICIAL_SNAPSHOT_VERSION = '0.165.0'
+OFFICIAL_SNAPSHOT_VERSION = '0.170.0'
 
 
 def catalog():

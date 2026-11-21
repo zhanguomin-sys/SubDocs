@@ -6,7 +6,7 @@ Windows 只读写 `CODEX_HOME` 内的配置和模型文件，不查找、启动�
 
 当前交付物是 [Windows 脚本](install/codex-models.ps1) 和 [Linux/macOS 共用脚本](install/codex-models.sh)。源码、设定和测试都在本子项目；交付物按用户要求迁移到上级安装目录与站点发布目录，供用户实机测试。
 
-Linux/macOS 脚本和第三个 Mac App 当前版本为 **1.0.2**，统一读取 [VERSION](VERSION)，具体变更和验证范围见[版本记录](CHANGELOG.md)。Windows 合并助手仍为 1.1.6，其内置脚本未改动。
+本站 Windows、Linux 和 macOS 脚本当前版本为 **1.0.3**，统一读取 [VERSION](VERSION)。具体变更见[版本记录](CHANGELOG.md)。
 
 ## 运行脚本
 

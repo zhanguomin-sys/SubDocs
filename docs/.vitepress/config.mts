@@ -53,6 +53,8 @@ export default withSidebar(config, {
     'codex-cc-switch.md',
     'image-video-group-image.md',
     'codex-models.md',
+    'quick-connect.md',
+    'codex-chinese.md',
     'models.md',
     'codex',
     'manual-config.md',

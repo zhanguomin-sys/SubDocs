@@ -91,7 +91,7 @@ test('PowerShell bootstrap prompts, rejects empty input and completes without st
     const result = await Promise.race([run.completion, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('bootstrap waited for stdin EOF')), 10000) })])
     assert.equal(result, 0, 'PowerShell bootstrap failed')
   } finally { clearTimeout(timer) }
-  assert.ok(run.output().includes('完成：V0.9.2'), 'installation did not complete')
+  assert.ok(run.output().includes('完成：V0.9.7'), 'installation did not complete')
   assert.ok((await readFile(path.join(env.CODEX_HOME, 'tools/myautoapi-imagines-tool/api-key'), 'utf8')).trim() === replacementKey, 'explicit bootstrap input must replace the saved synthetic key')
 })
 
@@ -135,7 +135,7 @@ try:
     assert sent_empty and sent_key, 'bootstrap did not explicitly prompt and reject empty input'
     assert status is not None, 'bootstrap waited for terminal EOF after a complete key line'
     assert os.waitstatus_to_exitcode(status) == 0, 'shell bootstrap failed'
-    assert '完成：V0.9.2'.encode() in captured, 'shell installation did not complete'
+    assert '完成：V0.9.7'.encode() in captured, 'shell installation did not complete'
     assert (pathlib.Path(home) / 'tools/myautoapi-imagines-tool/api-key').read_bytes().strip() == replacement, 'explicit bootstrap input did not replace the synthetic key'
 finally:
     if status is None:

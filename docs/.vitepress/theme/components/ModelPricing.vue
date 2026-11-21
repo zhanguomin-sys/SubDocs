@@ -349,7 +349,11 @@ const PRICE_FIELDS = [
                       :class="{ 'context-price-tier': model.priceTiers }"
                     >
                       <span v-if="model.priceTiers" class="context-tier-label">{{ tier.priceLabel }}</span>
-                      <template v-if="priceMode === 'group'">
+                      <template v-if="priceMode === 'group' && field === 'cachedInput' && tier.groupCachedInputUnconfirmed">
+                        <span>分组价待确认</span>
+                        <del>官方 {{ formatCny(tier.prices.official[field]) }}</del>
+                      </template>
+                      <template v-else-if="priceMode === 'group'">
                         <strong class="group-price">{{ formatCny(tier.prices.group[field]) }}</strong>
                         <span class="price-unit">/ 1M tokens</span>
                         <span

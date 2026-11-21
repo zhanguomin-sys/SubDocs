@@ -1,50 +1,50 @@
 {
   "upstream_repository": "https://github.com/youdaowudao/subdocs",
-  "upstream_commit": "c28a91174db4f065ff4c4121e348f20afebda85c",
-  "version": "0.9.2",
-  "archive": "v0.9.2-upstream-c28a911",
+  "upstream_commit": "af1c363279957b289bdbf1593a2031c900470919",
+  "version": "0.9.7",
+  "archive": "v0.9.7-upstream-af1c363",
   "method": "equal-length brand replacement; refresh existing Apple Silicon ad-hoc SHA-256 page hashes",
   "files": {
     "windows/amd64": {
-      "upstream_sha256": "11947f21ae3a591bf46f092f322c7ad7cc97758edf7cdbaf344f9a423ca8f282",
-      "sha256": "3bc1abcfd0ab8c90b625d0461345116df3d6d1a28b747a80a0aff3adcee22896",
-      "size": 6909440,
+      "upstream_sha256": "718c75998bc7b5457bc6114ef60a5b19368f7143b3082443558b3c71ab38f448",
+      "sha256": "f48afcd5e584a81f6130055a39ff4c1c4c481eac0f92f6f8300e3f8acc5c79c4",
+      "size": 7023104,
       "replacements": {
-        "usegoodai": 64,
-        "UseGoodAI": 37,
+        "usegoodai": 70,
+        "UseGoodAI": 38,
         "USEGOODAI": 23
       },
       "signed_pages": 0
     },
     "darwin/arm64": {
-      "upstream_sha256": "13d1941c91c84e668aee11bb808910607897a02dcb282d8e8ca906a2172677b4",
-      "sha256": "925f090ed745335424d9d8e5968b0c30d56ee45a60e1ba7eafac7fd6f5dac9df",
-      "size": 6436466,
+      "upstream_sha256": "1c494086214c26e8c83c9b2a657ba625ade1ec13303970f2312170b52c084abc",
+      "sha256": "0e912ba909d426749934e77adba809819b200abed2210814d91241f5877bc502",
+      "size": 6537154,
       "replacements": {
-        "usegoodai": 69,
-        "UseGoodAI": 45,
+        "usegoodai": 75,
+        "UseGoodAI": 46,
         "USEGOODAI": 23
       },
-      "signed_pages": 1560
+      "signed_pages": 1584
     },
     "darwin/amd64": {
-      "upstream_sha256": "f993f4cd429cebd811429cdacb129de6ce1f283d3e844f0b5de7cc4c16404428",
-      "sha256": "b1d3b8c82e6fbb6ee30e544b717ec1876eb2153d06039661d472ca2e2b40b274",
-      "size": 6874096,
+      "upstream_sha256": "cffb093358e1acfa3bf6a1608ff101e16678810c38bdf3ffc3dcc7e2b5e1b626",
+      "sha256": "26681fa275ca0901239958474c73afa0f4cfb3ecab3487478edce8a839345841",
+      "size": 6990400,
       "replacements": {
-        "usegoodai": 69,
-        "UseGoodAI": 45,
+        "usegoodai": 75,
+        "UseGoodAI": 46,
         "USEGOODAI": 23
       },
       "signed_pages": 0
     },
     "linux/amd64": {
-      "upstream_sha256": "e629977b7490d26063f7f6df23cfd5a3421117414ad080e8c328621880c9014c",
-      "sha256": "046653c0a4c4023266ab01df555caa8356efb4921a9fe41ec6bfc5235df12382",
-      "size": 6758584,
+      "upstream_sha256": "c7a3970649ab8ee86420d6649cb12d32de3ab8a7e5f97782cd9a312f350ba26a",
+      "sha256": "ad7802bb23f50636bbc64df2fd53031c7016434fee2bafbc2f43af5a7267bfdb",
+      "size": 6860984,
       "replacements": {
-        "usegoodai": 67,
-        "UseGoodAI": 45,
+        "usegoodai": 72,
+        "UseGoodAI": 46,
         "USEGOODAI": 23
       },
       "signed_pages": 0

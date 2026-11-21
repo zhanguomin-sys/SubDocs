@@ -6,7 +6,7 @@ outline: false
 
 # MyAutoAPI.com 中转站教程
 
-MyAutoAPI 中转站让 Codex 使用 AI 模型，并支持在对话中生成、修改图片。首次接入先看“快速开始”，按教程接入；也可以选择“CC Switch 接入”，接入后再安装生图工具、导入国产模型。
+MyAutoAPI 中转站让 Codex 使用 AI 模型，并支持在对话中生成、修改图片。Windows 用户可用 [接入助手](/quick-connect)，也可以选择“快速开始”或“CC Switch 接入”。接入后可安装生图工具、导入国产模型。
 
 <div class="home-entry-grid">
   <a class="home-entry home-entry--main" href="/quick-start">
@@ -41,6 +41,7 @@ MyAutoAPI 中转站让 Codex 使用 AI 模型，并支持在对话中生成、�
   <a href="/domestic/">国产工具</a>
   <a href="/clients/">其他工具</a>
   <a href="/codex/manual-config">Codex 手动配置</a>
+  <a href="/codex-chinese">Codex 界面语言</a>
   <a href="/images/infinite-canvas">无限画布</a>
   <a href="/models">模型价格</a>
   <a href="/errors/">遇到问题</a>

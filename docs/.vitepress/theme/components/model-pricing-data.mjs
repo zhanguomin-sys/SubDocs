@@ -7,6 +7,8 @@ export const DEEPSEEK_PRICE_PERIODS = {
 
 const GPT_MODEL_IDS = [
   'gpt-6-astra',
+  'gpt-6.2-astra',
+  'gpt-6.2-sol',
   'gpt-6.1-sol',
   'gpt-6-sol',
   'gpt-5.6-sol',
@@ -15,7 +17,11 @@ const GPT_MODEL_IDS = [
 ]
 
 const GEMINI_MODEL_IDS = [
+  'gemini-4-neon',
+  'gemini-4-argon',
+  'gemini-4-carbon',
   'gemini-4-barium',
+  'gemini-4-hydrogen',
   'gemini-3.8-flash',
   'gemini-3.7-flash',
   'gemini-3.6-flash-tiered',
@@ -159,17 +165,10 @@ export const TEXT_GROUPS = [
   },
   {
     id: 'gemini-antigravity',
-    name: 'Gemini 分组（反重力 Antigravity 反代）',
-    multiplier: 0.35,
-    description: '适合 Antigravity、代理式编程和 Gemini 模型测试',
+    name: 'Gemini 分组',
+    multiplier: 0.8,
+    description: '使用 Gemini 原生接口，按 token 计费',
     modelIds: GEMINI_MODEL_IDS,
-  },
-  {
-    id: 'gemini-4-argon',
-    name: 'gemini-4-argon',
-    multiplier: 0.5,
-    description: 'Gemini 4 Argon 专用分组',
-    modelIds: ['gemini-4-argon'],
   },
   {
     id: 'deepseek',
@@ -249,7 +248,7 @@ export const MODEL_CATEGORIES = [
     name: 'Gemini',
     iconSvg: GEMINI_ICON,
     kind: 'text',
-    groupIds: ['gemini-antigravity', 'gemini-4-argon'],
+    groupIds: ['gemini-antigravity'],
   },
   {
     id: 'deepseek',
@@ -305,6 +304,20 @@ export const MODEL_CATEGORIES = [
 ]
 
 export const TEXT_MODELS = [
+  {
+    id: 'gpt-6.2-astra',
+    name: 'GPT-6.2 Astra',
+    description: '适合高难推理、长程编码与复杂代理任务',
+    officialUsd: { input: 8, output: 40, cachedInput: 0.4 },
+    officialOnly: true,
+  },
+  {
+    id: 'gpt-6.2-sol',
+    name: 'GPT-6.2 Sol',
+    description: '适合日常编码、工具调用与代理工作流',
+    officialUsd: { input: 2, output: 10, cachedInput: 0.1 },
+    officialOnly: true,
+  },
   {
     id: 'gpt-6.1-sol',
     name: 'GPT-6.1 Sol',
@@ -449,10 +462,31 @@ export const TEXT_MODELS = [
     officialUsd: { input: 2, output: 6, cachedInput: 0.2 },
   },
   {
+    id: 'gemini-4-neon',
+    name: 'Gemini 4 Neon',
+    description: '适合编程、多模态推理和长上下文；支持最高 100 万 tokens 上下文',
+    officialUsd: { input: 3, output: 15, cachedInput: 0.15 },
+    groupCachedInputUnconfirmed: true,
+  },
+  {
     id: 'gemini-4-argon',
     name: 'Gemini 4 Argon',
     description: '2026-09 发布，适合复杂软件开发、长任务推理和企业知识工作；按官方首发价展示',
     officialUsd: { input: 2, output: 10, cachedInput: 0.1 },
+  },
+  {
+    id: 'gemini-4-carbon',
+    name: 'Gemini 4 Carbon',
+    description: '适合复杂编程、多步代理和推理任务；以当前渠道基准价计算分组价',
+    officialUsd: { input: 2, output: 10, cachedInput: 0.1 },
+    priceBasisLabel: '渠道基准',
+  },
+  {
+    id: 'gemini-4-hydrogen',
+    name: 'Gemini 4 Hydrogen',
+    description: '适合日常编程、工具调用与高频任务；以当前渠道基准价计算分组价',
+    officialUsd: { input: 1.5, output: 7.5, cachedInput: 0.075 },
+    priceBasisLabel: '渠道基准',
   },
   {
     id: 'gemini-4-barium',
@@ -756,7 +790,8 @@ export function getTextModelsForGroup(groupId) {
       return {
         ...model,
         id: modelId,
-        unavailableMessage: group.unavailableModels?.[modelId] ?? '',
+        unavailableMessage: group.unavailableModels?.[modelId]
+          ?? (model.officialOnly ? '本站分组价格待确认；请切换到「官方价格」查看参考价。' : ''),
       }
     })
     .filter(Boolean)

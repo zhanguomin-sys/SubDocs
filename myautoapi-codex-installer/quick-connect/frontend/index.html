@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MyAutoAPI 接入助手</title>
+  <link rel="stylesheet" href="./style.css">
+  <script defer src="./app.js"></script>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="brand"><span aria-hidden="true">M</span> MyAutoAPI</div>
+      <span id="version" class="version"></span>
+    </header>
+    <h1>接入助手</h1>
+    <p>为 Windows 上的 Codex、Claude Code 和 Claude 桌面版配置 MyAutoAPI。</p>
+    <section aria-labelledby="connect">
+      <div class="heading">
+        <h2 id="connect">连接 Codex 或 Claude Code</h2>
+        <button type="button" class="text" data-guide="keys">获取 API Key</button>
+      </div>
+      <form id="configure">
+        <label for="target">客户端</label>
+        <select id="target">
+          <option value="codex">Codex</option>
+          <option value="claude-code">Claude Code</option>
+        </select>
+        <label for="key">对应分组的 API Key</label>
+        <input id="key" type="password" autocomplete="off" spellcheck="false" required maxlength="512" placeholder="sk-…" />
+        <button class="primary">验证并保存配置</button>
+      </form>
+    </section>
+    <section class="row">
+      <div><h2>Claude 桌面版</h2><p>使用 Claude 的第三方接入设置。</p></div>
+      <div class="actions">
+        <button type="button" id="claude">保存接入模板</button>
+        <button type="button" class="text" data-guide="claude">查看步骤</button>
+      </div>
+    </section>
+    <section class="row">
+      <div><h2>Codex 界面语言</h2><p>保存简体中文偏好，重开后生效。</p></div>
+      <div class="actions">
+        <button type="button" id="locale">设为简体中文</button>
+        <button type="button" class="text" data-guide="locale">语言指南</button>
+      </div>
+    </section>
+    <div id="status" role="status" aria-live="polite"></div>
+    <footer>
+      <div class="actions">
+        <button type="button" class="text" data-guide="models">国产模型导入</button>
+        <button type="button" class="text" data-guide="images">生图工具</button>
+      </div>
+      <div class="actions">
+        <button type="button" id="check">检查更新</button>
+        <button type="button" class="primary" id="download" hidden>下载新版</button>
+      </div>
+    </footer>
+  </main>
+</body>
+</html>
