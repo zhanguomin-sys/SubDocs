@@ -9,19 +9,24 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/BurntSushi/toml"
 )
 
 const (
-	productName       = "MyAutoAPI 接入助手"
-	version           = "1.2.2"
-	api               = "https://api.myautoapi.com"
-	docs              = "https://docs.myautoapi.com"
-	keyVariable       = "MYAUTOAPI_CODEX_KEY"
-	provider          = "myautoapi"
-	defaultCodexModel = "gpt-6.1-sol"
+	productName = "MyAutoAPI 中转快速接入助手"
+	version     = "1.2.25"
+	site        = "https://myautoapi.com"
+	api         = "https://api.myautoapi.com"
+	docs        = "https://docs.myautoapi.com"
+	qqGroup     = "685861462"
+	qqInvite    = "https://qm.qq.com/q/C2UlbcUTmK"
+	keyVariable = "MYAUTOAPI_CODEX_KEY"
+	provider    = "myautoapi"
+	gpt62Model  = "gpt-6.2-sol"
+	gpt62Effort = "high"
 )
 
 var keyPattern = regexp.MustCompile("^sk-[A-Za-z0-9._-]{8,500}$")
@@ -61,7 +66,7 @@ func tomlTable(config map[string]any, name string) (map[string]any, error) {
 	return table, nil
 }
 
-func codexConfig(old []byte) ([]byte, error) {
+func codexConfig(old []byte, updateCatalog func(map[string]any) error) ([]byte, error) {
 	return setTOML(old, func(config map[string]any) error {
 		// An active named profile can override both the provider and the model.
 		// Do not silently reset an existing profile.
@@ -79,15 +84,31 @@ func codexConfig(old []byte) ([]byte, error) {
 			"env_key":              keyVariable,
 			"requires_openai_auth": false,
 		}
-		if config["model_provider"] != provider || config["model"] == nil {
-			config["model"] = defaultCodexModel
-		}
+		config["model"] = gpt62Model
+		config["model_reasoning_effort"] = gpt62Effort
 		config["model_provider"] = provider
+		// Older installs may restrict which effort levels the desktop picker shows.
+		if desktop, ok := config["desktop"].(map[string]any); ok {
+			if efforts, ok := desktop["enabled-reasoning-efforts"].([]any); ok && !slices.Contains(efforts, gpt62Effort) {
+				desktop["enabled-reasoning-efforts"] = append(efforts, gpt62Effort)
+			}
+		}
+		if updateCatalog != nil {
+			return updateCatalog(config)
+		}
 		return nil
 	})
 }
 
 func localeConfig(old []byte) ([]byte, error) {
+	// Check the same bytes that will be edited, using the status card's rule.
+	configured, err := codexUsesMyAutoAPI(old)
+	if err != nil {
+		return nil, errors.New("无法识别 Codex 配置，未更改语言设置。")
+	}
+	if !configured {
+		return nil, errors.New("Codex 尚未配置 MyAutoAPI。请先点击「一键连接 Codex」，再设置简体中文。")
+	}
 	return setTOML(old, func(config map[string]any) error {
 		desktop, err := tomlTable(config, "desktop")
 		if err != nil {
@@ -108,23 +129,30 @@ func jsonObject(old []byte) (map[string]json.RawMessage, error) {
 	return object, nil
 }
 
-func claudeCodeConfig(old []byte, key string) ([]byte, error) {
-	config, err := jsonObject(old)
-	if err != nil {
-		return nil, err
+func codexUsesMyAutoAPI(data []byte) (bool, error) {
+	var config struct {
+		Profile   string `toml:"profile"`
+		Provider  string `toml:"model_provider"`
+		Providers map[string]struct {
+			BaseURL string `toml:"base_url"`
+		} `toml:"model_providers"`
 	}
-	env, err := jsonObject(config["env"])
-	if err != nil {
-		return nil, err
+	if _, err := toml.Decode(strings.TrimPrefix(string(data), "\ufeff"), &config); err != nil {
+		return false, err
 	}
-	env["ANTHROPIC_BASE_URL"], _ = json.Marshal(api)
-	env["ANTHROPIC_AUTH_TOKEN"], _ = json.Marshal(key)
-	// Claude Code accepts a gateway token instead of an Anthropic API key.
-	// A saved direct Anthropic key would cause two competing credentials.
-	delete(env, "ANTHROPIC_API_KEY")
-	config["env"], _ = json.Marshal(env)
-	data, err := json.MarshalIndent(config, "", "  ")
-	return append(data, '\n'), err
+	return config.Profile == "" && strings.TrimRight(config.Providers[config.Provider].BaseURL, "/") == api+"/v1", nil
+}
+
+func reusableCodexKey(config []byte, stored string) (string, error) {
+	configured, err := codexUsesMyAutoAPI(config)
+	if err != nil || !configured {
+		return "", errors.New("Codex 尚未配置 MyAutoAPI，请输入 GPT 分组 API Key")
+	}
+	key, err := validateKey(stored)
+	if err != nil {
+		return "", errors.New("没有找到已保存的 GPT 分组 API Key，请重新输入")
+	}
+	return key, nil
 }
 
 func readConfig(path string) ([]byte, bool, error) {
@@ -199,4 +227,11 @@ func applyConfig(path string, change func([]byte) ([]byte, error)) (string, erro
 		return "", err
 	}
 	return saveConfig(path, old, exists, updated)
+}
+
+func report(message, backup string) string {
+	if backup != "" {
+		return message + "\n原配置备份：" + backup
+	}
+	return message
 }

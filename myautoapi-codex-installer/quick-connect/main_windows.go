@@ -5,7 +5,6 @@ import (
 	"embed"
 	"errors"
 	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -16,6 +15,7 @@ import (
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	winoptions "github.com/wailsapp/wails/v2/pkg/options/windows"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/registry"
@@ -25,35 +25,73 @@ import (
 var assets embed.FS
 
 type App struct {
-	ctx    context.Context
-	mutex  sync.Mutex
-	update updater
-	latest Release
-	smoke  bool
-	ready  bool
+	ctx         context.Context
+	mutex       sync.Mutex
+	update      updater
+	latest      Release
+	toolRepo    toolRepository
+	gateway     keyGateway
+	toolUpdates map[string]toolRelease
+	smoke       bool
+	ready       bool
+	closeClient func() error // Tests supply an isolated client lifecycle.
+	setupLocale func(context.Context, string, bool) error
 }
 
-func (a *App) Started() string {
+type AppInfo struct {
+	Version string `json:"version"`
+	Domain  string `json:"domain"`
+	QQGroup string `json:"qqGroup"`
+}
+
+func (a *App) Started() AppInfo {
+	return AppInfo{Version: version, Domain: strings.TrimPrefix(site, "https://"), QQGroup: qqGroup}
+}
+
+func (a *App) FitWindow(contentHeight int) {
+	if contentHeight <= 0 || contentHeight > 16384 {
+		return
+	}
+	fitted := fitAssistantWindow(contentHeight, false)
 	if a.smoke {
-		a.ready = true
+		a.ready = fitted
 		go runtime.Quit(a.ctx)
 	}
-	return version
 }
 
 func (a *App) OpenGuide(section string) {
 	// The embedded interface opens only these published pages.
-	slugs := map[string]string{
-		"help":   "/quick-connect",
-		"locale": "/codex-chinese",
-		"models": "/codex-models",
-		"images": "/images/codex-image.html",
-		"claude": "/quick-connect#claude-桌面版",
-		"keys":   "/quick-start",
+	links := map[string]string{
+		"site":   site,
+		"keys":   site + "/keys",
+		"help":   docs + "/quick-connect",
+		"locale": docs + "/codex-chinese",
+		"models": docs + "/codex-models",
+		"images": docs + "/image-video-group-image",
+		"qq":     qqInvite,
 	}
-	if slug, ok := slugs[section]; ok {
-		runtime.BrowserOpenURL(a.ctx, docs+slug)
+	if link, ok := links[section]; ok {
+		runtime.BrowserOpenURL(a.ctx, link)
 	}
+}
+
+func (a *App) CopyGroup() error {
+	return runtime.ClipboardSetText(a.ctx, qqGroup)
+}
+
+func (a *App) ClipboardAPIKey() string {
+	if a.smoke {
+		return ""
+	}
+	text, err := runtime.ClipboardGetText(a.ctx)
+	if err != nil {
+		return ""
+	}
+	key, err := validateKey(text)
+	if err != nil {
+		return ""
+	}
+	return key
 }
 
 func codexPath() (string, error) {
@@ -68,24 +106,40 @@ func codexPath() (string, error) {
 	return filepath.Join(home, "config.toml"), nil
 }
 
-func verifyKey(ctx context.Context, key string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, api+"/v1/usage", nil)
+func (a *App) ConnectionStatus(target string) (bool, error) {
+	var configPath func() (string, error)
+	var check func([]byte) (bool, error)
+	switch target {
+	case "codex":
+		configPath, check = codexPath, codexUsesMyAutoAPI
+	case "claude-code":
+		if files, installed := findClaudeDesktop(); installed {
+			return claudeDesktopConfigured(files)
+		}
+		configPath = func() (string, error) {
+			settings, _, err := claudeCodePaths()
+			return settings, err
+		}
+		check = claudeCodeUsesMyAutoAPI
+	default:
+		return false, errors.New("请选择受支持的客户端")
+	}
+	path, err := configPath()
 	if err != nil {
-		return errors.New("无法准备 Key 检查")
+		return false, errors.New("无法找到客户端配置")
 	}
-	req.Header.Set("Authorization", "Bearer "+key)
-	resp, err := trustedClient(12 * time.Second).Do(req)
+	data, exists, err := readConfig(path)
 	if err != nil {
-		return errors.New("暂时无法连接 MyAutoAPI，请检查网络后重试")
+		return false, errors.New("无法读取客户端配置")
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
-		return errors.New("Key 未通过验证，请查看 Key 是否启用并确认分组")
+	if !exists || len(data) == 0 {
+		return false, nil
 	}
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("MyAutoAPI 暂时无法验证 Key（HTTP %d）", resp.StatusCode)
+	configured, err := check(data)
+	if err != nil {
+		return false, errors.New("无法识别客户端配置")
 	}
-	return nil
+	return configured, nil
 }
 
 func configureCodex(key string) (string, error) {
@@ -97,11 +151,14 @@ func configureCodex(key string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	next, err := codexConfig(old)
+	official, err := bundledOfficialModels()
 	if err != nil {
 		return "", err
 	}
-
+	next, catalog, err := prepareCodexConnection(path, old, official)
+	if err != nil {
+		return "", err
+	}
 	env, _, err := registry.CreateKey(registry.CURRENT_USER, "Environment", registry.QUERY_VALUE|registry.SET_VALUE)
 	if err != nil {
 		return "", errors.New("无法保存当前 Windows 用户的接入 Key")
@@ -114,7 +171,18 @@ func configureCodex(key string) (string, error) {
 	if err := env.SetStringValue(keyVariable, key); err != nil {
 		return "", errors.New("无法保存当前 Windows 用户的接入 Key")
 	}
-	backup, err := saveConfig(path, old, exists, next)
+	var backup string
+	var catalogSaved bool
+	if catalog.path != "" {
+		_, err = saveConfig(catalog.path, catalog.old, catalog.exists, catalog.next)
+		catalogSaved = err == nil
+		if err != nil {
+			err = fmt.Errorf("无法写入 GPT-6.2 模型目录：%w", err)
+		}
+	}
+	if err == nil {
+		backup, err = saveConfig(path, old, exists, next)
+	}
 	if err != nil {
 		var undoErr error
 		switch {
@@ -125,8 +193,13 @@ func configureCodex(key string) (string, error) {
 		default:
 			undoErr = env.SetStringValue(keyVariable, previous)
 		}
+		if catalogSaved && catalog.active && catalog.exists {
+			if _, restoreErr := saveConfig(catalog.path, catalog.next, true, catalog.old); restoreErr != nil {
+				err = errors.Join(err, errors.New("无法自动恢复原模型目录，可使用目录旁的备份恢复"))
+			}
+		}
 		if undoErr != nil {
-			return "", errors.New("配置未写入，且无法恢复旧的 MYAUTOAPI_CODEX_KEY；请查看 Windows 用户环境变量")
+			return "", errors.Join(err, errors.New("无法恢复旧的 MYAUTOAPI_CODEX_KEY；请查看 Windows 用户环境变量"))
 		}
 		return "", err
 	}
@@ -139,42 +212,71 @@ func configureCodex(key string) (string, error) {
 	return backup, nil
 }
 
-func report(message, backup string) string {
-	if backup != "" {
-		return message + "\n原配置备份：" + backup
+func savedCodexKey() (string, error) {
+	path, err := codexPath()
+	if err != nil {
+		return "", errors.New("无法找到 Codex 配置")
 	}
-	return message
+	config, exists, err := readConfig(path)
+	if err != nil || !exists {
+		return "", errors.New("Codex 尚未配置 MyAutoAPI，请输入 GPT 分组 API Key")
+	}
+	env, err := registry.OpenKey(registry.CURRENT_USER, "Environment", registry.QUERY_VALUE)
+	if err != nil {
+		return "", errors.New("没有找到已保存的 GPT 分组 API Key，请重新输入")
+	}
+	defer env.Close()
+	stored, _, err := env.GetStringValue(keyVariable)
+	if err != nil {
+		return "", errors.New("没有找到已保存的 GPT 分组 API Key，请重新输入")
+	}
+	return reusableCodexKey(config, stored)
+}
+
+func (a *App) finishCodexOperation(message string) string {
+	closeClient := a.closeClient
+	if closeClient == nil {
+		closeClient = closeOpenAIClients
+	}
+	if err := closeClient(); err != nil {
+		return message + "\n未能完全关闭 ChatGPT/Codex。请完全退出客户端后再打开。"
+	}
+	return message + "\nChatGPT/Codex 已完全退出。请重新打开客户端并新建任务。"
+}
+
+func (a *App) connectCodex(key string, save func(string) (string, error)) (string, error) {
+	backup, err := save(key)
+	if err != nil {
+		return "", err
+	}
+	message := "已连接 MyAutoAPI。新任务默认使用 GPT-6.2 Sol，推理力度为 High。模型列表也包含 Astra。"
+	return report(a.finishCodexOperation(message), backup), nil
 }
 
 func (a *App) Configure(target, input string) (string, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
-	if target != "codex" && target != "claude-code" {
+	gateway := a.gateway
+	switch target {
+	case "claude-code":
+		return a.configureClaude(input)
+	case "codex", "codex-gpt62":
+	default:
 		return "", errors.New("请选择受支持的客户端")
 	}
-	key, err := validateKey(input)
-	if err != nil {
-		return "", err
-	}
-	if err = verifyKey(a.ctx, key); err != nil {
-		return "", err
-	}
-	if target == "codex" {
-		backup, err := configureCodex(key)
-		return report("配置已保存。请完全退出并重新打开 Codex。", backup), err
-	}
-	home := os.Getenv("CLAUDE_CONFIG_DIR")
-	if home == "" {
-		profile, err := os.UserHomeDir()
+	if strings.TrimSpace(input) == "" {
+		key, err := savedCodexKey()
 		if err != nil {
 			return "", err
 		}
-		home = filepath.Join(profile, ".claude")
+		input = key
 	}
-	backup, err := applyConfig(filepath.Join(home, "settings.json"), func(old []byte) ([]byte, error) {
-		return claudeCodeConfig(old, key)
+	return configureWithKey(a.ctx, gateway.client, gateway.origin, input, func(key string) (string, error) {
+		if err := gateway.requireModels(a.ctx, key, "GPT 分组", gpt62Model, gpt62Astra); err != nil {
+			return "", fmt.Errorf("%w\nCodex 配置没有改动。", err)
+		}
+		return a.connectCodex(key, configureCodex)
 	})
-	return report("配置已保存。请重新启动 Claude Code。", backup), err
 }
 
 func (a *App) SetChinese() (string, error) {
@@ -184,30 +286,42 @@ func (a *App) SetChinese() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	backup, err := applyConfig(path, localeConfig)
-	return report("已保存简体中文偏好。请完全退出并重新打开 Codex；若仍显示英文，请查看中文设置指南。", backup), err
-}
-
-func (a *App) SaveClaudeTemplate() (string, error) {
-	path, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
-		Title:           "保存 Claude 桌面版接入模板",
-		DefaultFilename: "myautoapi-claude-desktop.json",
-		Filters:         []runtime.FileFilter{{DisplayName: "Claude 配置 (*.json)", Pattern: "*.json"}},
-	})
-	if err != nil || path == "" {
-		return "", err
-	}
-	if !strings.EqualFold(filepath.Ext(path), ".json") {
-		return "", errors.New("请选择 .json 文件")
-	}
-	// This is the documented import format, not an installed profile.
-	// The user enters their Key inside Claude Desktop's own settings.
-	data := "{\n  \"inferenceProvider\": \"gateway\",\n  \"inferenceGatewayBaseUrl\": \"" + api + "\",\n  \"inferenceGatewayAuthScheme\": \"bearer\"\n}\n"
-	_, err = applyConfig(path, func([]byte) ([]byte, error) { return []byte(data), nil })
+	old, exists, err := readConfig(path)
 	if err != nil {
 		return "", err
 	}
-	return "模板已保存。请在 Claude 桌面版导入后填写对应分组的 Key。", nil
+	updated, err := localeConfig(old)
+	if err != nil {
+		return "", err
+	}
+	root, err := filepath.Abs(filepath.Dir(path))
+	if err != nil {
+		return "", errors.New("无法找到 Codex 配置目录")
+	}
+	setupLocale := a.setupLocale
+	if setupLocale == nil {
+		setupLocale = installDesktopLocale
+	}
+	if err := setupLocale(a.ctx, root, true); err != nil {
+		return "", err
+	}
+	if _, err := saveConfig(path, old, exists, updated); err != nil {
+		return "", err
+	}
+	closeClient := a.closeClient
+	if closeClient == nil {
+		closeClient = closeOpenAIClients
+	}
+	if err := closeClient(); err != nil {
+		if errors.Is(err, errStartedFromCodex) {
+			return "", errors.New("接入助手由 Codex 启动，旧会话仍在运行。请退出 Codex，从资源管理器双击接入助手，再重试。")
+		}
+		return "", errors.New("Codex 的桌面或后台进程未能完全退出。请关闭 Codex 后重试。")
+	}
+	if err := setupLocale(a.ctx, root, false); err != nil {
+		return "", err
+	}
+	return "已写入简体中文缓存并重新打开 Codex。", nil
 }
 
 type UpdateStatus struct {
@@ -225,7 +339,7 @@ func (a *App) CheckUpdate() (UpdateStatus, error) {
 	}
 	a.latest = latest
 	if !latest.newer() {
-		return UpdateStatus{Message: "当前已是最新版本"}, nil
+		return UpdateStatus{Message: "当前没有可用的新版本。"}, nil
 	}
 	return UpdateStatus{Message: "发现 " + latest.Version + "，可下载校验后的新版。", Available: true}, nil
 }
@@ -254,15 +368,25 @@ func (a *App) DownloadUpdate() (string, error) {
 }
 
 func main() {
-	a := &App{update: updater{http: trustedClient(45 * time.Second), origin: docs},
-		smoke: len(os.Args) == 2 && os.Args[1] == "--smoke-ui"}
+	a := &App{
+		update:      updater{http: trustedClient(45 * time.Second), origin: docs},
+		toolRepo:    toolRepository{client: trustedClient(35 * time.Second), origin: docs},
+		gateway:     keyGateway{client: trustedClient(12 * time.Second), origin: api},
+		toolUpdates: make(map[string]toolRelease),
+		smoke:       len(os.Args) == 2 && os.Args[1] == "--smoke-ui",
+	}
 	err := wails.Run(&options.App{
 		Title: productName,
-		Width: 780, Height: 730, MinWidth: 530, MinHeight: 600,
-		StartHidden: a.smoke,
-		AssetServer: &assetserver.Options{Assets: assets},
-		OnStartup:   func(ctx context.Context) { a.ctx = ctx },
-		Bind:        []interface{}{a},
+		Width: assistantWindowWidth, Height: startupWindowHeight,
+		DisableResize: true,
+		StartHidden:   a.smoke,
+		AssetServer:   &assetserver.Options{Assets: assets},
+		Windows:       &winoptions.Options{WindowClassName: assistantWindowClass},
+		OnStartup: func(ctx context.Context) {
+			a.ctx = ctx
+			fitAssistantWindow(0, true)
+		},
+		Bind: []interface{}{a},
 	})
 	if err != nil || (a.smoke && !a.ready) {
 		os.Exit(1)

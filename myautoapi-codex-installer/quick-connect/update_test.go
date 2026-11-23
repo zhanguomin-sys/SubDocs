@@ -16,7 +16,11 @@ import (
 func TestTrustedUpdateChecksPathVersionSizeAndHash(t *testing.T) {
 	valid := append([]byte("MZ"), bytes.Repeat([]byte{9}, 2046)...)
 	invalid := append([]byte("MZ"), bytes.Repeat([]byte{1}, 2046)...)
-	release := Release{Version: "1.2.3", SHA256: fmt.Sprintf("%x", sha256.Sum256(valid)), Size: int64(len(valid))}
+	var major, minor, patch int
+	if _, err := fmt.Sscanf(version, "%d.%d.%d", &major, &minor, &patch); err != nil {
+		t.Fatal(err)
+	}
+	release := Release{Version: fmt.Sprintf("%d.%d.%d", major, minor, patch+1), SHA256: fmt.Sprintf("%x", sha256.Sum256(valid)), Size: int64(len(valid))}
 	release.Path = "/download/quick-connect/" + release.filename()
 	payload, manifestRelease := valid, release
 	var state sync.Mutex

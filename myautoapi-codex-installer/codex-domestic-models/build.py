@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Build standalone installers. Python is needed by maintainers only."""
+import hashlib
 import json
 from pathlib import Path
 
@@ -66,7 +67,7 @@ def build():
         assert shell.count(marker) == 1
         shell = shell.replace(marker, content)
     ps = '''#Requires -Version 5.1
-param([string]$CodexHomePath, [string]$CodexPath, [switch]$Uninstall)
+param([string]$CodexHomePath, [string]$CodexPath, [switch]$Uninstall, [switch]$KeepClientsOpen, [string]$CatalogFile)
 $ErrorActionPreference = 'Stop'
 function Say([string]$Message) { Write-Host $Message }
 '''
@@ -74,18 +75,53 @@ function Say([string]$Message) { Write-Host $Message }
     ps += "$BundledOfficialVersion = '" + OFFICIAL_SNAPSHOT_VERSION + "'\n"
     ps += '$BundledOfficialCatalog = ConvertFrom-Json -InputObject @\'\n' + json.dumps(official, ensure_ascii=False) + "\n'@\n"
     ps += parent_powershell_process_functions() + '\n' + (ROOT / 'src/core.ps1').read_text(encoding='utf-8') + '\n' + (ROOT / 'src/windows-host.ps1').read_text(encoding='utf-8')
-    ps += '''
-try { Start-ModelInstaller $CodexHomePath $CodexPath -Uninstall:$Uninstall }
+    ps += r'''
+try {
+  if ($CatalogFile) {
+    if ($Uninstall) { throw (New-ModelImportError '卸载不接受外部模型目录。') }
+    $catalogUpdate = ConvertFrom-ModelJson (Read-PrivateText $CatalogFile) '读取新版目录' $CatalogFile
+    if ($catalogUpdate.schema -ne 1 -or $catalogUpdate.official_version -cnotmatch '^[0-9]{1,4}\.[0-9]{1,4}\.[0-9]{1,4}$') {
+      throw (New-ModelImportError '新版模型目录格式不兼容。')
+    }
+    Test-ModelCatalog $catalogUpdate.domestic
+    Test-ModelCatalog $catalogUpdate.official
+    $DomesticCatalog = $catalogUpdate.domestic
+    $BundledOfficialCatalog = $catalogUpdate.official
+    $BundledOfficialVersion = $catalogUpdate.official_version
+  }
+  Start-ModelInstaller $CodexHomePath $CodexPath -Uninstall:$Uninstall -KeepClientsOpen:$KeepClientsOpen
+}
 catch {
   Write-Host (Format-ModelImportError $_ -Uninstall:$Uninstall) -ForegroundColor Red
   if ($Uninstall) { throw '国产模型卸载未完成，软件未关闭。' }
   throw '国产模型导入未完成，软件未关闭。'
 }
 '''
-    target = ROOT / 'install'
-    target.mkdir(exist_ok=True)
-    (target / 'codex-models.sh').write_text(shell, encoding='utf-8', newline='\n')
-    (target / 'codex-models.ps1').write_text(ps, encoding='utf-8-sig', newline='\n')
+    public = ROOT.parents[1] / 'docs' / 'public' / 'install' / 'codex-models'
+    relative = f'releases/v{TOOL_VERSION}/catalog.json'
+    release_file = public / relative
+    release_file.parent.mkdir(parents=True, exist_ok=True)
+    payload = json.dumps({
+        'schema': 1, 'version': TOOL_VERSION, 'official_version': OFFICIAL_SNAPSHOT_VERSION,
+        'domestic': data, 'official': official,
+    }, ensure_ascii=False, separators=(',', ':')).encode('utf-8') + b'\n'
+    if release_file.exists() and release_file.read_bytes() != payload:
+        raise SystemExit('Model catalog changed: bump VERSION before publishing')
+    # PowerShell 5.1 needs a BOM for local files. The web entry serves UTF-8
+    # text without a BOM; keep both copies generated from the same source.
+    for target, windows_encoding in (
+        (ROOT / 'install', 'utf-8-sig'),
+        (ROOT.parent / 'install', 'utf-8-sig'),
+        (public.parent, 'utf-8'),
+    ):
+        target.mkdir(exist_ok=True)
+        (target / 'codex-models.sh').write_text(shell, encoding='utf-8', newline='\n')
+        (target / 'codex-models.ps1').write_text(ps, encoding=windows_encoding, newline='\n')
+    release_file.write_bytes(payload)
+    (public / 'latest.json').write_text(json.dumps({
+        'version': TOOL_VERSION, 'path': relative, 'size': len(payload),
+        'sha256': hashlib.sha256(payload).hexdigest(),
+    }, indent=2) + '\n', encoding='utf-8')
     return data
 
 

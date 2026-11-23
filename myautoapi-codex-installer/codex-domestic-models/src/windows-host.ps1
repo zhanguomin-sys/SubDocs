@@ -65,7 +65,7 @@ function Write-ModelFiles($Files, $OriginalConfig) {
   }
 }
 
-function Start-ModelInstaller([string]$CodexHomePath, [string]$CodexPath, [switch]$Uninstall) {
+function Start-ModelInstaller([string]$CodexHomePath, [string]$CodexPath, [switch]$Uninstall, [switch]$KeepClientsOpen) {
   if ($env:OS -ne 'Windows_NT') { throw (New-ModelImportError '这个脚本用于 Windows；macOS 请运行 codex-models.sh。') }
   if (-not $CodexHomePath) { $CodexHomePath=if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $HOME '.codex' } }
   $targetHome=[IO.Path]::GetFullPath($CodexHomePath)
@@ -73,19 +73,19 @@ function Start-ModelInstaller([string]$CodexHomePath, [string]$CodexPath, [switc
   # deliberately unused. Import and uninstall never locate or start Codex; they only
   # read and write files, then close running clients with the one-click installer's code.
   if ($Uninstall) {
-    Write-Host '移除当前启用目录中的国产模型后会自动关闭 ChatGPT/Codex，运行中的任务会中断。'
+    if (-not $KeepClientsOpen) { Write-Host '移除当前启用目录中的国产模型后会自动关闭 ChatGPT/Codex，运行中的任务会中断。' }
     $result=Remove-ImportedModels $targetHome $DomesticCatalog
     if (-not $result.Changed) { Write-Host '没有需要移除的国产模型，软件未关闭。'; return }
     if (-not $result.Active) { Write-Host '已清理原导入目录；软件未关闭。'; return }
     Write-Host '已移除本工具导入的国产模型，原 GPT 和其他模型已保留。'
-    Report-RunningClients (Stop-RunningClients)
+    if (-not $KeepClientsOpen) { Report-RunningClients (Stop-RunningClients) }
     Write-Host '重新打开 App，新建任务后选择模型。'
     return
   }
-  Write-Host '成功导入后会自动关闭 ChatGPT/Codex，运行中的任务会中断。'
+  if (-not $KeepClientsOpen) { Write-Host '成功导入后会自动关闭 ChatGPT/Codex，运行中的任务会中断。' }
   $result=Invoke-ModelImport $targetHome $DomesticCatalog
   Write-Host ("已导入 "+$result.Count+" 个国产模型，原 GPT 和其他模型已保留。")
   if (-not $result.UsedCache) { Write-Host '未读到本机模型缓存，GPT 列表来自脚本内置快照；后续新增 GPT，请使用更新后的脚本重新导入。' }
-  Report-RunningClients (Stop-RunningClients)
+  if (-not $KeepClientsOpen) { Report-RunningClients (Stop-RunningClients) }
   Write-Host '重新打开 App，新建任务后选择模型；API Key 分组由你在中转站切换。'
 }

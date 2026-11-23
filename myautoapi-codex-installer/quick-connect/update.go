@@ -46,7 +46,14 @@ func (r Release) newer() bool {
 	if !r.valid() {
 		return false
 	}
-	have, latest := strings.Split(version, "."), strings.Split(r.Version, ".")
+	return versionAfter(r.Version, version)
+}
+
+func versionAfter(candidate, current string) bool {
+	if !versionPattern.MatchString(candidate) || !versionPattern.MatchString(current) {
+		return false
+	}
+	have, latest := strings.Split(current, "."), strings.Split(candidate, ".")
 	for i := range have {
 		x, _ := strconv.Atoi(have[i])
 		y, _ := strconv.Atoi(latest[i])

@@ -7,3 +7,5 @@
 *.jpg binary
 *.png binary
 docs/public/install/myautoapi-imagines-tool/releases/*/myautoapi-imagines-tool-* binary
+docs/public/install/codex-models/releases/*/catalog.json text eol=lf
+myautoapi-codex-installer/quick-connect/locale/*.ps1 text eol=lf

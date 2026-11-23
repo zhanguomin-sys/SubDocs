@@ -3,59 +3,138 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>MyAutoAPI 接入助手</title>
+  <title>MyAutoAPI 中转快速接入助手</title>
   <link rel="stylesheet" href="./style.css">
   <script defer src="./app.js"></script>
 </head>
 <body>
   <main>
-    <header>
-      <div class="brand"><span aria-hidden="true">M</span> MyAutoAPI</div>
-      <span id="version" class="version"></span>
+    <header class="header">
+      <div class="brand">
+        <img src="./myautoapi.ico" alt="" width="52" height="52">
+        <div><h1>MyAuto<span>API</span></h1><p>中转快速接入助手</p></div>
+      </div>
+      <button type="button" class="site" id="site" data-guide="site">myautoapi.com ↗</button>
     </header>
-    <h1>接入助手</h1>
-    <p>为 Windows 上的 Codex、Claude Code 和 Claude 桌面版配置 MyAutoAPI。</p>
-    <section aria-labelledby="connect">
-      <div class="heading">
-        <h2 id="connect">连接 Codex 或 Claude Code</h2>
-        <button type="button" class="text" data-guide="keys">获取 API Key</button>
+
+    <div class="tabs" role="tablist" aria-label="客户端">
+      <button id="tab-codex" role="tab" type="button" aria-selected="true" aria-controls="connect" data-target="codex">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="m7 9 3 3-3 3m6 0h4"/></svg> Codex
+      </button>
+      <button id="tab-claude" role="tab" type="button" aria-selected="false" aria-controls="connect" tabindex="-1" data-target="claude-code">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18m-9-9h18M5.6 5.6l12.8 12.8m0-12.8L5.6 18.4"/></svg> Claude
+      </button>
+    </div>
+
+    <section id="connect" role="tabpanel" aria-labelledby="tab-codex">
+      <div id="connection-card" class="connection-card" data-state="idle" role="status">
+        <span class="connection-mark" id="connection-mark" aria-hidden="true">i</span>
+        <div><div class="eyebrow" id="connection-label">Codex 状态</div><div class="connection-text" id="connection-text">正在读取客户端配置…</div></div>
       </div>
       <form id="configure">
-        <label for="target">客户端</label>
-        <select id="target">
-          <option value="codex">Codex</option>
-          <option value="claude-code">Claude Code</option>
-        </select>
-        <label for="key">对应分组的 API Key</label>
-        <input id="key" type="password" autocomplete="off" spellcheck="false" required maxlength="512" placeholder="sk-…" />
-        <button class="primary">验证并保存配置</button>
+        <div class="key-heading">
+          <label for="key" id="key-label">GPT 分组 API 密钥</label>
+          <button type="button" class="text" data-guide="keys">获取 MyAutoAPI 密钥 ↗</button>
+        </div>
+        <div class="key-field">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="7.5" cy="15.5" r="4"/><path d="m10.5 12.5 9-9m-3 3 3 3m-6 0 2 2"/></svg>
+          <input id="key" type="password" autocomplete="off" spellcheck="false" maxlength="512" placeholder="请粘贴 API 密钥页面 GPT 分组的 API Key">
+        </div>
+        <p id="clipboard-notice" class="clipboard-notice" role="status" hidden>已从剪贴板填入，请确认使用的是当前分组的密钥。</p>
+        <button id="submit" class="primary" type="submit" disabled>一键连接 Codex</button>
+        <button id="switch-gpt62" class="model-preset" type="submit" disabled>切换至 GPT-6.2</button>
       </form>
-    </section>
-    <section class="row">
-      <div><h2>Claude 桌面版</h2><p>使用 Claude 的第三方接入设置。</p></div>
-      <div class="actions">
-        <button type="button" id="claude">保存接入模板</button>
-        <button type="button" class="text" data-guide="claude">查看步骤</button>
+      <div id="result" class="result" role="status" hidden></div>
+      <div id="codex-tools" class="tools" role="group" aria-label="Codex 工具">
+        <button type="button" data-tool="image" aria-haspopup="dialog" aria-controls="tool-panel">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m4 17 5-4 4 3 3-4 5 5"/></svg>
+          <span>安装绘图模型</span>
+        </button>
+        <button type="button" data-tool="models" aria-haspopup="dialog" aria-controls="tool-panel">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h13M7 12h11M7 17h8M3 7h.01M3 12h.01M3 17h.01"/></svg>
+          <span>导入国产模型</span>
+        </button>
+        <button type="button" id="locale" data-tool="locale" aria-haspopup="dialog" aria-controls="tool-panel">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 5h12M7.5 2v3m-3 3 6 6m-7 0c4-2 7-5 8-9m1.5 16 4.5-10 4.5 10m-7.5-3h6"/></svg>
+          <span>设为简体中文</span>
+        </button>
       </div>
     </section>
-    <section class="row">
-      <div><h2>Codex 界面语言</h2><p>保存简体中文偏好，重开后生效。</p></div>
-      <div class="actions">
-        <button type="button" id="locale">设为简体中文</button>
-        <button type="button" class="text" data-guide="locale">语言指南</button>
+
+    <section class="community" aria-labelledby="community-label">
+      <div class="community-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17.5H5a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-7L7 21z"/><path d="M8 11.5h.01m4 0h.01m4 0h.01"/></svg>
+      </div>
+      <div class="community-copy">
+        <div class="eyebrow" id="community-label">MyAutoAPI QQ 交流群</div>
+        <strong id="qq-group">685861462</strong>
+        <div>接入答疑 · 使用交流</div>
+      </div>
+      <div class="community-actions">
+        <button type="button" class="outline" id="copy-group">复制群号</button>
+        <button type="button" class="dark" data-guide="qq">加入群聊 ↗</button>
       </div>
     </section>
-    <div id="status" role="status" aria-live="polite"></div>
+
     <footer>
-      <div class="actions">
-        <button type="button" class="text" data-guide="models">国产模型导入</button>
-        <button type="button" class="text" data-guide="images">生图工具</button>
+      <div class="footer-links">
+        <button type="button" class="text" data-guide="help">接入指南</button>
+        <button type="button" class="text" id="check">检查助手更新</button>
+        <button type="button" class="outline" id="download" hidden>下载新版</button>
       </div>
-      <div class="actions">
-        <button type="button" id="check">检查更新</button>
-        <button type="button" class="primary" id="download" hidden>下载新版</button>
-      </div>
+      <span id="version" class="version" aria-label="助手版本"></span>
     </footer>
   </main>
+  <dialog id="connection-result" class="tool-panel" aria-labelledby="connection-result-title" aria-describedby="connection-result-message">
+    <div class="tool-header">
+      <h2 id="connection-result-title"></h2>
+      <button type="button" class="outline" id="connection-result-close" autofocus>关闭</button>
+    </div>
+    <div id="connection-result-message" class="result"></div>
+  </dialog>
+  <dialog id="tool-panel" class="tool-panel" aria-labelledby="tool-title" aria-describedby="tool-description">
+    <div class="tool-header">
+      <h2 id="tool-title"></h2>
+      <button type="button" class="outline" id="tool-close" autofocus>关闭</button>
+    </div>
+    <p class="tool-description" id="tool-description"></p>
+    <dl id="tool-versions" class="tool-versions" hidden>
+      <div><dt>本机</dt><dd id="tool-installed"></dd></div>
+      <div><dt>内置</dt><dd id="tool-included"></dd></div>
+      <div><dt>官网</dt><dd id="tool-latest"></dd></div>
+    </dl>
+    <form id="tool-form" hidden>
+      <div id="image-key-section" hidden>
+        <div class="key-heading">
+          <label for="image-key">专门画图分组 API 密钥</label>
+          <button type="button" class="text" data-guide="keys">获取密钥 ↗</button>
+        </div>
+        <div class="key-field">
+          <input id="image-key" type="password" autocomplete="off" spellcheck="false" maxlength="512">
+        </div>
+      </div>
+      <div class="tool-actions">
+        <button type="submit" class="outline tool-install" id="tool-bundle" data-source="bundled"></button>
+        <button type="submit" class="outline tool-install" id="tool-online" data-source="online" hidden></button>
+        <button type="button" class="outline" id="tool-update">联网检查更新</button>
+        <button type="button" class="text" id="tool-help" data-guide="images">使用说明 ↗</button>
+      </div>
+    </form>
+    <div id="locale-actions" class="tool-actions" hidden>
+      <button type="button" class="outline tool-install" id="locale-confirm">确认设为简体中文</button>
+      <button type="button" class="text" data-guide="locale">使用说明 ↗</button>
+    </div>
+    <div id="tool-result" class="result" role="status" hidden></div>
+  </dialog>
+  <dialog id="key-help-dialog" class="tool-panel" aria-labelledby="key-help-title" aria-describedby="key-help-description">
+    <div class="tool-header">
+      <h2 id="key-help-title">还没有输入有效密钥</h2>
+      <button type="button" class="outline" id="key-help-close" autofocus>关闭</button>
+    </div>
+    <p class="tool-description" id="key-help-description">请到 MyAutoAPI 网站的「API 密钥」页，选择一个密钥并点击「一键导入」。也可以复制 GPT 分组的 API Key，粘贴到上方，再点击「一键连接 Codex」。</p>
+    <div class="tool-actions">
+      <button type="button" class="outline tool-install" id="key-help-open" data-guide="keys">打开 API 密钥页面 ↗</button>
+    </div>
+  </dialog>
 </body>
 </html>
